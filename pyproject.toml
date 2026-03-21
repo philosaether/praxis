@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "praxis"
+version = "0.1.0"
+description = "Cue-based task management system"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "Phil Bascom" }
+]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "anthropic>=0.18.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.3.0",
+]
+api = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "jinja2>=3.1.0",
+    "python-multipart>=0.0.9",
+]
+
+[project.scripts]
+praxis = "praxis.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/praxis"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
