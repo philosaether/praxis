@@ -5,7 +5,8 @@ from rich.table import Table
 
 from praxis import __version__
 from praxis import db
-from praxis.models import TaskStatus
+from praxis import filters
+from praxis.models import Task, TaskStatus
 
 app = typer.Typer(
     name="praxis",
@@ -37,12 +38,18 @@ def main(
 # ---------------------------------------------------------------------
 
 @app.command(name="next")
-def fetch_highest_priority_task(
+def next_task(
     stream: str | None = typer.Option(
         None,
         "--stream",
         "-s",
         help="Filter to a specific workstream.",
+    ),
+    any_task: bool = typer.Option(
+        False,
+        "--any",
+        "-a",
+        help="Ignore filters, pick from any queued task.",
     ),
 ) -> None:
     workstream_id = None
@@ -60,9 +67,31 @@ def fetch_highest_priority_task(
         rprint("[bold green]Do what you will.[/bold green]")
         raise typer.Exit()
     
-    # random for now
-    task = random.choice(tasks)
+    if any_task:
+        task = random.choice(tasks)
+    else:
+        task = _select_task(tasks)
+    
+    if task is None:
+        rprint("[yellow]Do what you will.[/yellow]")
+        rprint("[dim]Or use [bold]praxis next --any[/bold] to bypass filters.[/dim]")
+        raise typer.Exit()
 
+    _display_task(task)
+
+def _select_task(tasks: list) -> Task | None:
+    scored = filters.apply_filters(tasks)
+
+    if not scored:
+        return None
+    
+    top_weight = scored[0].weight
+    top_tier = [scored_task for scored_task in scored if scored_task.weight == top_weight]
+
+    selected = random.choice(top_tier)
+    return selected.task
+
+def _display_task(task) -> None:
     rprint()
     rprint(f"[bold green]{task.title}[/bold green]")
     if task.workstream_name:
@@ -72,7 +101,7 @@ def fetch_highest_priority_task(
     if task.due_date:
         rprint(f"\n[yellow]Due: {task.due_date.strftime('%Y-%m-%d')}[/yellow]")
     rprint()
-    rprint(f"[dim]Task #{task.id} — mark complete with: praxis done {task.id}[/dim]")    
+    rprint(f"[dim]Task #{task.id} — mark complete with: praxis done {task.id}[/dim]")
 
 @app.command()
 def add(

@@ -1,0 +1,71 @@
+{
+  "filters": [
+    {
+      "id": "networking-business-hours",
+      "type": "hard",
+      "match": { "workstream": "Networking" },
+      "constraint": { "hours": { "after": 9, "before": 21 } }
+    },
+    {
+      "id": "networking-no-weekends",
+      "type": "hard",
+      "match": { "workstream": "Networking" },
+      "constraint": { "days": { "exclude": ["saturday", "sunday"] } }
+    },
+
+    {
+      "id": "leetcode-morning-boost",
+      "type": "soft",
+      "match": { "workstream": "Leetcode" },
+      "weight": { "boost": 20, "when": { "hours": { "before": 12 } } }
+    },
+    {
+      "id": "praxis-weekday-morning",
+      "type": "soft",
+      "match": { "workstream": "Praxis" },
+      "weight": {
+        "boost": 15,
+        "when": {
+          "hours": { "before": 12 },
+          "days": { "only": ["monday", "tuesday", "thursday"] }
+        }
+      }
+    },
+    {
+      "id": "job-search-wed-fri-morning",
+      "type": "soft",
+      "match": { "workstream": "Job Search" },
+      "weight": {
+        "boost": 15,
+        "when": {
+          "hours": { "before": 12 },
+          "days": { "only": ["wednesday", "friday"] }
+        }
+      }
+    },
+    {
+      "id": "reading-news-afternoon",
+      "type": "soft",
+      "match": { "workstream": "Reading - news" },
+      "weight": { "boost": 10, "when": { "hours": { "after": 15, "before": 18 } } }
+    },
+    {
+      "id": "reading-deep-afternoon",
+      "type": "soft",
+      "match": { "workstream": "Reading - deep" },
+      "weight": { "boost": 10, "when": { "hours": { "after": 15, "before": 18 } } }
+    },
+    {
+      "id": "proper-elevation-thursday",
+      "type": "soft",
+      "match": { "workstream": "Proper Elevation" },
+      "weight": {
+        "boost": 15,
+        "when": {
+          "hours": { "after": 12, "before": 15 },
+          "days": { "only": ["thursday"] }
+        }
+      }
+    }
+  ]
+}

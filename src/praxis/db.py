@@ -157,19 +157,33 @@ def seed_database() -> dict:
     # Sample workstreams
     streams = [
         ("Praxis", "Building the cue-based task system"),
+        ("Leetcode", "Interview prep, algorithm practice"),
+        ("Job Search", "Applications, resume updates, interview scheduling"),
         ("Reading - deep", "Books, papers, long-form technical content"),
         ("Reading - news", "Industry news, blog posts, light content"),
         ("Networking", "Outreach, relationship maintenance, intros"),
+        ("Writing", "Essays, blog posts, documentation"),
+        ("Proper Elevation", "PE business tasks"),
         ("Health", "Exercise, sleep, nutrition habits"),
     ]
 
-        # Sample tasks per stream
+    # Sample tasks per stream
     stream_tasks = {
         "Praxis": [
             "Implement task CRUD via CLI",
             "Add queue pull logic",
             "Integrate Claude API for cue generation",
             "Write project README",
+        ],
+        "Leetcode": [
+            "Establish performance baseline",
+            "Review array/string patterns",
+            "Practice binary search problems",
+        ],
+        "Job Search": [
+            "Update resume with Praxis project",
+            "Research Block/Bitkey team",
+            "Draft cover letter template",
         ],
         "Reading - deep": [
             "Finish 'Designing Data-Intensive Applications' ch. 5",
@@ -184,6 +198,12 @@ def seed_database() -> dict:
             "Reply to James re: coffee chat",
             "Send intro email to potential mentor",
             "Update LinkedIn with recent project",
+        ],
+        "Writing": [
+            "Outline 'I Used AI to Get a Job' essay",
+        ],
+        "Proper Elevation": [
+            "Review PE task backlog with Ronique",
         ],
         "Health": [
             "Schedule annual physical",
