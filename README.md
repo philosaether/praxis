@@ -18,6 +18,50 @@ Early development. MVP target: April 2026.
 - **Intelligence**: Claude API for contextual cue generation
 - **Storage**: SQLite (MVP) → PostgreSQL (MVP+1)
 
+## Generators
+
+Praxis uses a **unified generator model** to represent goals, obligations, and the work they generate. Generators form a directed acyclic graph (DAG)—a hierarchy where items can have multiple parents.
+
+### Generator Types
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| **Goal** | Chosen pursuit | "Accomplish positive change" |
+| **Obligation** | Imposed requirement | "Stay out of jail" |
+| **Capacity** | Skill to develop (can atrophy) | "Technical interview performance" |
+| **Accomplishment** | Threshold to reach (done when done) | "Get a day job" |
+| **Practice** | Recurring activity | "Leetcode drilling" |
+
+### CLI Commands
+
+```bash
+praxis gen tree                    # view full hierarchy
+praxis gen tree positive-change    # view subtree from a root
+praxis gen list --type goal        # list generators by type
+praxis gen show cap-technical-interviews  # show generator details
+praxis gen roots                   # list root generators
+
+praxis gen add goal my-goal "My Goal" --parent some-parent
+praxis gen link child-id parent-id
+praxis gen unlink child-id parent-id
+```
+
+### Example Tree
+
+```
+positive-change
+└── implement-philosophy
+    ├── acquire-capacity
+    │   ├── cap-moral-reasoning
+    │   └── cap-systems-engineering
+    └── acquire-power
+        ├── gain-reputation
+        │   ├── cap-systems-engineering  ← shared node (two parents)
+        │   └── prac-publish
+        └── gain-influence
+            └── acc-day-job
+```
+
 ## Filters
 
 Praxis uses a filter system to determine which tasks to surface. Filters are stored in `~/.praxis/filters.json`.
@@ -29,8 +73,6 @@ Praxis uses a filter system to determine which tasks to surface. Filters are sto
 **Soft filters** adjust ranking. Tasks that match get a weight boost, making them more likely to be selected.
 
 ### Standard Filter Primitives
-
-These are the building blocks for all filters:
 
 | Type | Primitive | Description | Example |
 |------|-----------|-------------|---------|
@@ -51,16 +93,7 @@ These are the building blocks for all filters:
 }
 ```
 
-```json
-{
-  "id": "leetcode-morning-boost",
-  "type": "soft",
-  "match": { "workstream": "Leetcode" },
-  "weight": { "boost": 20, "when": { "hours": { "before": 12 } } }
-}
-```
-
-See `src/praxis/filters-example.json` for a complete example configuration.
+See `filters-example.json` for a complete example configuration.
 
 ## Development
 
@@ -72,8 +105,12 @@ source .venv/bin/activate
 # Install in development mode
 pip install -e .
 
+# Seed with sample teleology
+python seed_teleology.py
+
 # Run CLI
 praxis --help
+praxis gen tree
 ```
 
 ## License
