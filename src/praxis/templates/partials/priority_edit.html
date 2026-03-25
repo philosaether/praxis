@@ -1,5 +1,5 @@
 <div class="detail-view">
-    <form hx-post="/priorities/{{ generator.id }}"
+    <form hx-post="/priorities/{{ priority.id }}"
           hx-target="#detail-pane"
           hx-swap="innerHTML">
 
@@ -9,15 +9,15 @@
                 <input type="text"
                        id="name"
                        name="name"
-                       value="{{ generator.name }}"
+                       value="{{ priority.name }}"
                        required>
             </div>
 
             <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                <span class="type-badge {{ generator.generator_type.value }}">
-                    {{ generator.generator_type.value }}
+                <span class="type-badge {{ priority.priority_type.value }}">
+                    {{ priority.priority_type.value }}
                 </span>
-                <span style="color: var(--text-muted);">{{ generator.id }}</span>
+                <span style="color: var(--text-muted);">{{ priority.id }}</span>
             </div>
         </div>
 
@@ -25,8 +25,8 @@
         <div class="form-group">
             <label for="status">Status</label>
             <select id="status" name="status">
-                {% for s in generator_statuses %}
-                <option value="{{ s.value }}" {% if generator.status == s %}selected{% endif %}>
+                {% for s in priority_statuses %}
+                <option value="{{ s.value }}" {% if priority.status == s %}selected{% endif %}>
                     {{ s.value }}
                 </option>
                 {% endfor %}
@@ -38,67 +38,67 @@
             <label for="agent_context">Context</label>
             <textarea id="agent_context"
                       name="agent_context"
-                      placeholder="Brief context for AI agent...">{{ generator.agent_context or '' }}</textarea>
+                      placeholder="Brief context for AI agent...">{{ priority.agent_context or '' }}</textarea>
         </div>
 
         <!-- Type-specific fields -->
-        {% if generator.generator_type.value == 'goal' %}
+        {% if priority.priority_type.value == 'goal' %}
             <div class="form-group">
                 <label for="success_looks_like">Success Looks Like</label>
                 <textarea id="success_looks_like"
-                          name="success_looks_like">{{ generator.success_looks_like or '' }}</textarea>
+                          name="success_looks_like">{{ priority.success_looks_like or '' }}</textarea>
             </div>
             <div class="form-group">
                 <label for="obsolete_when">Obsolete When</label>
                 <textarea id="obsolete_when"
-                          name="obsolete_when">{{ generator.obsolete_when or '' }}</textarea>
+                          name="obsolete_when">{{ priority.obsolete_when or '' }}</textarea>
             </div>
 
-        {% elif generator.generator_type.value == 'obligation' %}
+        {% elif priority.priority_type.value == 'obligation' %}
             <div class="form-group">
                 <label for="consequence_of_neglect">Consequence of Neglect</label>
                 <textarea id="consequence_of_neglect"
-                          name="consequence_of_neglect">{{ generator.consequence_of_neglect or '' }}</textarea>
+                          name="consequence_of_neglect">{{ priority.consequence_of_neglect or '' }}</textarea>
             </div>
 
-        {% elif generator.generator_type.value == 'capacity' %}
+        {% elif priority.priority_type.value == 'capacity' %}
             <div class="form-group">
                 <label for="current_level">Current Level</label>
                 <input type="text"
                        id="current_level"
                        name="current_level"
-                       value="{{ generator.current_level or '' }}">
+                       value="{{ priority.current_level or '' }}">
             </div>
             <div class="form-group">
                 <label for="target_level">Target Level</label>
                 <input type="text"
                        id="target_level"
                        name="target_level"
-                       value="{{ generator.target_level or '' }}">
+                       value="{{ priority.target_level or '' }}">
             </div>
             <div class="form-group">
                 <label for="measurement_method">Measurement Method</label>
                 <textarea id="measurement_method"
-                          name="measurement_method">{{ generator.measurement_method or '' }}</textarea>
+                          name="measurement_method">{{ priority.measurement_method or '' }}</textarea>
             </div>
             <div class="form-group">
                 <label for="measurement_rubric">Measurement Rubric</label>
                 <textarea id="measurement_rubric"
-                          name="measurement_rubric">{{ generator.measurement_rubric or '' }}</textarea>
+                          name="measurement_rubric">{{ priority.measurement_rubric or '' }}</textarea>
             </div>
 
-        {% elif generator.generator_type.value == 'accomplishment' %}
+        {% elif priority.priority_type.value == 'accomplishment' %}
             <div class="form-group">
                 <label for="success_criteria">Success Criteria</label>
                 <textarea id="success_criteria"
-                          name="success_criteria">{{ generator.success_criteria or '' }}</textarea>
+                          name="success_criteria">{{ priority.success_criteria or '' }}</textarea>
             </div>
             <div class="form-group">
                 <label for="progress">Progress</label>
                 <input type="text"
                        id="progress"
                        name="progress"
-                       value="{{ generator.progress or '' }}"
+                       value="{{ priority.progress or '' }}"
                        placeholder="e.g., 3/10, 70%">
             </div>
             <div class="form-group">
@@ -106,16 +106,16 @@
                 <input type="date"
                        id="due_date"
                        name="due_date"
-                       value="{{ generator.due_date.strftime('%Y-%m-%d') if generator.due_date else '' }}">
+                       value="{{ priority.due_date.strftime('%Y-%m-%d') if priority.due_date else '' }}">
             </div>
 
-        {% elif generator.generator_type.value == 'practice' %}
+        {% elif priority.priority_type.value == 'practice' %}
             <div class="form-group">
                 <label for="rhythm_frequency">Rhythm Frequency</label>
                 <input type="text"
                        id="rhythm_frequency"
                        name="rhythm_frequency"
-                       value="{{ generator.rhythm_frequency or '' }}"
+                       value="{{ priority.rhythm_frequency or '' }}"
                        placeholder="e.g., daily, weekly, 2x daily">
             </div>
             <div class="form-group">
@@ -123,14 +123,14 @@
                 <input type="text"
                        id="rhythm_constraints"
                        name="rhythm_constraints"
-                       value="{{ generator.rhythm_constraints or '' }}"
+                       value="{{ priority.rhythm_constraints or '' }}"
                        placeholder="e.g., morning only, not after 9pm">
             </div>
             <div class="form-group">
                 <label for="generation_prompt">Generation Prompt</label>
                 <textarea id="generation_prompt"
                           name="generation_prompt"
-                          placeholder="How should agent generate specific tasks?">{{ generator.generation_prompt or '' }}</textarea>
+                          placeholder="How should agent generate specific tasks?">{{ priority.generation_prompt or '' }}</textarea>
             </div>
         {% endif %}
 
@@ -139,11 +139,11 @@
             <label for="parent_id">Parent</label>
             <select id="parent_id" name="parent_id">
                 <option value="">None (root)</option>
-                {% for g in all_generators %}
-                    {% if g.id != generator.id %}
-                    <option value="{{ g.id }}"
-                            {% if g.id in parents|map(attribute='id')|list %}selected{% endif %}>
-                        {{ g.name }} ({{ g.generator_type.value[:3] }})
+                {% for p in all_priorities %}
+                    {% if p.id != priority.id %}
+                    <option value="{{ p.id }}"
+                            {% if p.id in parents|map(attribute='id')|list %}selected{% endif %}>
+                        {{ p.name }} ({{ p.priority_type.value[:3] }})
                     </option>
                     {% endif %}
                 {% endfor %}
@@ -155,7 +155,7 @@
             <button type="submit" class="btn btn-primary">Save</button>
             <button type="button"
                     class="btn btn-secondary"
-                    hx-get="/priorities/{{ generator.id }}"
+                    hx-get="/priorities/{{ priority.id }}"
                     hx-target="#detail-pane"
                     hx-swap="innerHTML">
                 Cancel

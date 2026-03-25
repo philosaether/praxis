@@ -14,13 +14,14 @@
             </div>
         </div>
 
-        <!-- Workstream -->
+        <!-- Priority -->
         <div class="form-group">
-            <label for="workstream_id">Workstream</label>
-            <select id="workstream_id" name="workstream_id" required>
-                {% for ws in workstreams %}
-                <option value="{{ ws.id }}" {% if task.workstream_id == ws.id %}selected{% endif %}>
-                    {{ ws.name }}
+            <label for="priority_id">Priority</label>
+            <select id="priority_id" name="priority_id">
+                <option value="">None</option>
+                {% for p in priorities %}
+                <option value="{{ p.id }}" {% if task.priority_id == p.id %}selected{% endif %}>
+                    {{ p.name }}
                 </option>
                 {% endfor %}
             </select>

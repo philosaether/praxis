@@ -5,7 +5,7 @@
             <div style="display: flex; gap: 0.5rem;">
                 {% if task.status.value == 'queued' %}
                 <button class="btn btn-primary"
-                        hx-post="/tasks/{{ task.id }}/done"
+                        hx-post="/tasks/{{ task.id }}/toggle"
                         hx-target="#detail-pane"
                         hx-swap="innerHTML"
                         hx-on::after-request="htmx.trigger('#task-list', 'refresh')">
@@ -21,8 +21,10 @@
             </div>
         </div>
         <div class="meta">
-            <span class="workstream-badge">{{ task.workstream_name }}</span>
+            {% if task.priority_name %}
+            <span class="priority-badge">{{ task.priority_name }}</span>
             &nbsp;&middot;&nbsp;
+            {% endif %}
             <span class="status-indicator {% if task.status.value == 'queued' %}queued{% elif task.status.value == 'active' %}active{% endif %}">
                 {{ task.status.value }}
             </span>

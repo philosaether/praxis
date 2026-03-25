@@ -6,7 +6,9 @@
          hx-swap="innerHTML">
         <div class="task-title">{{ task.title }}</div>
         <div class="meta">
-            <span class="workstream-badge">{{ task.workstream_name }}</span>
+            {% if task.priority_name %}
+            <span class="priority-badge">{{ task.priority_name }}</span>
+            {% endif %}
             <span class="status-indicator {{ task.status.value }}">
                 {{ task.status.value }}
             </span>

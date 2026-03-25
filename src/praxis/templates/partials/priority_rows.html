@@ -1,15 +1,15 @@
-{% for gen in generators %}
+{% for p in priorities %}
 <div class="priority-row"
-     hx-get="/priorities/{{ gen.id }}"
+     hx-get="/priorities/{{ p.id }}"
      hx-target="#detail-pane"
      hx-swap="innerHTML">
-    <div class="name">{{ gen.name }}</div>
+    <div class="name">{{ p.name }}</div>
     <div class="meta">
-        <span class="type-badge {{ gen.generator_type.value }}">{{ gen.generator_type.value[:3] }}</span>
-        <span class="status-indicator {% if gen.status.value == 'active' %}active{% endif %}">
-            {{ gen.status.value }}
+        <span class="type-badge {{ p.priority_type.value }}">{{ p.priority_type.value[:3] }}</span>
+        <span class="status-indicator {% if p.status.value == 'active' %}active{% endif %}">
+            {{ p.status.value }}
         </span>
-        <span>{{ gen.id }}</span>
+        <span>{{ p.id }}</span>
     </div>
 </div>
 {% else %}

@@ -15,10 +15,10 @@ from datetime import datetime
 
 from praxis import db
 from praxis.models import TaskStatus
-from praxis.generators import (
-    GeneratorGraph,
-    GeneratorType,
-    GeneratorStatus,
+from praxis.priorities import (
+    PriorityGraph,
+    PriorityType,
+    PriorityStatus,
     Goal,
     Obligation,
     Capacity,
@@ -38,16 +38,16 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
 # ---------------------------------------------------------------------
-# Graph Singleton (same pattern as cli.py)
+# Graph Singleton
 # ---------------------------------------------------------------------
 
-_graph: GeneratorGraph | None = None
+_graph: PriorityGraph | None = None
 
-def get_graph() -> GeneratorGraph:
-    """Get or create the generator graph singleton."""
+def get_graph() -> PriorityGraph:
+    """Get or create the priority graph singleton."""
     global _graph
     if _graph is None:
-        _graph = GeneratorGraph(db.get_connection)
+        _graph = PriorityGraph(db.get_connection)
         _graph.load()
     return _graph
 
@@ -56,29 +56,29 @@ def get_graph() -> GeneratorGraph:
 # Helper: Build context for detail/edit templates
 # ---------------------------------------------------------------------
 
-def _detail_context(generator_id: str, edit_mode: bool = False):
-    """Build template context for detail or edit view."""
+def _priority_context(priority_id: str, edit_mode: bool = False):
+    """Build template context for priority detail or edit view."""
     graph = get_graph()
-    generator = graph.get(generator_id)
+    priority = graph.get(priority_id)
 
-    if not generator:
+    if not priority:
         return None
 
-    parent_ids = graph.parents.get(generator_id, set())
-    child_ids = graph.children.get(generator_id, set())
+    parent_ids = graph.parents.get(priority_id, set())
+    child_ids = graph.children.get(priority_id, set())
     parents = [graph.get(pid) for pid in sorted(parent_ids) if graph.get(pid)]
     children = [graph.get(cid) for cid in sorted(child_ids) if graph.get(cid)]
 
-    # All generators for parent selection dropdown
-    all_generators = sorted(graph.nodes.values(), key=lambda g: g.name)
+    # All priorities for parent selection dropdown
+    all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
-        "generator": generator,
+        "priority": priority,
         "parents": parents,
         "children": children,
-        "all_generators": all_generators,
-        "generator_types": list(GeneratorType),
-        "generator_statuses": list(GeneratorStatus),
+        "all_priorities": all_priorities,
+        "priority_types": list(PriorityType),
+        "priority_statuses": list(PriorityStatus),
         "edit_mode": edit_mode,
     }
 
@@ -89,7 +89,7 @@ def _detail_context(generator_id: str, edit_mode: bool = False):
 
 @app.get("/", response_class=RedirectResponse)
 async def root():
-    """Redirect to priorities list."""
+    """Redirect to main page."""
     return RedirectResponse(url="/priorities", status_code=302)
 
 
@@ -97,19 +97,17 @@ async def root():
 async def priorities_page(request: Request):
     """Full page: two-pane layout with list on left."""
     graph = get_graph()
-    generators = sorted(
+    priorities = sorted(
         graph.nodes.values(),
-        key=lambda g: (g.generator_type.value, g.name)
+        key=lambda p: (p.priority_type.value, p.name)
     )
-    workstreams = db.list_workstreams()
 
     return templates.TemplateResponse(
         request,
         "priority_list.html",
         {
-            "generators": generators,
-            "generator_types": list(GeneratorType),
-            "workstreams": workstreams,
+            "priorities": priorities,
+            "priority_types": list(PriorityType),
             "selected_type": None,
             "active_only": False,
         }
@@ -117,7 +115,7 @@ async def priorities_page(request: Request):
 
 
 # ---------------------------------------------------------------------
-# Routes: HTMX Partials - List & Tree
+# Routes: HTMX Partials - Priority List & Tree
 # ---------------------------------------------------------------------
 
 @app.get("/priorities/list", response_class=HTMLResponse)
@@ -132,24 +130,24 @@ async def priorities_list_partial(
     # Filter by type if specified
     if type:
         try:
-            generator_type = GeneratorType(type)
-            generators = graph.by_type(generator_type)
+            priority_type = PriorityType(type)
+            priorities = graph.by_type(priority_type)
         except ValueError:
-            generators = list(graph.nodes.values())
+            priorities = list(graph.nodes.values())
     else:
-        generators = list(graph.nodes.values())
+        priorities = list(graph.nodes.values())
 
     # Filter by active status
     if active:
-        generators = [g for g in generators if g.status == GeneratorStatus.ACTIVE]
+        priorities = [p for p in priorities if p.status == PriorityStatus.ACTIVE]
 
     # Sort by type, then name
-    generators = sorted(generators, key=lambda g: (g.generator_type.value, g.name))
+    priorities = sorted(priorities, key=lambda p: (p.priority_type.value, p.name))
 
     return templates.TemplateResponse(
         request,
         "partials/priority_rows.html",
-        {"generators": generators}
+        {"priorities": priorities}
     )
 
 
@@ -157,7 +155,7 @@ async def priorities_list_partial(
 async def priority_tree(request: Request):
     """HTMX partial: tree view of priority hierarchy."""
     graph = get_graph()
-    roots = sorted(graph.roots(), key=lambda g: (g.generator_type.value, g.name))
+    roots = sorted(graph.roots(), key=lambda p: (p.priority_type.value, p.name))
 
     return templates.TemplateResponse(
         request,
@@ -166,11 +164,11 @@ async def priority_tree(request: Request):
     )
 
 
-@app.get("/priorities/tree/{generator_id}/children", response_class=HTMLResponse)
-async def priority_tree_children(request: Request, generator_id: str):
+@app.get("/priorities/tree/{priority_id}/children", response_class=HTMLResponse)
+async def priority_tree_children(request: Request, priority_id: str):
     """HTMX partial: children of a tree node (for lazy loading)."""
     graph = get_graph()
-    child_ids = graph.children.get(generator_id, set())
+    child_ids = graph.children.get(priority_id, set())
     children = [graph.get(cid) for cid in sorted(child_ids) if graph.get(cid)]
 
     return templates.TemplateResponse(
@@ -181,13 +179,13 @@ async def priority_tree_children(request: Request, generator_id: str):
 
 
 # ---------------------------------------------------------------------
-# Routes: HTMX Partials - Detail & Edit
+# Routes: HTMX Partials - Priority Detail & Edit
 # ---------------------------------------------------------------------
 
-@app.get("/priorities/{generator_id}", response_class=HTMLResponse)
-async def priority_detail(request: Request, generator_id: str):
+@app.get("/priorities/{priority_id}", response_class=HTMLResponse)
+async def priority_detail(request: Request, priority_id: str):
     """HTMX partial: detail view for a single priority."""
-    ctx = _detail_context(generator_id, edit_mode=False)
+    ctx = _priority_context(priority_id, edit_mode=False)
     if not ctx:
         return HTMLResponse(
             content="<div class='error'>Priority not found</div>",
@@ -197,10 +195,10 @@ async def priority_detail(request: Request, generator_id: str):
     return templates.TemplateResponse(request, "partials/priority_detail.html", ctx)
 
 
-@app.get("/priorities/{generator_id}/edit", response_class=HTMLResponse)
-async def priority_edit_form(request: Request, generator_id: str):
+@app.get("/priorities/{priority_id}/edit", response_class=HTMLResponse)
+async def priority_edit_form(request: Request, priority_id: str):
     """HTMX partial: edit form for a priority."""
-    ctx = _detail_context(generator_id, edit_mode=True)
+    ctx = _priority_context(priority_id, edit_mode=True)
     if not ctx:
         return HTMLResponse(
             content="<div class='error'>Priority not found</div>",
@@ -210,10 +208,10 @@ async def priority_edit_form(request: Request, generator_id: str):
     return templates.TemplateResponse(request, "partials/priority_edit.html", ctx)
 
 
-@app.post("/priorities/{generator_id}", response_class=HTMLResponse)
+@app.post("/priorities/{priority_id}", response_class=HTMLResponse)
 async def priority_save(
     request: Request,
-    generator_id: str,
+    priority_id: str,
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
@@ -240,71 +238,70 @@ async def priority_save(
 ):
     """Save edits to a priority and return updated detail view."""
     graph = get_graph()
-    generator = graph.get(generator_id)
+    priority = graph.get(priority_id)
 
-    if not generator:
+    if not priority:
         return HTMLResponse(
             content="<div class='error'>Priority not found</div>",
             status_code=404
         )
 
     # Update common fields
-    generator.name = name.strip()
-    generator.status = GeneratorStatus(status)
-    generator.agent_context = agent_context.strip() if agent_context else None
-    generator.updated_at = datetime.now()
+    priority.name = name.strip()
+    priority.status = PriorityStatus(status)
+    priority.agent_context = agent_context.strip() if agent_context else None
+    priority.updated_at = datetime.now()
 
     # Update type-specific fields
-    if isinstance(generator, Goal):
-        generator.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        generator.obsolete_when = obsolete_when.strip() if obsolete_when else None
+    if isinstance(priority, Goal):
+        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
+        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
 
-    elif isinstance(generator, Obligation):
-        generator.consequence_of_neglect = consequence_of_neglect.strip() if consequence_of_neglect else None
+    elif isinstance(priority, Obligation):
+        priority.consequence_of_neglect = consequence_of_neglect.strip() if consequence_of_neglect else None
 
-    elif isinstance(generator, Capacity):
-        generator.measurement_method = measurement_method.strip() if measurement_method else None
-        generator.measurement_rubric = measurement_rubric.strip() if measurement_rubric else None
-        generator.current_level = current_level.strip() if current_level else None
-        generator.target_level = target_level.strip() if target_level else None
+    elif isinstance(priority, Capacity):
+        priority.measurement_method = measurement_method.strip() if measurement_method else None
+        priority.measurement_rubric = measurement_rubric.strip() if measurement_rubric else None
+        priority.current_level = current_level.strip() if current_level else None
+        priority.target_level = target_level.strip() if target_level else None
 
-    elif isinstance(generator, Accomplishment):
-        generator.success_criteria = success_criteria.strip() if success_criteria else None
-        generator.progress = progress.strip() if progress else None
+    elif isinstance(priority, Accomplishment):
+        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.progress = progress.strip() if progress else None
         if due_date:
             try:
-                generator.due_date = datetime.fromisoformat(due_date)
+                priority.due_date = datetime.fromisoformat(due_date)
             except ValueError:
-                generator.due_date = None
+                priority.due_date = None
         else:
-            generator.due_date = None
+            priority.due_date = None
 
-    elif isinstance(generator, Practice):
-        generator.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        generator.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        generator.generation_prompt = generation_prompt.strip() if generation_prompt else None
+    elif isinstance(priority, Practice):
+        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
+        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
+        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
 
     # Persist to database
-    graph.save_generator(generator)
+    graph.save_priority(priority)
 
     # Handle parent link changes
-    current_parents = graph.parents.get(generator_id, set())
+    current_parents = graph.parents.get(priority_id, set())
     new_parent = parent_id.strip() if parent_id else None
 
     # For simplicity: single parent model (unlink all, then link new)
-    # This works for tree structures; DAGs would need multi-select
     for old_parent in list(current_parents):
         if old_parent != new_parent:
-            graph.unlink(generator_id, old_parent)
+            graph.unlink(priority_id, old_parent)
 
-    if new_parent and new_parent not in current_parents and new_parent != generator_id:
+    if new_parent and new_parent not in current_parents and new_parent != priority_id:
         try:
-            graph.link(generator_id, new_parent)
+            graph.link(priority_id, new_parent)
         except ValueError:
             pass  # Ignore cycle errors for now
 
     # Return updated detail view
-    ctx = _detail_context(generator_id, edit_mode=False)
+    ctx = _priority_context(priority_id, edit_mode=False)
     return templates.TemplateResponse(request, "partials/priority_detail.html", ctx)
 
 
@@ -315,7 +312,7 @@ async def priority_save(
 @app.get("/tasks/list", response_class=HTMLResponse)
 async def tasks_list_partial(
     request: Request,
-    workstream: int | None = None,
+    priority: str | None = None,
     status: str | None = None,
 ):
     """HTMX partial: filtered list of tasks."""
@@ -327,13 +324,16 @@ async def tasks_list_partial(
         except ValueError:
             pass
 
-    tasks = db.list_tasks(workstream_id=workstream, status=task_status)
-    workstreams = db.list_workstreams()
+    tasks = db.list_tasks(priority_id=priority, status=task_status)
+
+    # Get all priorities for filter dropdown
+    graph = get_graph()
+    priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return templates.TemplateResponse(
         request,
         "partials/task_rows.html",
-        {"tasks": tasks, "workstreams": workstreams}
+        {"tasks": tasks, "priorities": priorities}
     )
 
 
@@ -347,13 +347,15 @@ async def task_detail(request: Request, task_id: int):
             status_code=404
         )
 
-    workstreams = db.list_workstreams()
+    graph = get_graph()
+    priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
+
     return templates.TemplateResponse(
         request,
         "partials/task_detail.html",
         {
             "task": task,
-            "workstreams": workstreams,
+            "priorities": priorities,
             "task_statuses": list(TaskStatus),
         }
     )
@@ -369,13 +371,15 @@ async def task_edit_form(request: Request, task_id: int):
             status_code=404
         )
 
-    workstreams = db.list_workstreams()
+    graph = get_graph()
+    priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
+
     return templates.TemplateResponse(
         request,
         "partials/task_edit.html",
         {
             "task": task,
-            "workstreams": workstreams,
+            "priorities": priorities,
             "task_statuses": list(TaskStatus),
         }
     )
@@ -387,7 +391,7 @@ async def task_save(
     task_id: int,
     title: Annotated[str, Form()],
     status: Annotated[str, Form()],
-    workstream_id: Annotated[int, Form()],
+    priority_id: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
 ):
@@ -404,7 +408,7 @@ async def task_save(
         task_id=task_id,
         title=title.strip(),
         status=TaskStatus(status),
-        workstream_id=workstream_id,
+        priority_id=priority_id.strip() if priority_id else "",
         notes=notes.strip() if notes else None,
         due_date=parsed_due_date,
     )
@@ -415,13 +419,15 @@ async def task_save(
             status_code=404
         )
 
-    workstreams = db.list_workstreams()
+    graph = get_graph()
+    priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
+
     return templates.TemplateResponse(
         request,
         "partials/task_detail.html",
         {
             "task": task,
-            "workstreams": workstreams,
+            "priorities": priorities,
             "task_statuses": list(TaskStatus),
         }
     )

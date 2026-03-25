@@ -36,7 +36,7 @@
                         hx-target="#item-list"
                         hx-include="[name='active']">
                     <option value="">All Types</option>
-                    {% for t in generator_types %}
+                    {% for t in priority_types %}
                     <option value="{{ t.value }}">{{ t.value|title }}</option>
                     {% endfor %}
                 </select>
@@ -54,12 +54,12 @@
 
             <!-- Task filters (hidden by default) -->
             <div id="task-filters" class="filter-group" style="display: none;">
-                <select name="workstream"
+                <select name="priority"
                         hx-get="/tasks/list"
                         hx-target="#item-list">
-                    <option value="">All Workstreams</option>
-                    {% for ws in workstreams %}
-                    <option value="{{ ws.id }}">{{ ws.name }}</option>
+                    <option value="">All Priorities</option>
+                    {% for p in priorities %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -183,7 +183,7 @@
         color: white;
     }
 
-    .workstream-badge {
+    .priority-badge {
         display: inline-block;
         padding: 0.1rem 0.4rem;
         border-radius: 3px;
