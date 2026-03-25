@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Praxis{% endblock %}
+
+{% block body %}
+<div class="container">
+    <!-- Left Pane -->
+    <div class="left-pane">
+        <div class="header">
+            <h1>Praxis</h1>
+        </div>
+
+        <!-- Main Toggle: Tasks | Priorities -->
+        <div class="filters">
+            <div class="view-toggle">
+                <button class="view-btn"
+                        id="tasks-view-btn"
+                        hx-get="/tasks/list"
+                        hx-target="#item-list"
+                        onclick="setMode('tasks')">
+                    Tasks
+                </button>
+                <button class="view-btn active"
+                        id="priorities-view-btn"
+                        hx-get="/priorities/list"
+                        hx-target="#item-list"
+                        onclick="setMode('priorities')">
+                    Priorities
+                </button>
+            </div>
+
+            <!-- Priority filters (shown when priorities mode) -->
+            <div id="priority-filters" class="filter-group">
+                <select name="type"
+                        hx-get="/priorities/list"
+                        hx-target="#item-list"
+                        hx-include="[name='active']">
+                    <option value="">All Types</option>
+                    {% for t in generator_types %}
+                    <option value="{{ t.value }}">{{ t.value|title }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>
+                    <input type="checkbox"
+                           name="active"
+                           value="true"
+                           hx-get="/priorities/list"
+                           hx-target="#item-list"
+                           hx-include="[name='type']">
+                    Active only
+                </label>
+            </div>
+
+            <!-- Task filters (hidden by default) -->
+            <div id="task-filters" class="filter-group" style="display: none;">
+                <select name="workstream"
+                        hx-get="/tasks/list"
+                        hx-target="#item-list">
+                    <option value="">All Workstreams</option>
+                    {% for ws in workstreams %}
+                    <option value="{{ ws.id }}">{{ ws.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Item List -->
+        <div class="priority-list" id="item-list" hx-trigger="refresh from:body" hx-get="/tasks/list">
+            {% include "partials/priority_rows.html" %}
+        </div>
+    </div>
+
+    <!-- Right Pane: Detail View -->
+    <div class="right-pane" id="detail-pane">
+        <div class="empty-state">
+            <h3>Select an item</h3>
+            <p>Click an item on the left to view details</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setMode(mode) {
+        // Toggle button states
+        document.getElementById('tasks-view-btn').classList.toggle('active', mode === 'tasks');
+        document.getElementById('priorities-view-btn').classList.toggle('active', mode === 'priorities');
+
+        // Toggle filter visibility
+        document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
+        document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
+
+        // Clear detail pane
+        document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+    }
+</script>
+
+<style>
+    .view-toggle {
+        display: flex;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .view-btn {
+        padding: 0.3rem 0.6rem;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border: none;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.15s;
+    }
+
+    .view-btn:hover {
+        background: var(--bg-primary);
+    }
+
+    .view-btn.active {
+        background: var(--accent);
+        color: white;
+    }
+
+    .view-btn + .view-btn {
+        border-left: 1px solid var(--border);
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    /* Task row styles */
+    .task-row {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+    }
+
+    .task-row:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .task-row .task-content {
+        flex: 1;
+        cursor: pointer;
+        padding: 0.25rem 0;
+    }
+
+    .task-row .task-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+
+    .task-row .meta {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .quick-done {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.15s;
+        flex-shrink: 0;
+        margin-left: 0.5rem;
+    }
+
+    .quick-done:hover {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+    }
+
+    .workstream-badge {
+        display: inline-block;
+        padding: 0.1rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+    }
+
+    .status-indicator.queued {
+        color: var(--accent);
+    }
+
+    .status-indicator.active {
+        color: var(--success);
+    }
+
+    .due-date {
+        color: var(--warning);
+    }
+
+    /* Done task toggle button */
+    .quick-done.checked {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+        opacity: 0.6;
+    }
+
+    .quick-done.checked:hover {
+        opacity: 1;
+        background: var(--bg-tertiary);
+        border-color: var(--border);
+        color: var(--text-secondary);
+    }
+
+    /* Done task row styling */
+    .task-row.done {
+        opacity: 0.6;
+    }
+
+    .task-row.done .task-title {
+        text-decoration: line-through;
+        color: var(--text-muted);
+    }
+
+    .task-row.done .meta {
+        color: var(--text-muted);
+    }
+
+    .task-row.done:hover {
+        opacity: 0.8;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% for gen in generators %}
+<div class="priority-row"
+     hx-get="/priorities/{{ gen.id }}"
+     hx-target="#detail-pane"
+     hx-swap="innerHTML">
+    <div class="name">{{ gen.name }}</div>
+    <div class="meta">
+        <span class="type-badge {{ gen.generator_type.value }}">{{ gen.generator_type.value[:3] }}</span>
+        <span class="status-indicator {% if gen.status.value == 'active' %}active{% endif %}">
+            {{ gen.status.value }}
+        </span>
+        <span>{{ gen.id }}</span>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No priorities found</h3>
+    <p>Try adjusting your filters</p>
+</div>
+{% endfor %}

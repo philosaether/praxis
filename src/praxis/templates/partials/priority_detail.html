@@ -1,0 +1,171 @@
+<div class="detail-view">
+    <div class="detail-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <h2>{{ generator.name }}</h2>
+            <button class="btn btn-secondary"
+                    hx-get="/priorities/{{ generator.id }}/edit"
+                    hx-target="#detail-pane"
+                    hx-swap="innerHTML">
+                Edit
+            </button>
+        </div>
+        <div class="meta">
+            <span class="type-badge {{ generator.generator_type.value }}">
+                {{ generator.generator_type.value }}
+            </span>
+            &nbsp;&middot;&nbsp;
+            <span>{{ generator.id }}</span>
+            &nbsp;&middot;&nbsp;
+            <span class="status-indicator {% if generator.status.value == 'active' %}active{% endif %}">
+                {{ generator.status.value }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Common fields -->
+    {% if generator.agent_context %}
+    <div class="detail-section">
+        <h3>Context</h3>
+        <p>{{ generator.agent_context }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Type-specific fields -->
+    {% if generator.generator_type.value == 'goal' %}
+        {% if generator.success_looks_like %}
+        <div class="detail-section">
+            <h3>Success Looks Like</h3>
+            <p>{{ generator.success_looks_like }}</p>
+        </div>
+        {% endif %}
+        {% if generator.obsolete_when %}
+        <div class="detail-section">
+            <h3>Obsolete When</h3>
+            <p>{{ generator.obsolete_when }}</p>
+        </div>
+        {% endif %}
+
+    {% elif generator.generator_type.value == 'obligation' %}
+        {% if generator.consequence_of_neglect %}
+        <div class="detail-section">
+            <h3>Consequence of Neglect</h3>
+            <p>{{ generator.consequence_of_neglect }}</p>
+        </div>
+        {% endif %}
+
+    {% elif generator.generator_type.value == 'capacity' %}
+        <div class="detail-section">
+            <h3>Delta</h3>
+            <p>{{ generator.delta_description }}</p>
+        </div>
+        {% if generator.measurement_method %}
+        <div class="detail-section">
+            <h3>Measurement Method</h3>
+            <p>{{ generator.measurement_method }}</p>
+        </div>
+        {% endif %}
+        {% if generator.measurement_rubric %}
+        <div class="detail-section">
+            <h3>Rubric</h3>
+            <p>{{ generator.measurement_rubric }}</p>
+        </div>
+        {% endif %}
+
+    {% elif generator.generator_type.value == 'accomplishment' %}
+        {% if generator.success_criteria %}
+        <div class="detail-section">
+            <h3>Success Criteria</h3>
+            <p>{{ generator.success_criteria }}</p>
+        </div>
+        {% endif %}
+        {% if generator.progress %}
+        <div class="detail-section">
+            <h3>Progress</h3>
+            <p>{{ generator.progress }}</p>
+        </div>
+        {% endif %}
+        {% if generator.due_date %}
+        <div class="detail-section">
+            <h3>Due Date</h3>
+            <p>{{ generator.due_date.strftime('%Y-%m-%d') }}</p>
+        </div>
+        {% endif %}
+
+    {% elif generator.generator_type.value == 'practice' %}
+        {% if generator.rhythm_frequency %}
+        <div class="detail-section">
+            <h3>Rhythm</h3>
+            <p>{{ generator.rhythm_frequency }}</p>
+        </div>
+        {% endif %}
+        {% if generator.rhythm_constraints %}
+        <div class="detail-section">
+            <h3>Constraints</h3>
+            <p>{{ generator.rhythm_constraints }}</p>
+        </div>
+        {% endif %}
+        {% if generator.generation_prompt %}
+        <div class="detail-section">
+            <h3>Generation Prompt</h3>
+            <p>{{ generator.generation_prompt }}</p>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Parent links -->
+    {% if parents %}
+    <div class="detail-section">
+        <h3>Parents</h3>
+        <ul class="links-list">
+            {% for parent in parents %}
+            <li>
+                <a href="#"
+                   hx-get="/priorities/{{ parent.id }}"
+                   hx-target="#detail-pane"
+                   hx-swap="innerHTML">
+                    {{ parent.name }}
+                </a>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">
+                    ({{ parent.generator_type.value }})
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Child links -->
+    {% if children %}
+    <div class="detail-section">
+        <h3>Children</h3>
+        <ul class="links-list">
+            {% for child in children %}
+            <li>
+                <a href="#"
+                   hx-get="/priorities/{{ child.id }}"
+                   hx-target="#detail-pane"
+                   hx-swap="innerHTML">
+                    {{ child.name }}
+                </a>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">
+                    ({{ child.generator_type.value }})
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="detail-section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+        <p style="font-size: 0.8rem; color: var(--text-muted);">
+            {% if generator.created_at %}
+            Created: {{ generator.created_at.strftime('%Y-%m-%d %H:%M') }}
+            {% endif %}
+            {% if generator.updated_at %}
+            &nbsp;&middot;&nbsp;
+            Updated: {{ generator.updated_at.strftime('%Y-%m-%d %H:%M') }}
+            {% endif %}
+        </p>
+    </div>
+</div>

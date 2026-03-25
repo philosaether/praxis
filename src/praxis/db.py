@@ -128,6 +128,97 @@ def update_task_status(task_id: int, status: TaskStatus) -> None:
             (status.value, task_id),
         )
 
+
+def get_task(task_id: int) -> Task | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT t.*, w.name as workstream_name
+            FROM tasks t
+            JOIN workstreams w ON t.workstream_id = w.id
+            WHERE t.id = ?
+            """,
+            (task_id,),
+        ).fetchone()
+        if row:
+            return _row_to_task(row)
+        return None
+
+
+def list_tasks(
+    workstream_id: int | None = None,
+    status: TaskStatus | None = None,
+    include_done: bool = True,
+) -> list[Task]:
+    """List tasks with optional filters. Done tasks sorted to bottom."""
+    with get_connection() as conn:
+        query = """
+            SELECT t.*, w.name as workstream_name
+            FROM tasks t
+            JOIN workstreams w ON t.workstream_id = w.id
+            WHERE 1=1
+        """
+        params = []
+
+        if workstream_id:
+            query += " AND t.workstream_id = ?"
+            params.append(workstream_id)
+
+        if status:
+            query += " AND t.status = ?"
+            params.append(status.value)
+        elif not include_done:
+            query += " AND t.status NOT IN ('done', 'dropped')"
+
+        # Sort: active tasks first (by created_at), then done tasks
+        query += """ ORDER BY
+            CASE WHEN t.status = 'done' THEN 1 ELSE 0 END,
+            t.created_at
+        """
+        rows = conn.execute(query, params).fetchall()
+        return [_row_to_task(row) for row in rows]
+
+
+def update_task(
+    task_id: int,
+    title: str | None = None,
+    notes: str | None = None,
+    status: TaskStatus | None = None,
+    due_date: datetime | None = None,
+    workstream_id: int | None = None,
+) -> Task | None:
+    """Update task fields. Returns updated task or None if not found."""
+    with get_connection() as conn:
+        updates = []
+        params = []
+
+        if title is not None:
+            updates.append("title = ?")
+            params.append(title)
+        if notes is not None:
+            updates.append("notes = ?")
+            params.append(notes if notes else None)
+        if status is not None:
+            updates.append("status = ?")
+            params.append(status.value)
+        if due_date is not None:
+            updates.append("due_date = ?")
+            params.append(due_date.isoformat() if due_date else None)
+        if workstream_id is not None:
+            updates.append("workstream_id = ?")
+            params.append(workstream_id)
+
+        if not updates:
+            return get_task(task_id)
+
+        params.append(task_id)
+        conn.execute(
+            f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?",
+            params,
+        )
+
+    return get_task(task_id)
+
 def _row_to_task(row: sqlite3.Row) -> Task:
     due_date = None
     if row["due_date"]:
@@ -152,62 +243,53 @@ def _row_to_task(row: sqlite3.Row) -> Task:
 # Seed data
 # ---------------------------------------------------------------------
 
-def seed_database() -> dict:
+def clear_tasks() -> int:
+    """Delete all tasks. Returns count deleted."""
+    with get_connection() as conn:
+        result = conn.execute("DELETE FROM tasks")
+        return result.rowcount
 
-    # Sample workstreams
+
+def seed_database() -> dict:
+    """Seed with Phil's actual to-do list (2026-03-25)."""
+
+    # Workstreams
     streams = [
-        ("Praxis", "Building the cue-based task system"),
         ("Leetcode", "Interview prep, algorithm practice"),
-        ("Job Search", "Applications, resume updates, interview scheduling"),
-        ("Reading - deep", "Books, papers, long-form technical content"),
-        ("Reading - news", "Industry news, blog posts, light content"),
-        ("Networking", "Outreach, relationship maintenance, intros"),
-        ("Writing", "Essays, blog posts, documentation"),
-        ("Proper Elevation", "PE business tasks"),
-        ("Health", "Exercise, sleep, nutrition habits"),
+        ("Personal", "Personal admin and errands"),
+        ("Proper Elevation", "PE nonprofit tasks"),
+        ("Networking", "Outreach, relationship building"),
+        ("Tech Projects", "Side projects and web properties"),
     ]
 
-    # Sample tasks per stream
+    # Tasks organized by workstream
     stream_tasks = {
-        "Praxis": [
-            "Implement task CRUD via CLI",
-            "Add queue pull logic",
-            "Integrate Claude API for cue generation",
-            "Write project README",
-        ],
         "Leetcode": [
-            "Establish performance baseline",
-            "Review array/string patterns",
-            "Practice binary search problems",
+            ("Leetcode baseline x2", "11, Two Pointers next"),
         ],
-        "Job Search": [
-            "Update resume with Praxis project",
-            "Research Block/Bitkey team",
-            "Draft cover letter template",
-        ],
-        "Reading - deep": [
-            "Finish 'Designing Data-Intensive Applications' ch. 5",
-            "Read Anthropic's constitutional AI paper",
-            "Review Python asyncio documentation",
-        ],
-        "Reading - news": [
-            "Catch up on Hacker News weekly digest",
-            "Read latest Python release notes",
-        ],
-        "Networking": [
-            "Reply to James re: coffee chat",
-            "Send intro email to potential mentor",
-            "Update LinkedIn with recent project",
-        ],
-        "Writing": [
-            "Outline 'I Used AI to Get a Job' essay",
+        "Personal": [
+            ("Renew Mint", None),
+            ("Check if bills arrived yet", None),
         ],
         "Proper Elevation": [
-            "Review PE task backlog with Ronique",
+            ("Forward Sarah's email to Ronique", None),
+            ("Get precise dates / times for Teacher Appreciation Day visit", None),
+            ("Make a list of things we want to learn from the kids this May", None),
+            ("Create PE LinkedIn profile", "Research what established nonprofit LinkedIns look like, then make ours similar"),
+            ("Double check vendor status - make sure we still have it", None),
+            ("Work on business model", "Include school discretionary funding"),
+            ("Get a project management system set up", None),
         ],
-        "Health": [
-            "Schedule annual physical",
-            "Try new morning routine for one week",
+        "Networking": [
+            ("LinkedIn Networking", "Get on Twitter? Where are engineers? VC approaches"),
+            ("Serve networking suggestions", None),
+            ("Reach out to Adam", "Introduce Akanksa to return some stuff to the apartment"),
+            ("Update personal LinkedIn profile", "Do a thorough review"),
+            ("Look at Ronique's LinkedIn and update", None),
+        ],
+        "Tech Projects": [
+            ("Restore MoE", "Double check that it's live"),
+            ("Restore Vida", "Figure out why it's not live"),
         ],
     }
 
@@ -215,14 +297,14 @@ def seed_database() -> dict:
     task_count = 0
 
     for name, description in streams:
-        if get_workstream_by_name(name):
-            continue
+        ws = get_workstream_by_name(name)
+        if not ws:
+            ws = create_workstream(name, description)
+            workstream_count += 1
 
-        ws = create_workstream(name, description)
-        workstream_count += 1
-
-        for task_title in stream_tasks.get(name, []):
-            create_task(ws.id, task_title)
+        for task_data in stream_tasks.get(name, []):
+            title, notes = task_data if isinstance(task_data, tuple) else (task_data, None)
+            create_task(ws.id, title, notes)
             task_count += 1
 
     return {"workstreams": workstream_count, "tasks": task_count}

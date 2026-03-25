@@ -1,0 +1,100 @@
+<div class="tree-view">
+    {% for root in roots %}
+    <div class="tree-node">
+        <div class="tree-node-content"
+             hx-get="/priorities/{{ root.id }}"
+             hx-target="#detail-pane"
+             hx-swap="innerHTML">
+            {% set child_ids = graph.children.get(root.id) %}
+            {% if child_ids %}
+            <span class="tree-toggle"
+                  hx-get="/priorities/tree/{{ root.id }}/children"
+                  hx-target="#children-{{ root.id }}"
+                  hx-swap="innerHTML"
+                  onclick="event.stopPropagation(); this.classList.toggle('expanded');">
+                <span class="chevron">+</span>
+            </span>
+            {% else %}
+            <span class="tree-toggle-spacer"></span>
+            {% endif %}
+            <span class="type-badge {{ root.generator_type.value }}">{{ root.generator_type.value[:3] }}</span>
+            <span class="tree-node-name">{{ root.name }}</span>
+            <span class="tree-node-id">{{ root.id }}</span>
+        </div>
+        <div class="tree-children" id="children-{{ root.id }}">
+            <!-- Children loaded via HTMX when expanded -->
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No root priorities found</h3>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .tree-view {
+        padding: 0.5rem;
+    }
+
+    .tree-node {
+        margin-left: 0;
+    }
+
+    .tree-node-content {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.5rem;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background 0.15s;
+    }
+
+    .tree-node-content:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .tree-toggle {
+        width: 1.2rem;
+        height: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-weight: bold;
+    }
+
+    .tree-toggle:hover {
+        color: var(--accent);
+    }
+
+    .tree-toggle.expanded .chevron {
+        transform: rotate(45deg);
+    }
+
+    .tree-toggle-spacer {
+        width: 1.2rem;
+    }
+
+    .tree-node-name {
+        flex: 1;
+        font-weight: 500;
+    }
+
+    .tree-node-id {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .tree-children {
+        margin-left: 1.5rem;
+        border-left: 1px solid var(--border);
+        padding-left: 0.5rem;
+    }
+
+    .tree-children:empty {
+        display: none;
+    }
+</style>
