@@ -1,18 +1,17 @@
-import json
-from datetime import datetime
-from pathlib import Path
-from dataclasses import dataclass
-from enum import StrEnum
+"""Filter models and filter application logic."""
 
-from praxis_core.models import Task
+import json
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+from pathlib import Path
+
+from praxis_core.model.tasks import Task
+
 
 CONFIG_DIR = Path.home() / ".praxis"
 FILTERS_PATH = CONFIG_DIR / "filters.json"
 
-
-# ---------------------------------------------------------------------
-# Filter Type Registry
-# ---------------------------------------------------------------------
 
 class MatchType(StrEnum):
     WORKSTREAM = "workstream"  # Match tasks in a specific workstream
@@ -27,6 +26,7 @@ class ConstraintType(StrEnum):
     DUE_WITHIN = "due_within"  # Due date proximity: {"days": 3} (future)
     PRIORITY = "priority"      # Task priority level (future)
 
+
 FILTER_TYPES = {
     "match": list(MatchType),
     "constraint": list(ConstraintType),
@@ -38,16 +38,18 @@ class ScoredTask:
     task: Task
     weight: float = 0.0
 
+
 def load_filters() -> list[dict]:
     if not FILTERS_PATH.exists():
         return []
-    
+
     with open(FILTERS_PATH) as filters:
         data = json.load(filters)
-    
+
     if isinstance(data, dict):
         return data.get("filters", [])
     return data
+
 
 def _matches_task(filter_definition: dict, task: Task, user: str | None = None) -> bool:
     match = filter_definition.get("match", {})
@@ -66,8 +68,9 @@ def _matches_task(filter_definition: dict, task: Task, user: str | None = None) 
     if MatchType.TAG in match:
         # TODO: implement when tasks have tags
         pass
-    
+
     return True
+
 
 def _check_hours_constraint(constraint: dict, now: datetime) -> bool:
     hour = now.hour
@@ -76,8 +79,9 @@ def _check_hours_constraint(constraint: dict, now: datetime) -> bool:
         return False
     if "before" in constraint and hour >= constraint["before"]:
         return False
-    
+
     return True
+
 
 def _check_days_constraint(constraint: dict, now: datetime) -> bool:
     day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -90,13 +94,15 @@ def _check_days_constraint(constraint: dict, now: datetime) -> bool:
 
     return True
 
+
 def _evaluate_constraint(constraint_type: str, constraint_value: dict, now: datetime) -> bool:
     if constraint_type == ConstraintType.HOURS:
         return _check_hours_constraint(constraint_value, now)
     elif constraint_type == ConstraintType.DAYS:
         return _check_days_constraint(constraint_value, now)
     else:
-        return True   
+        return True
+
 
 def _evaluate_hard_filter(filter_definition: dict, now: datetime) -> bool:
     constraint = filter_definition.get("constraint", {})
@@ -106,6 +112,7 @@ def _evaluate_hard_filter(filter_definition: dict, now: datetime) -> bool:
             return False
 
     return True
+
 
 def _evaluate_soft_filter(filter_definition: dict, now: datetime) -> float:
     weight_definition = filter_definition.get("weight", {})
@@ -121,14 +128,15 @@ def _evaluate_soft_filter(filter_definition: dict, now: datetime) -> float:
 
     return boost
 
+
 def apply_filters(
     tasks: list[Task],
     user: str | None = None,
     now: datetime | None = None,
 ) -> list[ScoredTask]:
-    
+
     results = []
-    
+
     if now is None:
         now = datetime.now()
 

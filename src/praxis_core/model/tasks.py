@@ -1,3 +1,5 @@
+"""Task models and enums."""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum

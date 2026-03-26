@@ -1,104 +1,19 @@
-from dataclasses import dataclass
-from datetime import datetime
-from enum import StrEnum
+"""Priority persistence: PriorityGraph and SQLite operations."""
+
 import sqlite3
+from datetime import datetime
 
-# ---------------------------------------------------------------------
-# Enums
-# ---------------------------------------------------------------------
+from praxis_core.model.priorities import (
+    Priority,
+    PriorityType,
+    PriorityStatus,
+    Goal,
+    Obligation,
+    Capacity,
+    Accomplishment,
+    Practice,
+)
 
-class PriorityType(StrEnum):
-    GOAL = "goal"
-    OBLIGATION = "obligation"
-    CAPACITY = "capacity"
-    ACCOMPLISHMENT = "accomplishment"
-    PRACTICE = "practice"
-
-class PriorityStatus(StrEnum):
-    # Universal
-    ACTIVE = "active"
-    DORMANT = "dormant"
-
-    # Goal/Obligation
-    ACHIEVED = "achieved"      # success criteria met
-    ABANDONED = "abandoned"    # no longer relevant
-    LAPSED = "lapsed"          # obligation neglected
-
-    # Accomplishment
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-
-# ---------------------------------------------------------------------
-# Priority dataclasses
-# ---------------------------------------------------------------------
-
-@dataclass
-class Priority:
-    id: str
-    name: str
-    priority_type: PriorityType
-    status: PriorityStatus = PriorityStatus.ACTIVE
-
-    agent_context: str | None = None
-    notes_path: str | None = None
-
-    # Metadata
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-
-@dataclass
-class Goal(Priority):
-    """A chosen pursuit (telos)."""
-
-    priority_type: PriorityType = PriorityType.GOAL
-    success_looks_like: str | None = None
-    obsolete_when: str | None = None
-
-@dataclass
-class Obligation(Priority):
-    """An imposed requirement (telos)."""
-
-    priority_type: PriorityType = PriorityType.OBLIGATION
-    consequence_of_neglect: str | None = None
-
-@dataclass
-class Capacity(Priority):
-    """A skill to develop and maintain (arete). Can atrophy if neglected."""
-
-    priority_type: PriorityType = PriorityType.CAPACITY
-    measurement_method: str | None = None
-    measurement_rubric: str | None = None
-    measurement_scale: str | None = None
-    current_level: str | None = None
-    target_level: str | None = None
-
-    @property
-    def delta_description(self) -> str:
-        """Describe the gap between current and target level."""
-        if self.current_level is None:
-            return "unknown (baseline not established)"
-        if self.target_level is None:
-            return "unknown (no target set)"
-        return f"current: {self.current_level}, target: {self.target_level}"
-
-@dataclass
-class Accomplishment(Priority):
-    """A threshold to reach. Done when done; no maintenance required."""
-
-    priority_type: PriorityType = PriorityType.ACCOMPLISHMENT
-    success_criteria: str | None = None
-    due_date: datetime | None = None
-    progress: str | None = None  # e.g., "3/10", "70%"
-
-@dataclass
-class Practice(Priority):
-    """A recurring activity (ethea). Generates task instances on a rhythm."""
-
-    priority_type: PriorityType = PriorityType.PRACTICE
-    rhythm_frequency: str | None = None   # e.g., "daily", "weekly", "2x daily"
-    rhythm_constraints: str | None = None # e.g., "morning only", "not after 9pm"
-    generation_prompt: str | None = None  # how agent generates specific tasks
 
 # ---------------------------------------------------------------------
 # SQLite Schema
@@ -159,21 +74,13 @@ CREATE INDEX IF NOT EXISTS idx_priority_edges_child ON priority_edges(child_id);
 CREATE INDEX IF NOT EXISTS idx_priority_edges_parent ON priority_edges(parent_id);
 """
 
-# Migration: rename old tables if they exist
-MIGRATION_FROM_GENERATORS = """
--- Rename generators to priorities if generators exists
-ALTER TABLE generators RENAME TO priorities;
-ALTER TABLE generator_edges RENAME TO priority_edges;
-
--- Rename column
-ALTER TABLE priorities RENAME COLUMN generator_type TO priority_type;
-"""
 
 # ---------------------------------------------------------------------
-# Factory: Row to Priority subclass
+# Row Conversion
 # ---------------------------------------------------------------------
 
 def priority_from_row(row: sqlite3.Row) -> Priority:
+    """Convert a database row to a Priority subclass."""
     # Handle both old column name (generator_type) and new (priority_type)
     type_value = row["priority_type"] if "priority_type" in row.keys() else row["generator_type"]
     priority_type = PriorityType(type_value)
@@ -238,14 +145,12 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
 
     raise ValueError(f"Unknown priority type: {priority_type}")
 
+
 def _parse_datetime(value: str | None) -> datetime | None:
     if value is None:
         return None
     return datetime.fromisoformat(value)
 
-# ---------------------------------------------------------------------
-# Serialization: Priority to row values
-# ---------------------------------------------------------------------
 
 def priority_to_row_values(priority: Priority) -> tuple:
     """
@@ -319,8 +224,9 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.updated_at.isoformat() if priority.updated_at else now,
     )
 
+
 # ---------------------------------------------------------------------
-# In-Memory Graph
+# PriorityGraph
 # ---------------------------------------------------------------------
 
 class PriorityGraph:

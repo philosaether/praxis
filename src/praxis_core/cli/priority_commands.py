@@ -1,16 +1,12 @@
-import random
+"""Priority-related CLI commands."""
+
 import typer
 from rich import print as rprint
 from rich.table import Table
 
-from praxis_core import __version__
-from praxis_core import db, filters
-from praxis_core.models import Task, TaskStatus
-from praxis_core.priorities import (
-    PriorityGraph,
+from praxis_core.model import (
     PriorityType,
     PriorityStatus,
-    Priority,
     Goal,
     Obligation,
     Capacity,
@@ -18,163 +14,19 @@ from praxis_core.priorities import (
     Practice,
 )
 
-app = typer.Typer(
-    name="praxis",
-    help="Cue-based task management system.",
-    no_args_is_help=True
-)
-
-_graph: PriorityGraph | None = None
-def get_graph() -> PriorityGraph:
-    global _graph
-    if _graph is None:
-        _graph = PriorityGraph(db.get_connection)
-        _graph.load()
-    return _graph
-
-def version_callback(value: bool) -> None:
-    if value:
-        rprint(f"praxis {__version__}")
-        raise typer.Exit()
-
-@app.callback()
-def main(
-    version: bool = typer.Option(
-        False,
-        "--version",
-        "-v",
-        help="Show version and exit.",
-        callback=version_callback,
-        is_eager=True,
-    ),
-) -> None:
-    """Praxis: set free the soul."""
-    pass
-
-# ---------------------------------------------------------------------
-# Top-Level Commands
-# ---------------------------------------------------------------------
-
-@app.command(name="next")
-def next_task(
-    priority: str | None = typer.Option(
-        None,
-        "--priority",
-        "-p",
-        help="Filter to a specific priority.",
-    ),
-    any_task: bool = typer.Option(
-        False,
-        "--any",
-        "-a",
-        help="Ignore filters, pick from any queued task.",
-    ),
-) -> None:
-    """Get the next task to work on."""
-    tasks = db.list_tasks(priority_id=priority, status=TaskStatus.QUEUED)
-
-    if not tasks:
-        rprint("[bold green]Do what you will.[/bold green]")
-        raise typer.Exit()
-
-    if any_task:
-        task = random.choice(tasks)
-    else:
-        task = _select_task(tasks)
-
-    if task is None:
-        rprint("[yellow]Do what you will.[/yellow]")
-        rprint("[dim]Or use [bold]praxis next --any[/bold] to bypass filters.[/dim]")
-        raise typer.Exit()
-
-    _display_task(task)
-
-def _select_task(tasks: list) -> Task | None:
-    scored = filters.apply_filters(tasks)
-
-    if not scored:
-        return None
-
-    top_weight = scored[0].weight
-    top_tier = [scored_task for scored_task in scored if scored_task.weight == top_weight]
-
-    selected = random.choice(top_tier)
-    return selected.task
-
-def _display_task(task: Task) -> None:
-    rprint()
-    rprint(f"[bold green]{task.title}[/bold green]")
-    if task.priority_name:
-        rprint(f"[dim]{task.priority_name}[/dim]")
-    if task.current_subtask:
-        rprint(f"[cyan]→ {task.current_subtask.title}[/cyan]")
-    if task.notes:
-        rprint(f"\n{task.notes}")
-    if task.due_date:
-        rprint(f"\n[yellow]Due: {task.due_date.strftime('%Y-%m-%d')}[/yellow]")
-    rprint()
-    rprint(f"[dim]Task #{task.id} — mark complete with: praxis done {task.id}[/dim]")
-
-@app.command()
-def add(
-    title: str = typer.Argument(..., help="Task title"),
-    priority: str | None = typer.Option(
-        None,
-        "--priority",
-        "-p",
-        help="Priority ID to associate with.",
-    ),
-    notes: str | None = typer.Option(
-        None,
-        "--notes",
-        "-n",
-        help="Additional notes.",
-    ),
-) -> None:
-    """Add a new task."""
-    # Validate priority if provided
-    if priority:
-        graph = get_graph()
-        if not graph.get(priority):
-            rprint(f"[red]Priority not found:[/red] {priority}")
-            raise typer.Exit(1)
-
-    task = db.create_task(title, notes, priority_id=priority)
-    rprint(f"[green]Created task #{task.id}:[/green] {title}")
-    if priority:
-        rprint(f"[dim]Priority: {priority}[/dim]")
-
-@app.command()
-def done(
-    task_id: int = typer.Argument(..., help="Task ID to mark complete."),
-) -> None:
-    """Mark a task as done."""
-    db.update_task_status(task_id, TaskStatus.DONE)
-    rprint(f"[green]Task #{task_id} marked complete.[/green]")
-
-@app.command()
-def seed() -> None:
-    """Seed the database with sample data."""
-    result = db.seed_database()
-
-    if result["tasks"] == 0:
-        rprint("[yellow]Database already seeded.[/yellow]")
-    else:
-        rprint(f"[green]Created {result['tasks']} tasks.[/green]")
-
-    rprint("\nRun [bold]praxis next[/bold] to get your first task.")
-
-
-# ---------------------------------------------------------------------
-# Priority Commands
-# ---------------------------------------------------------------------
 
 priority_app = typer.Typer(
     name="priority",
     help="Manage priorities (goals, obligations, capacities, accomplishments, practices).",
     no_args_is_help=True,
 )
-app.add_typer(priority_app)
+
+
+def _get_graph():
+    """Import here to avoid circular import."""
+    from praxis_core.cli.app import get_graph
+    return get_graph()
+
 
 @priority_app.command(name="list")
 def priority_list(
@@ -192,7 +44,7 @@ def priority_list(
     ),
 ) -> None:
     """List all priorities."""
-    graph = get_graph()
+    graph = _get_graph()
 
     if priority_type:
         try:
@@ -241,7 +93,7 @@ def priority_show(
     priority_id: str = typer.Argument(..., help="Priority ID to show."),
 ) -> None:
     """Show details for a priority."""
-    graph = get_graph()
+    graph = _get_graph()
     p = graph.get(priority_id)
 
     if not p:
@@ -320,7 +172,7 @@ def priority_tree(
     ),
 ) -> None:
     """Display priority hierarchy as a tree."""
-    graph = get_graph()
+    graph = _get_graph()
 
     if root_id:
         root = graph.get(root_id)
@@ -387,7 +239,7 @@ def priority_add(
     ),
 ) -> None:
     """Add a new priority."""
-    graph = get_graph()
+    graph = _get_graph()
 
     # Validate type
     try:
@@ -436,7 +288,7 @@ def priority_link(
     parent_id: str = typer.Argument(..., help="Parent priority ID"),
 ) -> None:
     """Link a child priority to a parent."""
-    graph = get_graph()
+    graph = _get_graph()
 
     try:
         graph.link(child_id, parent_id)
@@ -452,7 +304,7 @@ def priority_unlink(
     parent_id: str = typer.Argument(..., help="Parent priority ID"),
 ) -> None:
     """Remove a parent-child link."""
-    graph = get_graph()
+    graph = _get_graph()
 
     if child_id not in graph.nodes:
         rprint(f"[red]Priority not found:[/red] {child_id}")
@@ -468,7 +320,7 @@ def priority_unlink(
 @priority_app.command(name="roots")
 def priority_roots() -> None:
     """List all root priorities (no parents)."""
-    graph = get_graph()
+    graph = _get_graph()
     roots = graph.roots()
 
     if not roots:

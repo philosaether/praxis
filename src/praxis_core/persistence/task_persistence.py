@@ -1,13 +1,17 @@
+"""Task persistence: CRUD operations and schema."""
+
 import sqlite3
 from datetime import datetime
-from pathlib import Path
 
-from praxis_core.models import Task, TaskStatus, Subtask
+from praxis_core.model.tasks import Task, TaskStatus, Subtask
+from praxis_core.persistence.database import get_connection
 
-DB_DIR = Path.home() / ".praxis"
-DB_PATH = DB_DIR / "praxis.db"
 
-SCHEMA = """
+# ---------------------------------------------------------------------
+# Schema
+# ---------------------------------------------------------------------
+
+TASKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -32,22 +36,12 @@ CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 """
 
-# Migration from old schema with workstreams
-MIGRATION_SQL = """
--- Check and migrate from old schema if needed
-"""
 
-def get_connection() -> sqlite3.Connection:
-    DB_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-
-    # Check for migration needs
-    _maybe_migrate(conn)
-
-    conn.executescript(SCHEMA)
-    return conn
+def ensure_schema() -> None:
+    """Ensure the tasks schema exists."""
+    with get_connection() as conn:
+        _maybe_migrate(conn)
+        conn.executescript(TASKS_SCHEMA)
 
 
 def _maybe_migrate(conn: sqlite3.Connection) -> None:
@@ -67,11 +61,9 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
             # Migrate: add priority_id, data will need manual migration
             conn.execute("ALTER TABLE tasks ADD COLUMN priority_id TEXT")
 
-    # Create subtasks table if not exists (handled by SCHEMA)
-
 
 # ---------------------------------------------------------------------
-# Task operations
+# Task Operations
 # ---------------------------------------------------------------------
 
 def create_task(
@@ -80,6 +72,8 @@ def create_task(
     due_date: datetime | None = None,
     priority_id: str | None = None,
 ) -> Task:
+    """Create a new task."""
+    ensure_schema()
     with get_connection() as conn:
         due_str = due_date.isoformat() if due_date else None
         cursor = conn.execute(
@@ -100,6 +94,8 @@ def create_task(
 
 
 def get_task(task_id: int) -> Task | None:
+    """Get a task by ID."""
+    ensure_schema()
     with get_connection() as conn:
         row = conn.execute(
             """
@@ -123,6 +119,7 @@ def list_tasks(
     include_done: bool = True,
 ) -> list[Task]:
     """List tasks with optional filters. Done tasks sorted to bottom."""
+    ensure_schema()
     with get_connection() as conn:
         query = """
             SELECT t.*, p.name as priority_name
@@ -159,6 +156,8 @@ def list_tasks(
 
 
 def update_task_status(task_id: int, status: TaskStatus) -> None:
+    """Update a task's status."""
+    ensure_schema()
     with get_connection() as conn:
         conn.execute(
             "UPDATE tasks SET status = ? WHERE id = ?",
@@ -175,6 +174,7 @@ def update_task(
     priority_id: str | None = None,
 ) -> Task | None:
     """Update task fields. Returns updated task or None if not found."""
+    ensure_schema()
     with get_connection() as conn:
         updates = []
         params = []
@@ -210,12 +210,14 @@ def update_task(
 
 def delete_task(task_id: int) -> bool:
     """Delete a task. Returns True if deleted."""
+    ensure_schema()
     with get_connection() as conn:
         result = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
         return result.rowcount > 0
 
 
 def _row_to_task(row: sqlite3.Row) -> Task:
+    """Convert a database row to a Task."""
     due_date = None
     if row["due_date"]:
         due_date = datetime.fromisoformat(row["due_date"])
@@ -251,6 +253,7 @@ def _get_subtasks(conn: sqlite3.Connection, task_id: int) -> list[Subtask]:
 
 
 def _row_to_subtask(row: sqlite3.Row) -> Subtask:
+    """Convert a database row to a Subtask."""
     completed_at = None
     if row["completed_at"]:
         completed_at = datetime.fromisoformat(row["completed_at"])
@@ -266,11 +269,12 @@ def _row_to_subtask(row: sqlite3.Row) -> Subtask:
 
 
 # ---------------------------------------------------------------------
-# Subtask operations
+# Subtask Operations
 # ---------------------------------------------------------------------
 
 def create_subtask(task_id: int, title: str, sort_order: int | None = None) -> Subtask:
     """Create a subtask. If sort_order not specified, appends to end."""
+    ensure_schema()
     with get_connection() as conn:
         if sort_order is None:
             # Get max sort_order for this task
@@ -297,6 +301,7 @@ def create_subtask(task_id: int, title: str, sort_order: int | None = None) -> S
 
 def toggle_subtask(subtask_id: int) -> Subtask | None:
     """Toggle subtask completion status. Returns updated subtask."""
+    ensure_schema()
     with get_connection() as conn:
         row = conn.execute(
             "SELECT * FROM subtasks WHERE id = ?", (subtask_id,)
@@ -324,6 +329,7 @@ def toggle_subtask(subtask_id: int) -> Subtask | None:
 
 def delete_subtask(subtask_id: int) -> bool:
     """Delete a subtask. Returns True if deleted."""
+    ensure_schema()
     with get_connection() as conn:
         result = conn.execute("DELETE FROM subtasks WHERE id = ?", (subtask_id,))
         return result.rowcount > 0
@@ -331,6 +337,7 @@ def delete_subtask(subtask_id: int) -> bool:
 
 def reorder_subtasks(task_id: int, subtask_ids: list[int]) -> None:
     """Reorder subtasks by providing new order of IDs."""
+    ensure_schema()
     with get_connection() as conn:
         for order, subtask_id in enumerate(subtask_ids):
             conn.execute(
@@ -340,11 +347,12 @@ def reorder_subtasks(task_id: int, subtask_ids: list[int]) -> None:
 
 
 # ---------------------------------------------------------------------
-# Seed data (for development)
+# Seed Data (for development)
 # ---------------------------------------------------------------------
 
 def clear_tasks() -> int:
     """Delete all tasks. Returns count deleted."""
+    ensure_schema()
     with get_connection() as conn:
         result = conn.execute("DELETE FROM tasks")
         return result.rowcount
