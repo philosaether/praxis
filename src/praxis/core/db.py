@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from praxis.models import Task, TaskStatus, Subtask
+from praxis.core.models import Task, TaskStatus, Subtask
 
 DB_DIR = Path.home() / ".praxis"
 DB_PATH = DB_DIR / "praxis.db"

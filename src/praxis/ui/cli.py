@@ -4,10 +4,9 @@ from rich import print as rprint
 from rich.table import Table
 
 from praxis import __version__
-from praxis import db
-from praxis import filters
-from praxis.models import Task, TaskStatus
-from praxis.priorities import (
+from praxis.core import db, filters
+from praxis.core.models import Task, TaskStatus
+from praxis.core.priorities import (
     PriorityGraph,
     PriorityType,
     PriorityStatus,

@@ -31,7 +31,7 @@ api = [
 ]
 
 [project.scripts]
-praxis = "praxis.cli:app"
+praxis = "praxis.ui.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/praxis"]

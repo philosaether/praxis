@@ -1,7 +1,7 @@
 """
 FastAPI application for Praxis web GUI.
 
-Run with: uvicorn praxis.api:app --reload
+Run with: uvicorn praxis.ui.api:app --reload
 
 Requires: pip install -e ".[api]"
 """
@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Annotated
 from datetime import datetime
 
-from praxis import db
-from praxis.models import TaskStatus
-from praxis.priorities import (
+from praxis.core import db
+from praxis.core.models import TaskStatus
+from praxis.core.priorities import (
     PriorityGraph,
     PriorityType,
     PriorityStatus,
