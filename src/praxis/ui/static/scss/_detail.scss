@@ -1,0 +1,38 @@
+// =============================================================================
+// Detail View
+// =============================================================================
+@use 'variables' as *;
+
+.detail-view {
+  max-width: $detail-max-width;
+}
+
+.detail-header {
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    font-size: $font-size-xl;
+    margin-bottom: $spacing-sm;
+  }
+
+  .meta {
+    color: $text-secondary;
+    font-size: $font-size-base;
+  }
+}
+
+.detail-section {
+  margin-bottom: $spacing-xl;
+
+  h3 {
+    font-size: $font-size-md;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-secondary;
+    margin-bottom: $spacing-sm;
+  }
+
+  p {
+    color: $text-primary;
+  }
+}

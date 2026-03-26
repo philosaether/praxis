@@ -1,0 +1,130 @@
+// =============================================================================
+// List Views (Priorities & Tasks)
+// =============================================================================
+@use 'variables' as *;
+
+.priority-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// -----------------------------------------------------------------------------
+// Priority Rows
+// -----------------------------------------------------------------------------
+
+.priority-row {
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid $border;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.selected {
+    background: $bg-tertiary;
+    border-left: 3px solid $accent;
+  }
+
+  .name {
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
+  }
+
+  .meta {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    display: flex;
+    gap: $spacing-md;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Task Rows
+// -----------------------------------------------------------------------------
+
+.task-row {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm $spacing-lg;
+  border-bottom: 1px solid $border;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.done {
+    opacity: 0.6;
+
+    .task-title {
+      text-decoration: line-through;
+      color: $text-muted;
+    }
+
+    .meta {
+      color: $text-muted;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .task-content {
+    flex: 1;
+    cursor: pointer;
+    padding: $spacing-xs 0;
+  }
+
+  .task-title {
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
+  }
+
+  .meta {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    display: flex;
+    gap: $spacing-md;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Quick Done Button
+// -----------------------------------------------------------------------------
+
+.quick-done {
+  width: 28px;
+  height: 28px;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $text-muted;
+  cursor: pointer;
+  font-size: $font-size-base;
+  transition: all $transition-fast;
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
+
+  &:hover {
+    background: $success;
+    border-color: $success;
+    color: white;
+  }
+
+  &.checked {
+    background: $success;
+    border-color: $success;
+    color: white;
+    opacity: 0.6;
+
+    &:hover {
+      opacity: 1;
+      background: $bg-tertiary;
+      border-color: $border;
+      color: $text-secondary;
+    }
+  }
+}

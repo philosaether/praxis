@@ -1,0 +1,13 @@
+// =============================================================================
+// Praxis Main Stylesheet
+// =============================================================================
+
+// Using @use for modern Sass (no deprecation warnings)
+@use 'variables' as *;
+@use 'reset';
+@use 'layout';
+@use 'components';
+@use 'list';
+@use 'detail';
+@use 'tree';
+@use 'utilities';

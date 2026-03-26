@@ -1,0 +1,69 @@
+// =============================================================================
+// Tree View
+// =============================================================================
+@use 'variables' as *;
+
+.tree-view {
+  padding: $spacing-sm;
+}
+
+.tree-node {
+  margin-left: 0;
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 0.4rem $spacing-sm;
+  cursor: pointer;
+  border-radius: $radius-md;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+}
+
+.tree-toggle {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: $text-secondary;
+  font-weight: bold;
+
+  &:hover {
+    color: $accent;
+  }
+
+  &.expanded .chevron {
+    transform: rotate(45deg);
+  }
+}
+
+.tree-toggle-spacer {
+  width: 1.2rem;
+}
+
+.tree-node-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.tree-node-id {
+  font-size: $font-size-xs;
+  color: $text-muted;
+}
+
+.tree-children {
+  margin-left: $spacing-xl;
+  border-left: 1px solid $border;
+  padding-left: $spacing-sm;
+
+  &:empty {
+    display: none;
+  }
+}

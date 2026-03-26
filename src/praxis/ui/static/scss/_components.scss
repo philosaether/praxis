@@ -1,0 +1,147 @@
+// =============================================================================
+// Components
+// =============================================================================
+@use 'sass:list';
+@use 'sass:color';
+@use 'variables' as *;
+
+// -----------------------------------------------------------------------------
+// Buttons
+// -----------------------------------------------------------------------------
+
+.btn {
+  padding: $spacing-sm $spacing-lg;
+  border: none;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  cursor: pointer;
+  transition: background $transition-fast;
+}
+
+.btn-primary {
+  background: $accent;
+  color: white;
+
+  &:hover {
+    background: $accent-dim;
+  }
+}
+
+.btn-secondary {
+  background: $bg-tertiary;
+  color: $text-primary;
+
+  &:hover {
+    background: color.adjust($bg-tertiary, $lightness: 5%);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Badges
+// -----------------------------------------------------------------------------
+
+.type-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+
+  @each $type, $colors in $type-colors {
+    &.#{$type} {
+      background: list.nth($colors, 1);
+      color: list.nth($colors, 2);
+    }
+  }
+}
+
+.priority-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  background: $bg-tertiary;
+  color: $text-secondary;
+}
+
+// -----------------------------------------------------------------------------
+// Status Indicators
+// -----------------------------------------------------------------------------
+
+.status-indicator {
+  color: $text-muted;
+
+  &.active {
+    color: $success;
+  }
+
+  &.queued {
+    color: $accent;
+  }
+}
+
+.due-date {
+  color: $warning;
+}
+
+// -----------------------------------------------------------------------------
+// Forms
+// -----------------------------------------------------------------------------
+
+.form-group {
+  margin-bottom: $spacing-lg;
+
+  label {
+    display: block;
+    font-size: $font-size-md;
+    color: $text-secondary;
+    margin-bottom: 0.3rem;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: $spacing-sm;
+    background: $bg-secondary;
+    color: $text-primary;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    font-size: $font-size-base;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: $accent;
+    }
+  }
+
+  textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Links List
+// -----------------------------------------------------------------------------
+
+.links-list {
+  list-style: none;
+
+  li {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid $border;
+  }
+
+  a {
+    color: $accent;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

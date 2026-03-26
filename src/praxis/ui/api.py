@@ -8,6 +8,7 @@ Requires: pip install -e ".[api]"
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from typing import Annotated
@@ -32,8 +33,11 @@ from praxis.core.priorities import (
 
 app = FastAPI(title="Praxis", description="Cue-based task management")
 
-# Template directory relative to this file
+# Static files and templates
+STATIC_DIR = Path(__file__).parent / "static"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
