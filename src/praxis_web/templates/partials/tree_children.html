@@ -16,7 +16,7 @@
         {% else %}
         <span class="tree-toggle-spacer"></span>
         {% endif %}
-        <span class="type-badge {{ child.priority_type.value }}">{{ child.priority_type.value[:3] }}</span>
+        <span class="type-badge {{ child.priority_type }}">{{ child.priority_type[:3] }}</span>
         <span class="tree-node-name">{{ child.name }}</span>
         <span class="tree-node-id">{{ child.id }}</span>
     </div>

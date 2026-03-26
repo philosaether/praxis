@@ -10,14 +10,14 @@
             </button>
         </div>
         <div class="meta">
-            <span class="type-badge {{ priority.priority_type.value }}">
-                {{ priority.priority_type.value }}
+            <span class="type-badge {{ priority.priority_type }}">
+                {{ priority.priority_type }}
             </span>
             &nbsp;&middot;&nbsp;
             <span>{{ priority.id }}</span>
             &nbsp;&middot;&nbsp;
-            <span class="status-indicator {% if priority.status.value == 'active' %}active{% endif %}">
-                {{ priority.status.value }}
+            <span class="status-indicator {% if priority.status == 'active' %}active{% endif %}">
+                {{ priority.status }}
             </span>
         </div>
     </div>
@@ -31,7 +31,7 @@
     {% endif %}
 
     <!-- Type-specific fields -->
-    {% if priority.priority_type.value == 'goal' %}
+    {% if priority.priority_type == 'goal' %}
         {% if priority.success_looks_like %}
         <div class="detail-section">
             <h3>Success Looks Like</h3>
@@ -45,7 +45,7 @@
         </div>
         {% endif %}
 
-    {% elif priority.priority_type.value == 'obligation' %}
+    {% elif priority.priority_type == 'obligation' %}
         {% if priority.consequence_of_neglect %}
         <div class="detail-section">
             <h3>Consequence of Neglect</h3>
@@ -53,7 +53,7 @@
         </div>
         {% endif %}
 
-    {% elif priority.priority_type.value == 'capacity' %}
+    {% elif priority.priority_type == 'capacity' %}
         <div class="detail-section">
             <h3>Delta</h3>
             <p>{{ priority.delta_description }}</p>
@@ -71,7 +71,7 @@
         </div>
         {% endif %}
 
-    {% elif priority.priority_type.value == 'accomplishment' %}
+    {% elif priority.priority_type == 'accomplishment' %}
         {% if priority.success_criteria %}
         <div class="detail-section">
             <h3>Success Criteria</h3>
@@ -87,11 +87,11 @@
         {% if priority.due_date %}
         <div class="detail-section">
             <h3>Due Date</h3>
-            <p>{{ priority.due_date.strftime('%Y-%m-%d') }}</p>
+            <p>{{ priority.due_date }}</p>
         </div>
         {% endif %}
 
-    {% elif priority.priority_type.value == 'practice' %}
+    {% elif priority.priority_type == 'practice' %}
         {% if priority.rhythm_frequency %}
         <div class="detail-section">
             <h3>Rhythm</h3>
@@ -126,7 +126,7 @@
                     {{ parent.name }}
                 </a>
                 <span style="color: var(--text-muted); font-size: 0.8rem;">
-                    ({{ parent.priority_type.value }})
+                    ({{ parent.priority_type }})
                 </span>
             </li>
             {% endfor %}
@@ -148,7 +148,7 @@
                     {{ child.name }}
                 </a>
                 <span style="color: var(--text-muted); font-size: 0.8rem;">
-                    ({{ child.priority_type.value }})
+                    ({{ child.priority_type }})
                 </span>
             </li>
             {% endfor %}
@@ -160,11 +160,11 @@
     <div class="detail-section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
         <p style="font-size: 0.8rem; color: var(--text-muted);">
             {% if priority.created_at %}
-            Created: {{ priority.created_at.strftime('%Y-%m-%d %H:%M') }}
+            Created: {{ priority.created_at }}
             {% endif %}
             {% if priority.updated_at %}
             &nbsp;&middot;&nbsp;
-            Updated: {{ priority.updated_at.strftime('%Y-%m-%d %H:%M') }}
+            Updated: {{ priority.updated_at }}
             {% endif %}
         </p>
     </div>

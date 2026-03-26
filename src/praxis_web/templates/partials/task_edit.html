@@ -32,8 +32,8 @@
             <label for="status">Status</label>
             <select id="status" name="status">
                 {% for s in task_statuses %}
-                <option value="{{ s.value }}" {% if task.status == s %}selected{% endif %}>
-                    {{ s.value }}
+                <option value="{{ s }}" {% if task.status == s %}selected{% endif %}>
+                    {{ s }}
                 </option>
                 {% endfor %}
             </select>
@@ -53,7 +53,7 @@
             <input type="date"
                    id="due_date"
                    name="due_date"
-                   value="{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else '' }}">
+                   value="{{ task.due_date or '' }}">
         </div>
 
         <!-- Actions -->

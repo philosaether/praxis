@@ -1,4 +1,4 @@
-<div class="task-row {% if task.status.value == 'done' %}done{% endif %}">
+<div class="task-row {% if task.status == 'done' %}done{% endif %}">
     <div class="task-content"
          hx-get="/tasks/{{ task.id }}"
          hx-target="#detail-pane"
@@ -8,20 +8,20 @@
             {% if task.priority_name %}
             <span class="priority-badge">{{ task.priority_name }}</span>
             {% endif %}
-            <span class="status-indicator {{ task.status.value }}">
-                {{ task.status.value }}
+            <span class="status-indicator {{ task.status }}">
+                {{ task.status }}
             </span>
             {% if task.due_date %}
-            <span class="due-date">{{ task.due_date.strftime('%m/%d') }}</span>
+            <span class="due-date">{{ task.due_date }}</span>
             {% endif %}
         </div>
     </div>
-    <button class="quick-done {% if task.status.value == 'done' %}checked{% endif %}"
+    <button class="quick-done {% if task.status == 'done' %}checked{% endif %}"
             hx-post="/tasks/{{ task.id }}/toggle"
             hx-target="closest .task-row"
             hx-swap="outerHTML"
             onclick="event.stopPropagation();"
-            title="{% if task.status.value == 'done' %}Requeue{% else %}Mark done{% endif %}">
+            title="{% if task.status == 'done' %}Requeue{% else %}Mark done{% endif %}">
         ✓
     </button>
 </div>

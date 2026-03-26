@@ -37,7 +37,7 @@
                         hx-include="[name='active']">
                     <option value="">All Types</option>
                     {% for t in priority_types %}
-                    <option value="{{ t.value }}">{{ t.value|title }}</option>
+                    <option value="{{ t }}">{{ t|title }}</option>
                     {% endfor %}
                 </select>
 

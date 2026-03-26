@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
-class TaskStatus(Enum):
+
+class TaskStatus(StrEnum):
     """
     queued  - In the backlog, available for cue selection
     active  - Currently being worked on

@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from enum import StrEnum
 
-from praxis.core.models import Task
+from praxis_core.models import Task
 
 CONFIG_DIR = Path.home() / ".praxis"
 FILTERS_PATH = CONFIG_DIR / "filters.json"

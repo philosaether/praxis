@@ -3,10 +3,10 @@ import typer
 from rich import print as rprint
 from rich.table import Table
 
-from praxis import __version__
-from praxis.core import db, filters
-from praxis.core.models import Task, TaskStatus
-from praxis.core.priorities import (
+from praxis_core import __version__
+from praxis_core import db, filters
+from praxis_core.models import Task, TaskStatus
+from praxis_core.priorities import (
     PriorityGraph,
     PriorityType,
     PriorityStatus,
