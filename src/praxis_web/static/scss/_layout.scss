@@ -84,18 +84,22 @@
 
 .view-toggle {
   display: flex;
+  flex-shrink: 0;
   border: 1px solid $border;
   border-radius: $radius-md;
   overflow: hidden;
+  position: relative;
+  z-index: 10;
 }
 
 .view-btn {
   padding: 0.3rem 0.6rem;
   background: $bg-tertiary;
-  color: $text-secondary;
+  color: $text-primary;  // brighter text
   border: none;
   cursor: pointer;
   font-size: $font-size-sm;
+  font-weight: 500;
   transition: all $transition-fast;
 
   &:hover {

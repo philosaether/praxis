@@ -6,6 +6,7 @@ Run with: uvicorn praxis_core.api.app:app --reload
 
 from datetime import datetime
 from fastapi import FastAPI
+import markdown
 
 from praxis_core.model import (
     Goal,
@@ -64,14 +65,24 @@ def fmt_date(dt: datetime | None) -> str | None:
     return dt.strftime("%Y-%m-%d")
 
 
-def serialize_priority(p) -> dict:
+def render_md(text: str) -> str:
+    """Render markdown text to HTML."""
+    return markdown.markdown(text, extensions=["fenced_code", "tables"])
+
+
+def serialize_priority(p, render_markdown: bool = False) -> dict:
     """Convert a Priority to JSON-serializable dict."""
+    notes = p.notes
+    if render_markdown and notes:
+        notes = render_md(notes)
+
     data = {
         "id": p.id,
         "name": p.name,
         "priority_type": p.priority_type.value,
         "status": p.status.value,
         "agent_context": p.agent_context,
+        "notes": notes,
         "created_at": fmt_datetime(p.created_at),
         "updated_at": fmt_datetime(p.updated_at),
     }
@@ -100,13 +111,17 @@ def serialize_priority(p) -> dict:
     return data
 
 
-def serialize_task(t) -> dict:
+def serialize_task(t, render_markdown: bool = False) -> dict:
     """Convert a Task to JSON-serializable dict."""
+    notes = t.notes
+    if render_markdown and notes:
+        notes = render_md(notes)
+
     return {
         "id": t.id,
         "title": t.title,
         "status": t.status.value,
-        "notes": t.notes,
+        "notes": notes,
         "due_date": fmt_date(t.due_date),
         "created_at": fmt_datetime(t.created_at),
         "priority_id": t.priority_id,

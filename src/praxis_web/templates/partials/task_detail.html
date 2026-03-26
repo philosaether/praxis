@@ -36,7 +36,7 @@
     {% if task.notes %}
     <div class="detail-section">
         <h3>Notes</h3>
-        <p>{{ task.notes }}</p>
+        <div class="markdown-content">{{ task.notes|safe }}</div>
     </div>
     {% endif %}
 

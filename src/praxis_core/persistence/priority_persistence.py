@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS priorities (
 
     -- Common
     agent_context TEXT,
-    notes_path TEXT,
+    notes TEXT,
 
     -- Goal
     success_looks_like TEXT,
@@ -93,7 +93,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "name": row["name"],
         "status": PriorityStatus(row["status"]),
         "agent_context": row["agent_context"],
-        "notes_path": row["notes_path"],
+        "notes": row["notes"] if "notes" in row.keys() else None,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -205,7 +205,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.name,
         priority.status.value,
         priority.agent_context,
-        priority.notes_path,
+        priority.notes,
         success_looks_like,
         obsolete_when,
         consequence_of_neglect,
@@ -267,6 +267,10 @@ class PriorityGraph:
                     # Rename the column (SQLite 3.25+)
                     conn.execute("ALTER TABLE priorities RENAME COLUMN generator_type TO priority_type")
 
+                # Migrate notes_path to notes
+                if "notes_path" in column_names and "notes" not in column_names:
+                    conn.execute("ALTER TABLE priorities RENAME COLUMN notes_path TO notes")
+
             # Ensure schema exists (creates if not present)
             conn.executescript(PRIORITIES_SCHEMA)
 
@@ -296,7 +300,7 @@ class PriorityGraph:
             conn.execute("""
                 INSERT INTO priorities (
                     id, priority_type, name, status,
-                    agent_context, notes_path,
+                    agent_context, notes,
                     success_looks_like, obsolete_when,
                     consequence_of_neglect,
                     measurement_method, measurement_rubric, measurement_scale,
@@ -310,7 +314,7 @@ class PriorityGraph:
                     name = excluded.name,
                     status = excluded.status,
                     agent_context = excluded.agent_context,
-                    notes_path = excluded.notes_path,
+                    notes = excluded.notes,
                     success_looks_like = excluded.success_looks_like,
                     obsolete_when = excluded.obsolete_when,
                     consequence_of_neglect = excluded.consequence_of_neglect,

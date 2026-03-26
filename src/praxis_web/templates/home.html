@@ -13,14 +13,14 @@
         <!-- Main Toggle: Tasks | Priorities -->
         <div class="filters">
             <div class="view-toggle">
-                <button class="view-btn"
+                <button class="view-btn active"
                         id="tasks-view-btn"
                         hx-get="/tasks/list"
                         hx-target="#item-list"
                         onclick="setMode('tasks')">
                     Tasks
                 </button>
-                <button class="view-btn active"
+                <button class="view-btn"
                         id="priorities-view-btn"
                         hx-get="/priorities/list"
                         hx-target="#item-list"
@@ -29,8 +29,20 @@
                 </button>
             </div>
 
-            <!-- Priority filters (shown when priorities mode) -->
-            <div id="priority-filters" class="filter-group">
+            <!-- Task filters (shown by default) -->
+            <div id="task-filters" class="filter-group">
+                <select name="priority"
+                        hx-get="/tasks/list"
+                        hx-target="#item-list">
+                    <option value="">All Priorities</option>
+                    {% for p in priorities %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Priority filters (hidden by default) -->
+            <div id="priority-filters" class="filter-group" style="display: none;">
                 <select name="type"
                         hx-get="/priorities/list"
                         hx-target="#item-list"
@@ -51,23 +63,11 @@
                     Active only
                 </label>
             </div>
-
-            <!-- Task filters (hidden by default) -->
-            <div id="task-filters" class="filter-group" style="display: none;">
-                <select name="priority"
-                        hx-get="/tasks/list"
-                        hx-target="#item-list">
-                    <option value="">All Priorities</option>
-                    {% for p in priorities %}
-                    <option value="{{ p.id }}">{{ p.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
         </div>
 
         <!-- Item List -->
-        <div class="priority-list" id="item-list" hx-trigger="refresh from:body" hx-get="/tasks/list">
-            {% include "partials/priority_rows.html" %}
+        <div class="priority-list" id="item-list">
+            {% include "partials/task_rows.html" %}
         </div>
     </div>
 

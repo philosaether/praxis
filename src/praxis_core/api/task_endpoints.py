@@ -1,12 +1,16 @@
 """Task API endpoints."""
 
-from fastapi import APIRouter
+from datetime import datetime
+from typing import Annotated
+
+from fastapi import APIRouter, Form
 from fastapi.responses import JSONResponse
 
 from praxis_core.model import TaskStatus
 from praxis_core.persistence import (
     get_task,
     list_tasks,
+    update_task,
     update_task_status,
 )
 
@@ -26,10 +30,10 @@ def _serialize_priority(p):
     return serialize_priority(p)
 
 
-def _serialize_task(t):
+def _serialize_task(t, render_markdown: bool = False):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_task
-    return serialize_task(t)
+    return serialize_task(t, render_markdown=render_markdown)
 
 
 @router.get("")
@@ -66,10 +70,63 @@ async def get_task_endpoint(task_id: int):
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
-        "task": _serialize_task(task),
+        "task": _serialize_task(task, render_markdown=True),
         "priorities": [_serialize_priority(p) for p in priorities],
         "task_statuses": [s.value for s in TaskStatus],
     }
+
+
+@router.get("/{task_id}/edit")
+async def get_task_for_edit(task_id: int):
+    """Get task data for edit form (raw, no markdown rendering)."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    graph = _get_graph()
+    priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
+
+    return {
+        "task": _serialize_task(task, render_markdown=False),
+        "priorities": [_serialize_priority(p) for p in priorities],
+        "task_statuses": [s.value for s in TaskStatus],
+        "edit_mode": True,
+    }
+
+
+@router.post("/{task_id}")
+async def update_task_endpoint(
+    task_id: int,
+    title: Annotated[str, Form()],
+    status: Annotated[str, Form()],
+    priority_id: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
+    due_date: Annotated[str | None, Form()] = None,
+):
+    """Update a task and return updated data."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    # Parse due_date if provided
+    parsed_due_date = None
+    if due_date:
+        try:
+            parsed_due_date = datetime.fromisoformat(due_date)
+        except ValueError:
+            pass
+
+    update_task(
+        task_id,
+        title=title.strip(),
+        status=TaskStatus(status),
+        priority_id=priority_id.strip() if priority_id else "",
+        notes=notes.strip() if notes else "",
+        due_date=parsed_due_date,
+    )
+
+    # Return updated data
+    return await get_task_endpoint(task_id)
 
 
 @router.post("/{task_id}/toggle")

@@ -36,3 +36,84 @@
     color: $text-primary;
   }
 }
+
+// Markdown content styling
+.markdown-content {
+  color: $text-primary;
+  line-height: 1.6;
+
+  p {
+    margin-bottom: $spacing-md;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: $spacing-lg;
+    margin-bottom: $spacing-sm;
+    font-weight: 600;
+  }
+
+  h1 { font-size: 1.5em; }
+  h2 { font-size: 1.3em; }
+  h3 { font-size: 1.1em; }
+
+  ul, ol {
+    margin-bottom: $spacing-md;
+    padding-left: $spacing-lg;
+  }
+
+  li {
+    margin-bottom: $spacing-xs;
+  }
+
+  code {
+    background: rgba($text-secondary, 0.1);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.9em;
+  }
+
+  pre {
+    background: rgba($text-secondary, 0.1);
+    padding: $spacing-md;
+    border-radius: $radius-md;
+    overflow-x: auto;
+    margin-bottom: $spacing-md;
+
+    code {
+      background: none;
+      padding: 0;
+    }
+  }
+
+  blockquote {
+    border-left: 3px solid $border;
+    padding-left: $spacing-md;
+    margin: $spacing-md 0;
+    color: $text-secondary;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: $spacing-md;
+
+    th, td {
+      border: 1px solid $border;
+      padding: $spacing-sm;
+      text-align: left;
+    }
+
+    th {
+      background: rgba($text-secondary, 0.1);
+    }
+  }
+
+  a {
+    color: $accent;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
