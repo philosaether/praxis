@@ -37,7 +37,7 @@ class Priority:
     status: PriorityStatus = PriorityStatus.ACTIVE
 
     agent_context: str | None = None
-    notes_path: str | None = None
+    notes: str | None = None
 
     # Metadata
     created_at: datetime | None = None

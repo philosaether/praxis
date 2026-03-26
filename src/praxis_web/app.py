@@ -41,28 +41,32 @@ def api_client():
 # Routes: Pages
 # -----------------------------------------------------------------------------
 
-@app.get("/", response_class=RedirectResponse)
-async def root():
-    return RedirectResponse(url="/priorities", status_code=302)
-
-
-@app.get("/priorities", response_class=HTMLResponse)
-async def priorities_page(request: Request):
-    """Full page: two-pane layout with list on left."""
+@app.get("/", response_class=HTMLResponse)
+async def home_page(request: Request):
+    """Full page: two-pane layout with tasks as default view."""
     async with api_client() as client:
-        response = await client.get("/api/priorities")
-        data = response.json()
+        # Fetch both tasks and priorities for initial load
+        tasks_response = await client.get("/api/tasks")
+        priorities_response = await client.get("/api/priorities")
+        tasks_data = tasks_response.json()
+        priorities_data = priorities_response.json()
 
     return templates.TemplateResponse(
         request,
-        "priority_list.html",
+        "home.html",
         {
-            "priorities": data["priorities"],
-            "priority_types": data["priority_types"],
-            "selected_type": None,
-            "active_only": False,
+            "tasks": tasks_data["tasks"],
+            "priorities": priorities_data["priorities"],
+            "priority_types": priorities_data["priority_types"],
+            "default_mode": "tasks",
         }
     )
+
+
+@app.get("/priorities", response_class=RedirectResponse)
+async def priorities_redirect():
+    """Redirect to home page."""
+    return RedirectResponse(url="/", status_code=302)
 
 # -----------------------------------------------------------------------------
 # Routes: HTMX Partials - Priority List
@@ -200,6 +204,47 @@ async def task_detail(request: Request, task_id: int):
     """HTMX partial: detail view for a single task."""
     async with api_client() as client:
         response = await client.get(f"/api/tasks/{task_id}")
+        if response.status_code == 404:
+            return HTMLResponse(
+                content="<div class='error'>Task not found</div>",
+                status_code=404
+            )
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/task_detail.html",
+        data
+    )
+
+@app.get("/tasks/{task_id}/edit", response_class=HTMLResponse)
+async def task_edit_form(request: Request, task_id: int):
+    """HTMX partial: edit form for a task."""
+    async with api_client() as client:
+        response = await client.get(f"/api/tasks/{task_id}/edit")
+        if response.status_code == 404:
+            return HTMLResponse(
+                content="<div class='error'>Task not found</div>",
+                status_code=404
+            )
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/task_edit.html",
+        data
+    )
+
+@app.post("/tasks/{task_id}", response_class=HTMLResponse)
+async def task_save(request: Request, task_id: int):
+    """Save edits to a task and return updated detail view."""
+    form_data = await request.form()
+
+    async with api_client() as client:
+        response = await client.post(
+            f"/api/tasks/{task_id}",
+            data=dict(form_data)
+        )
         if response.status_code == 404:
             return HTMLResponse(
                 content="<div class='error'>Task not found</div>",

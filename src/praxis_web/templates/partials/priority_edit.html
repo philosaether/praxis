@@ -41,6 +41,15 @@
                       placeholder="Brief context for AI agent...">{{ priority.agent_context or '' }}</textarea>
         </div>
 
+        <!-- Notes (common) -->
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes"
+                      name="notes"
+                      rows="8"
+                      placeholder="Detailed notes (supports Markdown)...">{{ priority.notes or '' }}</textarea>
+        </div>
+
         <!-- Type-specific fields -->
         {% if priority.priority_type == 'goal' %}
             <div class="form-group">

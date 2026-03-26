@@ -26,10 +26,10 @@ def _get_graph():
     return get_graph()
 
 
-def _serialize_priority(p):
+def _serialize_priority(p, render_markdown: bool = False):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_priority
-    return serialize_priority(p)
+    return serialize_priority(p, render_markdown=render_markdown)
 
 
 @router.get("")
@@ -95,7 +95,7 @@ async def get_priority(priority_id: str):
     child_ids = graph.children.get(priority_id, set())
 
     return {
-        "priority": _serialize_priority(priority),
+        "priority": _serialize_priority(priority, render_markdown=True),
         "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
         "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
     }
@@ -129,6 +129,7 @@ async def update_priority(
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     # Goal fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
@@ -161,6 +162,7 @@ async def update_priority(
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
+    priority.notes = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
     if isinstance(priority, Goal):

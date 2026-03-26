@@ -30,6 +30,13 @@
     </div>
     {% endif %}
 
+    {% if priority.notes %}
+    <div class="detail-section">
+        <h3>Notes</h3>
+        <div class="markdown-content">{{ priority.notes|safe }}</div>
+    </div>
+    {% endif %}
+
     <!-- Type-specific fields -->
     {% if priority.priority_type == 'goal' %}
         {% if priority.success_looks_like %}

@@ -44,7 +44,8 @@
             <label for="notes">Notes</label>
             <textarea id="notes"
                       name="notes"
-                      placeholder="Additional details...">{{ task.notes or '' }}</textarea>
+                      rows="8"
+                      placeholder="Detailed notes (supports Markdown)...">{{ task.notes or '' }}</textarea>
         </div>
 
         <!-- Due Date -->
