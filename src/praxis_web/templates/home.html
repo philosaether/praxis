@@ -109,7 +109,7 @@
 </div>
 
 <script>
-    function setMode(mode) {
+    window.setMode = function(mode) {
         // Toggle button states
         document.getElementById('tasks-view-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-view-btn').classList.toggle('active', mode === 'priorities');
@@ -124,12 +124,16 @@
 
         // Clear detail pane
         document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
-    }
+    };
 
-    function loadNewTask(event) {
+    window.loadNewTask = function(event) {
         // Get the new task ID from the response header
         const taskId = event.detail.xhr.getResponseHeader('X-New-Item-Id');
         if (taskId) {
+            // Select the new row
+            const newRow = document.getElementById('task-row-' + taskId);
+            if (newRow) selectRow(newRow);
+
             // Load the detail view
             htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-pane', swap: 'innerHTML'})
                 .then(() => {
@@ -143,12 +147,16 @@
                     }, 100);
                 });
         }
-    }
+    };
 
-    function loadNewPriority(event) {
+    window.loadNewPriority = function(event) {
         // Get the new priority ID from the response header
         const priorityId = event.detail.xhr.getResponseHeader('X-New-Item-Id');
         if (priorityId) {
+            // Select the new row
+            const newRow = document.getElementById('priority-row-' + priorityId);
+            if (newRow) selectRow(newRow);
+
             // Load the detail view
             htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-pane', swap: 'innerHTML'})
                 .then(() => {
@@ -162,6 +170,14 @@
                     }, 100);
                 });
         }
-    }
+    };
+
+    window.selectRow = function(element) {
+        // Remove selected class from all rows
+        document.querySelectorAll('.task-row.selected, .priority-row.selected')
+            .forEach(el => el.classList.remove('selected'));
+        // Add selected class to clicked row
+        element.classList.add('selected');
+    };
 </script>
 {% endblock %}

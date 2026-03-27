@@ -1,7 +1,10 @@
 <div class="priority-row"
+     id="priority-row-{{ priority.id }}"
+     {% if oob %}hx-swap-oob="true"{% endif %}
      hx-get="/priorities/{{ priority.id }}"
      hx-target="#detail-pane"
-     hx-swap="innerHTML">
+     hx-swap="innerHTML"
+     onclick="selectRow(this)">
     <div class="name">{{ priority.name }}</div>
     <div class="meta">
         <span class="type-badge {{ priority.priority_type }}">{{ priority.priority_type[:3] }}</span>

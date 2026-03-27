@@ -161,7 +161,7 @@ async def priority_detail(request: Request, priority_id: str):
 
 @app.post("/priorities/{priority_id}/properties", response_class=HTMLResponse)
 async def priority_save_properties(request: Request, priority_id: str):
-    """Save priority properties and return updated properties section."""
+    """Save priority properties and return updated properties section + OOB row update."""
     form_data = await request.form()
 
     async with api_client() as client:
@@ -186,11 +186,21 @@ async def priority_save_properties(request: Request, priority_id: str):
     priority_type = data["priority"]["priority_type"]
     template_name = f"partials/properties/{priority_type}_properties.html"
 
-    return templates.TemplateResponse(
+    # Render properties section
+    properties_html = templates.TemplateResponse(
         request,
         template_name,
         data
-    )
+    ).body.decode()
+
+    # Render OOB row update
+    row_html = templates.TemplateResponse(
+        request,
+        "partials/priority_row_single.html",
+        {"priority": data["priority"], "oob": True}
+    ).body.decode()
+
+    return HTMLResponse(content=properties_html + row_html)
 
 
 @app.post("/priorities/{priority_id}/notes", response_class=HTMLResponse)
@@ -291,7 +301,7 @@ async def task_detail(request: Request, task_id: int):
 
 @app.post("/tasks/{task_id}/properties", response_class=HTMLResponse)
 async def task_save_properties(request: Request, task_id: int):
-    """Save task properties and return updated properties section."""
+    """Save task properties and return updated properties section + OOB row update."""
     form_data = await request.form()
 
     async with api_client() as client:
@@ -312,11 +322,21 @@ async def task_save_properties(request: Request, task_id: int):
             )
         data = response.json()
 
-    return templates.TemplateResponse(
+    # Render properties section
+    properties_html = templates.TemplateResponse(
         request,
         "partials/properties/task_properties.html",
         data
-    )
+    ).body.decode()
+
+    # Render OOB row update
+    row_html = templates.TemplateResponse(
+        request,
+        "partials/task_row_single.html",
+        {"task": data["task"], "oob": True}
+    ).body.decode()
+
+    return HTMLResponse(content=properties_html + row_html)
 
 
 @app.post("/tasks/{task_id}/notes", response_class=HTMLResponse)

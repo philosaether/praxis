@@ -55,6 +55,11 @@
     background: $bg-tertiary;
   }
 
+  &.selected {
+    background: $bg-tertiary;
+    border-left: 3px solid $accent;
+  }
+
   &.done {
     opacity: 0.6;
 

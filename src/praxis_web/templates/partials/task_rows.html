@@ -1,5 +1,7 @@
 {% for task in tasks %}
-<div class="task-row {% if task.status == 'done' %}done{% endif %}">
+<div class="task-row {% if task.status == 'done' %}done{% endif %}"
+     id="task-row-{{ task.id }}"
+     onclick="selectRow(this)">
     <div class="task-content"
          hx-get="/tasks/{{ task.id }}"
          hx-target="#detail-pane"
