@@ -403,6 +403,33 @@ class PriorityGraph:
         self.children[parent_id].discard(child_id)
         self.delete_edge(child_id, parent_id)
 
+    def delete(self, priority_id: str) -> bool:
+        """
+        Delete a priority and all its edges.
+        Returns True if deleted, False if not found.
+        """
+        if priority_id not in self.nodes:
+            return False
+
+        # Remove all edges where this is a child
+        for parent_id in list(self.parents.get(priority_id, set())):
+            self.unlink(priority_id, parent_id)
+
+        # Remove all edges where this is a parent
+        for child_id in list(self.children.get(priority_id, set())):
+            self.unlink(child_id, priority_id)
+
+        # Remove from in-memory graph
+        del self.nodes[priority_id]
+        self.parents.pop(priority_id, None)
+        self.children.pop(priority_id, None)
+
+        # Delete from database
+        with self.connection_factory() as conn:
+            conn.execute("DELETE FROM priorities WHERE id = ?", (priority_id,))
+
+        return True
+
     def _would_create_cycle(self, child_id: str, parent_id: str) -> bool:
         """Check if adding edge parent_id -> child_id would create a cycle."""
         return child_id in self.ancestors(parent_id)

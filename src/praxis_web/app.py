@@ -433,3 +433,27 @@ async def task_toggle_done(request: Request, task_id: int):
         "partials/task_row_single.html",
         {"task": data["task"]}
     )
+
+
+@app.delete("/tasks/{task_id}", response_class=HTMLResponse)
+async def delete_task(request: Request, task_id: int):
+    """Delete a task and return empty content."""
+    async with api_client() as client:
+        response = await client.delete(f"/api/tasks/{task_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+
+    # Return empty response - HTMX will remove the row
+    return HTMLResponse(content="")
+
+
+@app.delete("/priorities/{priority_id}", response_class=HTMLResponse)
+async def delete_priority(request: Request, priority_id: str):
+    """Delete a priority and return empty content."""
+    async with api_client() as client:
+        response = await client.delete(f"/api/priorities/{priority_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+
+    # Return empty response - HTMX will remove the node
+    return HTMLResponse(content="")

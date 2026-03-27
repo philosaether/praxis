@@ -414,6 +414,18 @@ class MoveRequest(BaseModel):
     new_index: int = 0
 
 
+@router.delete("/{priority_id}")
+async def delete_priority(priority_id: str):
+    """Delete a priority and all its edges."""
+    graph = _get_graph()
+
+    if not graph.get(priority_id):
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    graph.delete(priority_id)
+    return {"success": True, "deleted_id": priority_id}
+
+
 @router.post("/{priority_id}/move")
 async def move_priority(priority_id: str, request_data: MoveRequest):
     """

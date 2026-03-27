@@ -18,6 +18,14 @@
                         hx-swap="innerHTML">
                     Edit
                 </button>
+                <button class="btn btn-danger"
+                        hx-delete="/tasks/{{ task.id }}"
+                        hx-target="closest .detail-view"
+                        hx-swap="outerHTML"
+                        hx-confirm="Delete '{{ task.title }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); }">
+                    Delete
+                </button>
             </div>
         </div>
         <div class="meta">

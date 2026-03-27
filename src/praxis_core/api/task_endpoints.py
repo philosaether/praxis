@@ -13,6 +13,7 @@ from praxis_core.persistence import (
     list_tasks,
     update_task,
     update_task_status,
+    delete_task,
 )
 from praxis_core.prioritization import rank_tasks
 
@@ -243,3 +244,14 @@ async def update_task_notes(
         "notes": task_data.get("notes", ""),
         "notes_raw": task.notes or "",
     }
+
+
+@router.delete("/{task_id}")
+async def delete_task_endpoint(task_id: int):
+    """Delete a task."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    delete_task(task_id)
+    return {"success": True, "deleted_id": task_id}
