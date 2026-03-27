@@ -56,6 +56,14 @@
         <div class="property-actions">
             <button type="submit" class="btn btn-primary">Save</button>
             <span class="save-status" id="save-status"></span>
+            <button type="button"
+                    class="btn btn-danger"
+                    hx-delete="/tasks/{{ task.id }}"
+                    hx-swap="none"
+                    hx-confirm="Delete '{{ task.title }}'? This cannot be undone."
+                    hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
+                Delete
+            </button>
         </div>
 
         <!-- Validation errors will show here -->
