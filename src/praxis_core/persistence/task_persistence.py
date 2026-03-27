@@ -57,9 +57,39 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
             "PRAGMA table_info(tasks)"
         ).fetchall()}
 
-        if "workstream_id" in columns and "priority_id" not in columns:
-            # Migrate: add priority_id, data will need manual migration
-            conn.execute("ALTER TABLE tasks ADD COLUMN priority_id TEXT")
+        if "workstream_id" in columns:
+            # Full migration: recreate table without workstream_id
+            # Disable foreign keys during migration
+            conn.executescript("""
+                PRAGMA foreign_keys=OFF;
+
+                -- Create new table with correct schema
+                CREATE TABLE IF NOT EXISTS tasks_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'queued',
+                    notes TEXT,
+                    due_date TEXT,
+                    priority_id TEXT REFERENCES priorities(id),
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
+                -- Copy data (map workstream_id to priority_id if priority_id doesn't exist)
+                INSERT INTO tasks_new (id, title, status, notes, due_date, priority_id, created_at)
+                SELECT id, title, status, notes, due_date,
+                       COALESCE(priority_id, workstream_id), created_at
+                FROM tasks;
+
+                -- Drop old table and rename new one
+                DROP TABLE tasks;
+                ALTER TABLE tasks_new RENAME TO tasks;
+
+                -- Recreate indexes
+                CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+                CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
+
+                PRAGMA foreign_keys=ON;
+            """)
 
 
 # ---------------------------------------------------------------------
@@ -74,14 +104,15 @@ def create_task(
 ) -> Task:
     """Create a new task."""
     ensure_schema()
+    now = datetime.now()
     with get_connection() as conn:
         due_str = due_date.isoformat() if due_date else None
         cursor = conn.execute(
             """
-            INSERT INTO tasks (title, notes, due_date, priority_id)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO tasks (title, notes, due_date, priority_id, created_at)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (title, notes, due_str, priority_id),
+            (title, notes, due_str, priority_id, now.isoformat()),
         )
         return Task(
             id=cursor.lastrowid,
@@ -90,6 +121,8 @@ def create_task(
             notes=notes,
             due_date=due_date,
             priority_id=priority_id,
+            created_at=now,
+            subtasks=[],
         )
 
 

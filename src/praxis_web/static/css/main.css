@@ -130,6 +130,18 @@ a:hover {
   border-left: 1px solid #333;
 }
 
+.add-new-bar {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+  background: #0f3460;
+}
+.add-new-bar #add-task-bar,
+.add-new-bar #add-priority-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .btn {
   padding: 0.5rem 1rem;
   border: none;
@@ -153,6 +165,26 @@ a:hover {
 }
 .btn-secondary:hover {
   background: rgb(18.4459459459, 63.9459459459, 118.0540540541);
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.new-priority-group {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.priority-type-select {
+  background: #0f3460;
+  color: #eee;
+  border: 1px solid #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
 }
 
 .type-badge {

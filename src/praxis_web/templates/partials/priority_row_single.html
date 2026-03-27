@@ -1,0 +1,13 @@
+<div class="priority-row"
+     hx-get="/priorities/{{ priority.id }}"
+     hx-target="#detail-pane"
+     hx-swap="innerHTML">
+    <div class="name">{{ priority.name }}</div>
+    <div class="meta">
+        <span class="type-badge {{ priority.priority_type }}">{{ priority.priority_type[:3] }}</span>
+        <span class="status-indicator {% if priority.status == 'active' %}active{% endif %}">
+            {{ priority.status }}
+        </span>
+        <span>{{ priority.id }}</span>
+    </div>
+</div>

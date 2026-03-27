@@ -94,6 +94,26 @@ async def priorities_list_partial(
         {"priorities": data["priorities"]}
     )
 
+
+@app.post("/priorities/new", response_class=HTMLResponse)
+async def create_new_priority(request: Request):
+    """Create a new priority and return the row HTML."""
+    form_data = await request.form()
+
+    async with api_client() as client:
+        response = await client.post("/api/priorities", data=dict(form_data))
+        data = response.json()
+
+    priority = data["priority"]
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/priority_row_single.html",
+        {"priority": priority}
+    )
+    html_response.headers["X-New-Item-Id"] = priority["id"]
+    return html_response
+
+
 @app.get("/priorities/tree", response_class=HTMLResponse)
 async def priority_tree(request: Request):
     """HTMX partial: tree view of priority hierarchy."""
@@ -221,6 +241,23 @@ async def tasks_list_partial(
         "partials/task_rows.html",
         {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
     )
+
+
+@app.post("/tasks/new", response_class=HTMLResponse)
+async def create_new_task(request: Request):
+    """Create a new task and return the row HTML."""
+    async with api_client() as client:
+        response = await client.post("/api/tasks")
+        data = response.json()
+
+    task = data["task"]
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/task_row_single.html",
+        {"task": task}
+    )
+    html_response.headers["X-New-Item-Id"] = str(task["id"])
+    return html_response
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
 async def task_detail(request: Request, task_id: int):

@@ -32,6 +32,65 @@ def _serialize_priority(p, render_markdown: bool = False):
     return serialize_priority(p, render_markdown=render_markdown)
 
 
+def _generate_priority_id(name: str, graph) -> str:
+    """Generate a unique slug-style ID for a priority."""
+    import re
+    # Create base slug from name
+    base_slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    if not base_slug:
+        base_slug = "priority"
+
+    # Ensure uniqueness
+    slug = base_slug
+    counter = 1
+    while slug in graph.nodes:
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+    return slug
+
+
+def _create_priority_by_type(priority_type: str, id: str, name: str):
+    """Create a priority instance of the appropriate subclass."""
+    now = datetime.now()
+    if priority_type == "goal":
+        return Goal(id=id, name=name, created_at=now, updated_at=now)
+    elif priority_type == "obligation":
+        return Obligation(id=id, name=name, created_at=now, updated_at=now)
+    elif priority_type == "capacity":
+        return Capacity(id=id, name=name, created_at=now, updated_at=now)
+    elif priority_type == "accomplishment":
+        return Accomplishment(id=id, name=name, created_at=now, updated_at=now)
+    elif priority_type == "practice":
+        return Practice(id=id, name=name, created_at=now, updated_at=now)
+    else:
+        # Default to Goal
+        return Goal(id=id, name=name, created_at=now, updated_at=now)
+
+
+@router.post("")
+async def create_priority_endpoint(
+    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "goal",
+):
+    """Create a new priority with default values."""
+    graph = _get_graph()
+
+    # Create name based on type
+    type_label = new_priority_type.title()
+    name = f"New {type_label}"
+
+    # Generate unique ID
+    priority_id = _generate_priority_id(name, graph)
+
+    # Create the priority
+    priority = _create_priority_by_type(new_priority_type, priority_id, name)
+
+    # Add to graph
+    graph.add(priority)
+
+    return {"priority": _serialize_priority(priority)}
+
+
 @router.get("")
 async def list_priorities(
     type: str | None = None,

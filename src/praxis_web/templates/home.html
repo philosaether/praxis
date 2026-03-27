@@ -65,6 +65,34 @@
             </div>
         </div>
 
+        <!-- Add New Item Bar -->
+        <div class="add-new-bar">
+            <div id="add-task-bar" style="display: flex;">
+                <button class="btn btn-primary btn-sm"
+                        hx-post="/tasks/new"
+                        hx-target="#item-list"
+                        hx-swap="afterbegin"
+                        hx-on::after-request="loadNewTask(event)">
+                    + New Task
+                </button>
+            </div>
+            <div id="add-priority-bar" style="display: none;">
+                <select id="new-priority-type" name="new-priority-type" class="priority-type-select">
+                    {% for t in priority_types %}
+                    <option value="{{ t }}">{{ t|title }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary btn-sm"
+                        hx-post="/priorities/new"
+                        hx-target="#item-list"
+                        hx-swap="afterbegin"
+                        hx-include="#new-priority-type"
+                        hx-on::after-request="loadNewPriority(event)">
+                    + New
+                </button>
+            </div>
+        </div>
+
         <!-- Item List -->
         <div class="priority-list" id="item-list">
             {% include "partials/task_rows.html" %}
@@ -90,8 +118,50 @@
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
         document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
 
+        // Toggle add-new bar visibility
+        document.getElementById('add-task-bar').style.display = mode === 'tasks' ? 'flex' : 'none';
+        document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
+
         // Clear detail pane
         document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+    }
+
+    function loadNewTask(event) {
+        // Get the new task ID from the response header
+        const taskId = event.detail.xhr.getResponseHeader('X-New-Item-Id');
+        if (taskId) {
+            // Load the detail view
+            htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-pane', swap: 'innerHTML'})
+                .then(() => {
+                    // Focus the title input after detail loads
+                    setTimeout(() => {
+                        const titleInput = document.querySelector('#detail-pane #title');
+                        if (titleInput) {
+                            titleInput.focus();
+                            titleInput.select();
+                        }
+                    }, 100);
+                });
+        }
+    }
+
+    function loadNewPriority(event) {
+        // Get the new priority ID from the response header
+        const priorityId = event.detail.xhr.getResponseHeader('X-New-Item-Id');
+        if (priorityId) {
+            // Load the detail view
+            htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-pane', swap: 'innerHTML'})
+                .then(() => {
+                    // Focus the name input after detail loads
+                    setTimeout(() => {
+                        const nameInput = document.querySelector('#detail-pane #name');
+                        if (nameInput) {
+                            nameInput.focus();
+                            nameInput.select();
+                        }
+                    }, 100);
+                });
+        }
     }
 </script>
 {% endblock %}

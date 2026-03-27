@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from praxis_core.model import TaskStatus
 from praxis_core.persistence import (
+    create_task,
     get_task,
     list_tasks,
     update_task,
@@ -34,6 +35,13 @@ def _serialize_task(t, render_markdown: bool = False):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_task
     return serialize_task(t, render_markdown=render_markdown)
+
+
+@router.post("")
+async def create_task_endpoint():
+    """Create a new task with default values."""
+    task = create_task(title="New Task")
+    return {"task": _serialize_task(task)}
 
 
 @router.get("")

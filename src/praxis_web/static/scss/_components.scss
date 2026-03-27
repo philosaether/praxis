@@ -36,6 +36,30 @@
   }
 }
 
+.btn-sm {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+}
+
+// -----------------------------------------------------------------------------
+// New Item Controls
+// -----------------------------------------------------------------------------
+
+.new-priority-group {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
+.priority-type-select {
+  background: $bg-tertiary;
+  color: $text-primary;
+  border: 1px solid $border;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}
+
 // -----------------------------------------------------------------------------
 // Badges
 // -----------------------------------------------------------------------------
