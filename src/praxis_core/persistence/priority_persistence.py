@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS priorities (
     -- Common
     agent_context TEXT,
     notes TEXT,
+    rank INTEGER,
 
     -- Goal
     success_looks_like TEXT,
@@ -94,6 +95,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "status": PriorityStatus(row["status"]),
         "agent_context": row["agent_context"],
         "notes": row["notes"] if "notes" in row.keys() else None,
+        "rank": row["rank"] if "rank" in row.keys() else None,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -206,6 +208,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.status.value,
         priority.agent_context,
         priority.notes,
+        priority.rank,
         success_looks_like,
         obsolete_when,
         consequence_of_neglect,
@@ -271,6 +274,10 @@ class PriorityGraph:
                 if "notes_path" in column_names and "notes" not in column_names:
                     conn.execute("ALTER TABLE priorities RENAME COLUMN notes_path TO notes")
 
+                # Add rank column if missing
+                if "rank" not in column_names:
+                    conn.execute("ALTER TABLE priorities ADD COLUMN rank INTEGER")
+
             # Ensure schema exists (creates if not present)
             conn.executescript(PRIORITIES_SCHEMA)
 
@@ -300,7 +307,7 @@ class PriorityGraph:
             conn.execute("""
                 INSERT INTO priorities (
                     id, priority_type, name, status,
-                    agent_context, notes,
+                    agent_context, notes, rank,
                     success_looks_like, obsolete_when,
                     consequence_of_neglect,
                     measurement_method, measurement_rubric, measurement_scale,
@@ -308,13 +315,14 @@ class PriorityGraph:
                     success_criteria, due_date, progress,
                     rhythm_frequency, rhythm_constraints, generation_prompt,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     priority_type = excluded.priority_type,
                     name = excluded.name,
                     status = excluded.status,
                     agent_context = excluded.agent_context,
                     notes = excluded.notes,
+                    rank = excluded.rank,
                     success_looks_like = excluded.success_looks_like,
                     obsolete_when = excluded.obsolete_when,
                     consequence_of_neglect = excluded.consequence_of_neglect,
@@ -394,6 +402,33 @@ class PriorityGraph:
         self.parents[child_id].discard(parent_id)
         self.children[parent_id].discard(child_id)
         self.delete_edge(child_id, parent_id)
+
+    def delete(self, priority_id: str) -> bool:
+        """
+        Delete a priority and all its edges.
+        Returns True if deleted, False if not found.
+        """
+        if priority_id not in self.nodes:
+            return False
+
+        # Remove all edges where this is a child
+        for parent_id in list(self.parents.get(priority_id, set())):
+            self.unlink(priority_id, parent_id)
+
+        # Remove all edges where this is a parent
+        for child_id in list(self.children.get(priority_id, set())):
+            self.unlink(child_id, priority_id)
+
+        # Remove from in-memory graph
+        del self.nodes[priority_id]
+        self.parents.pop(priority_id, None)
+        self.children.pop(priority_id, None)
+
+        # Delete from database
+        with self.connection_factory() as conn:
+            conn.execute("DELETE FROM priorities WHERE id = ?", (priority_id,))
+
+        return True
 
     def _would_create_cycle(self, child_id: str, parent_id: str) -> bool:
         """Check if adding edge parent_id -> child_id would create a cycle."""

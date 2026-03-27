@@ -120,19 +120,24 @@ async def list_priorities(
     }
 
 
+def _sort_key(p):
+    """Sort by rank (nulls last), then by name."""
+    return (p.rank if p.rank is not None else 999, p.name)
+
+
 @router.get("/tree")
 async def priority_tree():
     """Get tree structure for priorities."""
     graph = _get_graph()
-    roots = sorted(graph.roots(), key=lambda p: (p.priority_type.value, p.name))
+    roots = sorted(graph.roots(), key=_sort_key)
 
     # Build children map for the entire tree
     children_map = {}
     for parent_id, child_ids in graph.children.items():
+        children = [graph.get(cid) for cid in child_ids if graph.get(cid)]
         children_map[parent_id] = [
-            _serialize_priority(graph.get(cid))
-            for cid in sorted(child_ids)
-            if graph.get(cid)
+            _serialize_priority(c)
+            for c in sorted(children, key=_sort_key)
         ]
 
     return {
@@ -398,3 +403,75 @@ async def update_priority_notes(
         "notes": priority_data.get("notes", ""),
         "notes_raw": priority.notes or "",
     }
+
+
+from pydantic import BaseModel
+
+
+class MoveRequest(BaseModel):
+    new_parent_id: str | None = None
+    sibling_ids: list[str] = []
+    new_index: int = 0
+
+
+@router.delete("/{priority_id}")
+async def delete_priority(priority_id: str):
+    """Delete a priority and all its edges."""
+    graph = _get_graph()
+
+    if not graph.get(priority_id):
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    graph.delete(priority_id)
+    return {"success": True, "deleted_id": priority_id}
+
+
+@router.post("/{priority_id}/move")
+async def move_priority(priority_id: str, request_data: MoveRequest):
+    """
+    Move a priority in the tree (reparent and/or reorder).
+
+    Handles drag-and-drop operations from the tree view.
+    """
+    graph = _get_graph()
+    priority = graph.get(priority_id)
+
+    if not priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    new_parent_id = request_data.new_parent_id
+    sibling_ids = request_data.sibling_ids
+    new_index = request_data.new_index
+
+    # Handle reparenting
+    current_parents = graph.parents.get(priority_id, set())
+
+    # Remove from old parent(s)
+    for old_parent in list(current_parents):
+        if old_parent != new_parent_id:
+            graph.unlink(priority_id, old_parent)
+
+    # Link to new parent (if not root)
+    if new_parent_id and new_parent_id not in current_parents:
+        try:
+            graph.link(priority_id, new_parent_id)
+        except ValueError as e:
+            return JSONResponse({"error": str(e)}, status_code=400)
+
+    # Handle reordering - update rank based on position in siblings
+    # For root priorities, rank determines importance
+    # For children, we'll use rank for ordering within the parent
+    if sibling_ids and priority_id in sibling_ids:
+        new_rank = sibling_ids.index(priority_id) + 1
+        priority.rank = new_rank
+        graph.save_priority(priority)
+
+        # Update ranks for all siblings to maintain order
+        for i, sibling_id in enumerate(sibling_ids):
+            if sibling_id != priority_id:
+                sibling = graph.get(sibling_id)
+                if sibling:
+                    sibling.rank = i + 1
+                    graph.save_priority(sibling)
+
+    return {"success": True, "priority_id": priority_id}

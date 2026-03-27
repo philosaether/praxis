@@ -94,6 +94,16 @@
     display: flex;
     gap: $spacing-md;
   }
+
+  .score-badge {
+    background: $bg-tertiary;
+    color: $text-muted;
+    padding: 0 $spacing-xs;
+    border-radius: $radius-sm;
+    font-family: monospace;
+    font-size: 0.75rem;
+    cursor: help;
+  }
 }
 
 // -----------------------------------------------------------------------------

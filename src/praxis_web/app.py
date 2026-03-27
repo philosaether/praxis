@@ -127,6 +127,62 @@ async def priority_tree(request: Request):
         {"roots": data["roots"], "children_map": data["children_map"]}
     )
 
+
+@app.get("/priorities/tree-pane", response_class=HTMLResponse)
+async def priority_tree_pane(request: Request):
+    """HTMX partial: full tree view for right pane."""
+    async with api_client() as client:
+        response = await client.get("/api/priorities/tree")
+        data = response.json()
+
+    # Build nested tree structure for recursive rendering
+    children_map = data["children_map"]
+
+    def nest_children(node):
+        """Recursively attach children to nodes."""
+        node_id = node["id"]
+        node["children"] = children_map.get(node_id, [])
+        for child in node["children"]:
+            nest_children(child)
+        return node
+
+    roots = [nest_children(root) for root in data["roots"]]
+
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_tree_pane.html",
+        {"roots": roots}
+    )
+
+
+@app.post("/priorities/{priority_id}/move", response_class=HTMLResponse)
+async def priority_move(request: Request, priority_id: str):
+    """Handle drag-and-drop move of a priority in the tree."""
+    data = await request.json()
+    new_parent_id = data.get("new_parent_id")
+    sibling_ids = data.get("sibling_ids", [])
+    new_index = data.get("new_index", 0)
+
+    async with api_client() as client:
+        # Update parent relationship
+        response = await client.post(
+            f"/api/priorities/{priority_id}/move",
+            json={
+                "new_parent_id": new_parent_id,
+                "sibling_ids": sibling_ids,
+                "new_index": new_index
+            }
+        )
+
+        if response.status_code != 200:
+            return HTMLResponse(
+                content="Failed to move priority",
+                status_code=response.status_code
+            )
+
+    return HTMLResponse(content="OK", status_code=200)
+
+
 # -----------------------------------------------------------------------------
 # Routes: HTMX Partials - Priority Detail
 # -----------------------------------------------------------------------------
@@ -377,3 +433,27 @@ async def task_toggle_done(request: Request, task_id: int):
         "partials/task_row_single.html",
         {"task": data["task"]}
     )
+
+
+@app.delete("/tasks/{task_id}", response_class=HTMLResponse)
+async def delete_task(request: Request, task_id: int):
+    """Delete a task and return empty content."""
+    async with api_client() as client:
+        response = await client.delete(f"/api/tasks/{task_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+
+    # Return empty response - HTMX will remove the row
+    return HTMLResponse(content="")
+
+
+@app.delete("/priorities/{priority_id}", response_class=HTMLResponse)
+async def delete_priority(request: Request, priority_id: str):
+    """Delete a priority and return empty content."""
+    async with api_client() as client:
+        response = await client.delete(f"/api/priorities/{priority_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+
+    # Return empty response - HTMX will remove the node
+    return HTMLResponse(content="")

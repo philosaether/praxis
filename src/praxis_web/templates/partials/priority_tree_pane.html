@@ -1,0 +1,163 @@
+{# Priority tree view for right pane - shows full hierarchy #}
+
+<div class="tree-pane">
+    <div class="tree-header">
+        <h2>Priority Hierarchy</h2>
+        <p class="tree-hint">Drag to reorder or reparent priorities</p>
+    </div>
+
+    <div class="tree-container sortable-tree" id="priority-tree">
+        {% for root in roots %}
+            {% with node=root, depth=0 %}
+                {% include "partials/priority_tree_node.html" %}
+            {% endwith %}
+        {% else %}
+        <div class="empty-state">
+            <h3>No priorities yet</h3>
+            <p>Create your first priority to get started</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    window.toggleTreeNode = function(toggle) {
+        toggle.classList.toggle('collapsed');
+        const node = toggle.closest('.tree-node');
+        const children = node.querySelector(':scope > .tree-children');
+        if (children) {
+            children.classList.toggle('collapsed');
+        }
+    };
+
+    // Initialize SortableJS on tree
+    (function() {
+        const initSortable = function(container) {
+            if (!container) return;
+
+            new Sortable(container, {
+                group: 'priority-tree',                                                                                                                                                                                          
+                animation: 150,                                                                                                                                                                                                  
+                fallbackOnBody: true,                                                                                                                                                                                            
+                swapThreshold: 0.75,        // was 0.65, now needs more overlap                                                                                                                                                  
+                invertSwap: true,           // swap on edges instead of center                                                                                                                                                   
+                invertedSwapThreshold: 0.5, // threshold for edge swaps                                                                                                                                                          
+                emptyInsertThreshold: 10,   // easier to drop into empty children                                                                                                                                                
+                handle: '.tree-node-row',                                                                                                                                                                                        
+                draggable: '.tree-node',    
+                ghostClass: 'tree-node-ghost',
+                chosenClass: 'tree-node-chosen',
+                dragClass: 'tree-node-drag',
+
+                onEnd: function(evt) {
+                    const item = evt.item;
+                    const priorityId = item.dataset.id;
+
+                    // Determine new parent from the container we dropped into
+                    let newParentId = null;
+                    if (evt.to.classList.contains('tree-children')) {
+                        // Dropped into a tree-children container
+                        newParentId = evt.to.dataset.parentId;
+                    }
+                    // If dropped into priority-tree (root), newParentId stays null
+
+                    const newIndex = evt.newIndex;
+
+                    // Get sibling IDs for ordering
+                    const siblings = Array.from(evt.to.children)
+                        .filter(el => el.classList.contains('tree-node'))
+                        .map(el => el.dataset.id);
+
+                    // Track if we're changing depth (reparenting)
+                    const oldParentId = evt.from.dataset.parentId || null;
+                    const wasRoot = !oldParentId;
+                    const isRoot = !newParentId;
+                    const depthChanged = oldParentId !== newParentId;
+
+                    // Update depth and padding if reparented
+                    if (depthChanged) {
+                        const newDepth = newParentId ?
+                            (parseInt(evt.to.closest('.tree-node')?.dataset.depth || '0') + 1) : 0;
+                        item.dataset.depth = newDepth;
+                        const row = item.querySelector(':scope > .tree-node-row');
+                        if (row) {
+                            row.style.paddingLeft = (newDepth * 1.5 + 0.5) + 'rem';
+                        }
+                        // Update children depths recursively
+                        const updateChildDepths = (node, parentDepth) => {
+                            node.querySelectorAll(':scope > .tree-children > .tree-node').forEach(child => {
+                                const childDepth = parentDepth + 1;
+                                child.dataset.depth = childDepth;
+                                const childRow = child.querySelector(':scope > .tree-node-row');
+                                if (childRow) {
+                                    childRow.style.paddingLeft = (childDepth * 1.5 + 0.5) + 'rem';
+                                }
+                                updateChildDepths(child, childDepth);
+                            });
+                        };
+                        updateChildDepths(item, newDepth);
+                    }
+
+                    // Update rank badges for root nodes
+                    const updateRootRanks = () => {
+                        const rootContainer = document.getElementById('priority-tree');
+                        rootContainer.querySelectorAll(':scope > .tree-node').forEach((node, idx) => {
+                            const badge = node.querySelector(':scope > .tree-node-row .rank-badge');
+                            const newRank = idx + 1;
+                            if (badge) {
+                                badge.textContent = '#' + newRank;
+                            } else if (parseInt(node.dataset.depth) === 0) {
+                                // Add badge if it doesn't exist (node became root)
+                                const content = node.querySelector(':scope > .tree-node-row .tree-node-content');
+                                if (content) {
+                                    const newBadge = document.createElement('span');
+                                    newBadge.className = 'rank-badge';
+                                    newBadge.textContent = '#' + newRank;
+                                    content.insertBefore(newBadge, content.firstChild);
+                                }
+                            }
+                        });
+                    };
+
+                    // Remove rank badge if node is no longer root
+                    if (wasRoot && !isRoot) {
+                        const badge = item.querySelector(':scope > .tree-node-row .rank-badge');
+                        if (badge) badge.remove();
+                    }
+
+                    // Update all root ranks
+                    if (wasRoot || isRoot) {
+                        updateRootRanks();
+                    }
+
+                    // Send update to server
+                    fetch('/priorities/' + priorityId + '/move', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            new_parent_id: newParentId,
+                            sibling_ids: siblings,
+                            new_index: newIndex
+                        })
+                    }).then(response => {
+                        if (!response.ok) {
+                            // On error, reload tree to restore correct state
+                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                        }
+                    }).catch(() => {
+                        // On network error, reload tree
+                        htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                    });
+                }
+            });
+        };
+
+        // Initialize on root container
+        initSortable(document.getElementById('priority-tree'));
+
+        // Initialize on all children containers
+        document.querySelectorAll('.tree-children').forEach(initSortable);
+    })();
+</script>

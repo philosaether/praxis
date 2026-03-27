@@ -3,6 +3,19 @@
 {# For priorities: expects priority, priority_statuses, all_priorities, parents, children #}
 
 <div class="detail-view">
+    {% if priority %}
+    <!-- Back to tree link for priorities -->
+    <div class="detail-nav">
+        <a href="#"
+           hx-get="/priorities/tree-pane"
+           hx-target="#detail-pane"
+           hx-swap="innerHTML"
+           class="back-link">
+            ← Back to Tree
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Properties Section -->
     <div id="properties-section">
         {% if task %}

@@ -13,7 +13,9 @@ from praxis_core.persistence import (
     list_tasks,
     update_task,
     update_task_status,
+    delete_task,
 )
+from praxis_core.prioritization import rank_tasks
 
 
 router = APIRouter()
@@ -49,7 +51,7 @@ async def list_tasks_endpoint(
     priority: str | None = None,
     status: str | None = None,
 ):
-    """List tasks with optional filters."""
+    """List tasks with optional filters, ranked by priority score."""
     task_status = None
     if status:
         try:
@@ -61,8 +63,20 @@ async def list_tasks_endpoint(
     graph = _get_graph()
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
+    # Rank tasks by importance + urgency
+    scored_tasks = rank_tasks(tasks, graph)
+
+    # Serialize with score included
+    serialized = []
+    for st in scored_tasks:
+        task_data = _serialize_task(st.task)
+        task_data["score"] = round(st.score, 2)
+        task_data["importance"] = round(st.importance, 1)
+        task_data["urgency"] = round(st.urgency, 1)
+        serialized.append(task_data)
+
     return {
-        "tasks": [_serialize_task(t) for t in tasks],
+        "tasks": serialized,
         "priorities": [_serialize_priority(p) for p in priorities],
     }
 
@@ -230,3 +244,14 @@ async def update_task_notes(
         "notes": task_data.get("notes", ""),
         "notes_raw": task.notes or "",
     }
+
+
+@router.delete("/{task_id}")
+async def delete_task_endpoint(task_id: int):
+    """Delete a task."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    delete_task(task_id)
+    return {"success": True, "deleted_id": task_id}

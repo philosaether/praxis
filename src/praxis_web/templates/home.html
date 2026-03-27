@@ -122,8 +122,22 @@
         document.getElementById('add-task-bar').style.display = mode === 'tasks' ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
 
-        // Clear detail pane
-        document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+        // Update detail pane based on mode
+        if (mode === 'priorities') {
+            // Load tree view in detail pane
+            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+        } else {
+            // Clear detail pane for tasks mode
+            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+        }
+    };
+
+    window.selectTreeNode = function(element) {
+        // Remove selected class from all tree nodes
+        document.querySelectorAll('.tree-node-content.selected')
+            .forEach(el => el.classList.remove('selected'));
+        // Add selected class to clicked node
+        element.classList.add('selected');
     };
 
     window.loadNewTask = function(event) {

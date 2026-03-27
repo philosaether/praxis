@@ -3,54 +3,81 @@
 // =============================================================================
 @use 'variables' as *;
 
+// -----------------------------------------------------------------------------
+// Tree Pane (right-side view)
+// -----------------------------------------------------------------------------
+
+.tree-pane {
+  padding: $spacing-lg;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-header {
+  margin-bottom: $spacing-lg;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid $border;
+
+  h2 {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: 600;
+  }
+}
+
+.tree-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// -----------------------------------------------------------------------------
+// Tree Nodes
+// -----------------------------------------------------------------------------
+
 .tree-view {
   padding: $spacing-sm;
 }
 
 .tree-node {
-  margin-left: 0;
+  user-select: none;
+}
+
+.tree-node-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
+  border-radius: $radius-sm;
 }
 
 .tree-node-content {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  padding: 0.4rem $spacing-sm;
+  flex: 1;
+  padding: $spacing-xs $spacing-sm;
   cursor: pointer;
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   transition: background $transition-fast;
+  min-width: 0;
 
   &:hover {
     background: $bg-tertiary;
   }
-}
 
-.tree-toggle {
-  width: 1.2rem;
-  height: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: $text-secondary;
-  font-weight: bold;
-
-  &:hover {
-    color: $accent;
+  &.selected {
+    background: $bg-tertiary;
+    border-left: 3px solid $accent;
   }
-
-  &.expanded .chevron {
-    transform: rotate(45deg);
-  }
-}
-
-.tree-toggle-spacer {
-  width: 1.2rem;
 }
 
 .tree-node-name {
   flex: 1;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tree-node-id {
@@ -58,12 +85,144 @@
   color: $text-muted;
 }
 
-.tree-children {
-  margin-left: $spacing-xl;
-  border-left: 1px solid $border;
-  padding-left: $spacing-sm;
+// -----------------------------------------------------------------------------
+// Toggle & Chevron
+// -----------------------------------------------------------------------------
 
-  &:empty {
+.tree-toggle {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: $text-muted;
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+
+  &:hover {
+    color: $text-primary;
+    background: $bg-tertiary;
+  }
+
+  .chevron {
+    display: inline-block;
+    transition: transform $transition-fast;
+    font-size: 0.65rem;
+    line-height: 1;
+
+    &::before {
+      content: "▶";
+    }
+  }
+
+  &:not(.collapsed) .chevron {
+    transform: rotate(90deg);
+  }
+}
+
+.tree-toggle-spacer {
+  width: 1.25rem;
+  flex-shrink: 0;
+}
+
+// -----------------------------------------------------------------------------
+// Children Container
+// -----------------------------------------------------------------------------
+
+.tree-children {
+  &.collapsed {
     display: none;
   }
+}
+
+// -----------------------------------------------------------------------------
+// Badges
+// -----------------------------------------------------------------------------
+
+.rank-badge {
+  background: $accent;
+  color: white;
+  padding: 0.1rem $spacing-xs;
+  border-radius: $radius-sm;
+  font-size: 0.65rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.status-dim {
+  color: $text-muted;
+  font-size: $font-size-sm;
+  font-style: italic;
+}
+
+// -----------------------------------------------------------------------------
+// Drag and Drop States
+// -----------------------------------------------------------------------------
+
+.tree-node-ghost {
+  opacity: 0.4;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+}
+
+.tree-node-chosen {
+  .tree-node-row {
+    background: $bg-tertiary;
+    border-radius: $radius-md;
+  }
+}
+
+.tree-node-drag {
+  opacity: 1;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tree-hint {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-top: $spacing-xs;
+}
+
+// Make tree-children a valid drop target even when empty
+.tree-children {
+  min-height: 0.25rem;
+  margin-left: 1.25rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid transparent;
+  transition: all $transition-fast;
+
+  &:empty {
+    min-height: 1.5rem;
+    border-left-color: transparent;
+    position: relative;
+
+    &::after {
+      content: "Drop here to add as child";
+      position: absolute;
+      left: 0.5rem;
+      top: 0.25rem;
+      font-size: 0.7rem;
+      color: transparent;
+      transition: color $transition-fast;
+    }
+  }
+
+  // Show drop zone when dragging
+  .sortable-ghost ~ &:empty,
+  &:empty:hover {
+    border-left-color: $accent;
+    background: rgba($accent, 0.05);
+
+    &::after {
+      color: $text-muted;
+    }
+  }
+}
+
+// Highlight potential drop targets during drag
+.tree-node-drag ~ .tree-children:empty {
+  border-left-color: $border;
 }
