@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from praxis_core.model import TaskStatus
 from praxis_core.persistence import (
+    create_task,
     get_task,
     list_tasks,
     update_task,
@@ -34,6 +35,13 @@ def _serialize_task(t, render_markdown: bool = False):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_task
     return serialize_task(t, render_markdown=render_markdown)
+
+
+@router.post("")
+async def create_task_endpoint():
+    """Create a new task with default values."""
+    task = create_task(title="New Task")
+    return {"task": _serialize_task(task)}
 
 
 @router.get("")
@@ -141,3 +149,84 @@ async def toggle_task(task_id: int):
 
     task = get_task(task_id)
     return {"task": _serialize_task(task)}
+
+
+@router.post("/{task_id}/properties")
+async def update_task_properties(
+    task_id: int,
+    title: Annotated[str, Form()],
+    status: Annotated[str, Form()],
+    priority_id: Annotated[str | None, Form()] = None,
+    due_date: Annotated[str | None, Form()] = None,
+):
+    """Update task properties (everything except notes)."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    # Validate title
+    if not title.strip():
+        return JSONResponse({"error": "Title is required"}, status_code=400)
+
+    # Parse due_date if provided
+    parsed_due_date = None
+    if due_date:
+        try:
+            parsed_due_date = datetime.fromisoformat(due_date)
+        except ValueError:
+            pass
+
+    update_task(
+        task_id,
+        title=title.strip(),
+        status=TaskStatus(status),
+        priority_id=priority_id.strip() if priority_id else "",
+        notes=task.notes or "",  # Preserve existing notes
+        due_date=parsed_due_date,
+    )
+
+    # Return updated task with both raw and rendered notes
+    task = get_task(task_id)
+    graph = _get_graph()
+    priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
+
+    task_data = _serialize_task(task, render_markdown=True)
+    task_data["notes_raw"] = task.notes or ""
+
+    return {
+        "task": task_data,
+        "priorities": [_serialize_priority(p) for p in priorities],
+        "task_statuses": [s.value for s in TaskStatus],
+    }
+
+
+@router.post("/{task_id}/notes")
+async def update_task_notes(
+    task_id: int,
+    notes: Annotated[str | None, Form()] = None,
+):
+    """Update task notes independently."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    update_task(
+        task_id,
+        title=task.title,
+        status=task.status,
+        priority_id=task.priority_id or "",
+        notes=notes.strip() if notes else "",
+        due_date=task.due_date,
+    )
+
+    task = get_task(task_id)
+    task_data = _serialize_task(task, render_markdown=True)
+    task_data["notes_raw"] = task.notes or ""
+
+    return {
+        "task": task_data,
+        "item_type": "task",
+        "item_id": task.id,
+        "notes": task_data.get("notes", ""),
+        "notes_raw": task.notes or "",
+    }

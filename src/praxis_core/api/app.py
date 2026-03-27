@@ -67,7 +67,7 @@ def fmt_date(dt: datetime | None) -> str | None:
 
 def render_md(text: str) -> str:
     """Render markdown text to HTML."""
-    return markdown.markdown(text, extensions=["fenced_code", "tables"])
+    return markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
 
 
 def serialize_priority(p, render_markdown: bool = False) -> dict:

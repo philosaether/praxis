@@ -115,3 +115,20 @@
     border-left: 1px solid $border;
   }
 }
+
+// -----------------------------------------------------------------------------
+// Add New Bar
+// -----------------------------------------------------------------------------
+
+.add-new-bar {
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid $border;
+  background: $bg-tertiary;
+
+  #add-task-bar,
+  #add-priority-bar {
+    display: flex;
+    gap: $spacing-sm;
+    align-items: center;
+  }
+}

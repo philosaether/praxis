@@ -1,0 +1,57 @@
+{# Item detail view - composed of properties section + notes section #}
+{# For tasks: expects task, priorities, task_statuses #}
+{# For priorities: expects priority, priority_statuses, all_priorities, parents, children #}
+
+<div class="detail-view">
+    <!-- Properties Section -->
+    <div id="properties-section">
+        {% if task %}
+            {% include "partials/properties/task_properties.html" %}
+        {% elif priority %}
+            {% if priority.priority_type == 'goal' %}
+                {% include "partials/properties/goal_properties.html" %}
+            {% elif priority.priority_type == 'obligation' %}
+                {% include "partials/properties/obligation_properties.html" %}
+            {% elif priority.priority_type == 'capacity' %}
+                {% include "partials/properties/capacity_properties.html" %}
+            {% elif priority.priority_type == 'accomplishment' %}
+                {% include "partials/properties/accomplishment_properties.html" %}
+            {% elif priority.priority_type == 'practice' %}
+                {% include "partials/properties/practice_properties.html" %}
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Related Items (priorities only) -->
+    {% if priority %}
+        {% if children %}
+        <div class="related-section">
+            <h3>Children</h3>
+            <ul class="links-list">
+                {% for child in children %}
+                <li>
+                    <a href="#"
+                       hx-get="/priorities/{{ child.id }}"
+                       hx-target="#detail-pane"
+                       hx-swap="innerHTML">
+                        {{ child.name }}
+                    </a>
+                    <span class="link-meta">({{ child.priority_type }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Notes Section -->
+    {% if task %}
+        {% with item_type='task', item_id=task.id, notes=task.notes, notes_raw=task.notes_raw %}
+            {% include "partials/item_notes.html" %}
+        {% endwith %}
+    {% elif priority %}
+        {% with item_type='priority', item_id=priority.id, notes=priority.notes, notes_raw=priority.notes_raw %}
+            {% include "partials/item_notes.html" %}
+        {% endwith %}
+    {% endif %}
+</div>

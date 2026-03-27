@@ -65,6 +65,34 @@
             </div>
         </div>
 
+        <!-- Add New Item Bar -->
+        <div class="add-new-bar">
+            <div id="add-task-bar" style="display: flex;">
+                <button class="btn btn-primary btn-sm"
+                        hx-post="/tasks/new"
+                        hx-target="#item-list"
+                        hx-swap="afterbegin"
+                        hx-on::after-request="loadNewTask(event)">
+                    + New Task
+                </button>
+            </div>
+            <div id="add-priority-bar" style="display: none;">
+                <select id="new-priority-type" name="new-priority-type" class="priority-type-select">
+                    {% for t in priority_types %}
+                    <option value="{{ t }}">{{ t|title }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary btn-sm"
+                        hx-post="/priorities/new"
+                        hx-target="#item-list"
+                        hx-swap="afterbegin"
+                        hx-include="#new-priority-type"
+                        hx-on::after-request="loadNewPriority(event)">
+                    + New
+                </button>
+            </div>
+        </div>
+
         <!-- Item List -->
         <div class="priority-list" id="item-list">
             {% include "partials/task_rows.html" %}
@@ -81,7 +109,7 @@
 </div>
 
 <script>
-    function setMode(mode) {
+    window.setMode = function(mode) {
         // Toggle button states
         document.getElementById('tasks-view-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-view-btn').classList.toggle('active', mode === 'priorities');
@@ -90,8 +118,66 @@
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
         document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
 
+        // Toggle add-new bar visibility
+        document.getElementById('add-task-bar').style.display = mode === 'tasks' ? 'flex' : 'none';
+        document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
+
         // Clear detail pane
         document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
-    }
+    };
+
+    window.loadNewTask = function(event) {
+        // Get the new task ID from the response header
+        const taskId = event.detail.xhr.getResponseHeader('X-New-Item-Id');
+        if (taskId) {
+            // Select the new row
+            const newRow = document.getElementById('task-row-' + taskId);
+            if (newRow) selectRow(newRow);
+
+            // Load the detail view
+            htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-pane', swap: 'innerHTML'})
+                .then(() => {
+                    // Focus the title input after detail loads
+                    setTimeout(() => {
+                        const titleInput = document.querySelector('#detail-pane #title');
+                        if (titleInput) {
+                            titleInput.focus();
+                            titleInput.select();
+                        }
+                    }, 100);
+                });
+        }
+    };
+
+    window.loadNewPriority = function(event) {
+        // Get the new priority ID from the response header
+        const priorityId = event.detail.xhr.getResponseHeader('X-New-Item-Id');
+        if (priorityId) {
+            // Select the new row
+            const newRow = document.getElementById('priority-row-' + priorityId);
+            if (newRow) selectRow(newRow);
+
+            // Load the detail view
+            htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-pane', swap: 'innerHTML'})
+                .then(() => {
+                    // Focus the name input after detail loads
+                    setTimeout(() => {
+                        const nameInput = document.querySelector('#detail-pane #name');
+                        if (nameInput) {
+                            nameInput.focus();
+                            nameInput.select();
+                        }
+                    }, 100);
+                });
+        }
+    };
+
+    window.selectRow = function(element) {
+        // Remove selected class from all rows
+        document.querySelectorAll('.task-row.selected, .priority-row.selected')
+            .forEach(el => el.classList.remove('selected'));
+        // Add selected class to clicked row
+        element.classList.add('selected');
+    };
 </script>
 {% endblock %}

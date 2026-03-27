@@ -1,6 +1,7 @@
 // =============================================================================
 // Detail View
 // =============================================================================
+@use 'sass:list';
 @use 'variables' as *;
 
 .detail-view {
@@ -37,7 +38,226 @@
   }
 }
 
+// =============================================================================
+// Properties Section
+// =============================================================================
+
+.properties-section {
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-xl;
+}
+
+.property-header {
+  margin-bottom: $spacing-lg;
+}
+
+.property-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: $spacing-lg;
+
+  label {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: $spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.property-input {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-tertiary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-family: inherit;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+textarea.property-input {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.title-input {
+  font-size: $font-size-lg;
+  font-weight: 500;
+}
+
+.property-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border;
+}
+
+.save-status {
+  font-size: $font-size-sm;
+  color: $text-muted;
+}
+
+.property-errors {
+  color: $error;
+  font-size: $font-size-sm;
+  margin-top: $spacing-sm;
+}
+
+.property-meta {
+  display: flex;
+  gap: $spacing-lg;
+  margin-top: $spacing-lg;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border;
+
+  .meta-item {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+// Type-specific styling
+@each $type, $colors in $type-colors {
+  .#{$type}-properties {
+    border-left: 3px solid list.nth($colors, 1);
+  }
+}
+
+// =============================================================================
+// Notes Section
+// =============================================================================
+
+.notes-section {
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  padding: $spacing-xl;
+  margin-top: $spacing-xl;
+}
+
+.notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-lg;
+
+  h3 {
+    font-size: $font-size-md;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-secondary;
+    margin: 0;
+  }
+}
+
+.notes-toggle {
+  display: flex;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  .toggle-btn {
+    padding: $spacing-xs $spacing-md;
+    background: $bg-tertiary;
+    color: $text-secondary;
+    border: none;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $bg-primary;
+    }
+
+    &.active {
+      background: $accent;
+      color: white;
+    }
+
+    & + .toggle-btn {
+      border-left: 1px solid $border;
+    }
+  }
+}
+
+.notes-content {
+  .text-muted {
+    color: $text-muted;
+    font-style: italic;
+  }
+}
+
+.notes-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-family: $font-family;
+  line-height: $line-height;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.notes-actions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+}
+
+// =============================================================================
+// Related Items Section
+// =============================================================================
+
+.related-section {
+  margin-top: $spacing-xl;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border;
+
+  h3 {
+    font-size: $font-size-md;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-secondary;
+    margin-bottom: $spacing-sm;
+  }
+
+  .link-meta {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin-left: $spacing-xs;
+  }
+}
+
+// =============================================================================
 // Markdown content styling
+// =============================================================================
+
 .markdown-content {
   color: $text-primary;
   line-height: 1.6;
