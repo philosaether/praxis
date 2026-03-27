@@ -41,14 +41,12 @@
         </div>
     </div>
 
-    {# Children container #}
-    {% if node.children %}
-    <div class="tree-children">
+    {# Children container - always render so it's a valid drop target #}
+    <div class="tree-children" data-parent-id="{{ node.id }}">
         {% for child in node.children %}
             {% with node=child, depth=depth + 1 %}
                 {% include "partials/priority_tree_node.html" %}
             {% endwith %}
         {% endfor %}
     </div>
-    {% endif %}
 </div>

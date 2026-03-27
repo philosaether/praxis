@@ -188,16 +188,41 @@
 
 // Make tree-children a valid drop target even when empty
 .tree-children {
-  min-height: 0.5rem;
+  min-height: 0.25rem;
+  margin-left: 1.25rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid transparent;
+  transition: all $transition-fast;
 
   &:empty {
     min-height: 1.5rem;
-    border: 1px dashed transparent;
-    border-radius: $radius-sm;
-    margin-left: 1.5rem;
+    border-left-color: transparent;
+    position: relative;
 
-    &:hover {
-      border-color: $border;
+    &::after {
+      content: "Drop here to add as child";
+      position: absolute;
+      left: 0.5rem;
+      top: 0.25rem;
+      font-size: 0.7rem;
+      color: transparent;
+      transition: color $transition-fast;
     }
   }
+
+  // Show drop zone when dragging
+  .sortable-ghost ~ &:empty,
+  &:empty:hover {
+    border-left-color: $accent;
+    background: rgba($accent, 0.05);
+
+    &::after {
+      color: $text-muted;
+    }
+  }
+}
+
+// Highlight potential drop targets during drag
+.tree-node-drag ~ .tree-children:empty {
+  border-left-color: $border;
 }
