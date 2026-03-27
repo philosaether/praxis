@@ -1,0 +1,89 @@
+{# Priority tree view for right pane - shows full hierarchy #}
+
+<div class="tree-pane">
+    <div class="tree-header">
+        <h2>Priority Hierarchy</h2>
+        <p class="tree-hint">Drag to reorder or reparent priorities</p>
+    </div>
+
+    <div class="tree-container sortable-tree" id="priority-tree">
+        {% for root in roots %}
+            {% with node=root, depth=0 %}
+                {% include "partials/priority_tree_node.html" %}
+            {% endwith %}
+        {% else %}
+        <div class="empty-state">
+            <h3>No priorities yet</h3>
+            <p>Create your first priority to get started</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    window.toggleTreeNode = function(toggle) {
+        toggle.classList.toggle('collapsed');
+        const node = toggle.closest('.tree-node');
+        const children = node.querySelector(':scope > .tree-children');
+        if (children) {
+            children.classList.toggle('collapsed');
+        }
+    };
+
+    // Initialize SortableJS on tree
+    (function() {
+        const initSortable = function(container) {
+            if (!container) return;
+
+            new Sortable(container, {
+                group: 'priority-tree',
+                animation: 150,
+                fallbackOnBody: true,
+                swapThreshold: 0.65,
+                handle: '.tree-node-row',
+                draggable: '.tree-node',
+                ghostClass: 'tree-node-ghost',
+                chosenClass: 'tree-node-chosen',
+                dragClass: 'tree-node-drag',
+
+                onEnd: function(evt) {
+                    const item = evt.item;
+                    const priorityId = item.dataset.id;
+                    const newParent = evt.to.closest('.tree-node');
+                    const newParentId = newParent ? newParent.dataset.id : null;
+                    const newIndex = evt.newIndex;
+
+                    // Get sibling IDs for ordering
+                    const siblings = Array.from(evt.to.children)
+                        .filter(el => el.classList.contains('tree-node'))
+                        .map(el => el.dataset.id);
+
+                    // Send update to server
+                    fetch('/priorities/' + priorityId + '/move', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            new_parent_id: newParentId,
+                            sibling_ids: siblings,
+                            new_index: newIndex
+                        })
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.error('Failed to move priority');
+                            // Optionally reload tree on error
+                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                        }
+                    });
+                }
+            });
+        };
+
+        // Initialize on root container
+        initSortable(document.getElementById('priority-tree'));
+
+        // Initialize on all children containers
+        document.querySelectorAll('.tree-children').forEach(initSortable);
+    })();
+</script>

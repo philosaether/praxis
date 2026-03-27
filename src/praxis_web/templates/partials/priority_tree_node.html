@@ -1,0 +1,54 @@
+{# Single tree node - recursively includes children #}
+{# Expects: node (with nested children), depth (defaults to 0) #}
+{% set depth = depth|default(0) %}
+{% set node = node|default(root) %}
+
+<div class="tree-node" data-id="{{ node.id }}" data-depth="{{ depth }}">
+    <div class="tree-node-row"
+         style="padding-left: {{ depth * 1.5 + 0.5 }}rem;">
+
+        {# Expand/collapse toggle #}
+        {% if node.children %}
+        <span class="tree-toggle" onclick="event.stopPropagation(); toggleTreeNode(this);">
+            <span class="chevron"></span>
+        </span>
+        {% else %}
+        <span class="tree-toggle-spacer"></span>
+        {% endif %}
+
+        {# Clickable content area #}
+        <div class="tree-node-content"
+             hx-get="/priorities/{{ node.id }}"
+             hx-target="#detail-pane"
+             hx-swap="innerHTML"
+             onclick="selectTreeNode(this)">
+
+            {# Rank badge (only for roots with rank) #}
+            {% if depth == 0 and node.rank %}
+            <span class="rank-badge">#{{ node.rank }}</span>
+            {% endif %}
+
+            {# Type badge #}
+            <span class="type-badge {{ node.priority_type }}">{{ node.priority_type[:3] }}</span>
+
+            {# Name #}
+            <span class="tree-node-name">{{ node.name }}</span>
+
+            {# Status indicator #}
+            {% if node.status and node.status != 'active' %}
+            <span class="status-dim">({{ node.status }})</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Children container #}
+    {% if node.children %}
+    <div class="tree-children">
+        {% for child in node.children %}
+            {% with node=child, depth=depth + 1 %}
+                {% include "partials/priority_tree_node.html" %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

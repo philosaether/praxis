@@ -83,6 +83,7 @@ def serialize_priority(p, render_markdown: bool = False) -> dict:
         "status": p.status.value,
         "agent_context": p.agent_context,
         "notes": notes,
+        "rank": p.rank,
         "created_at": fmt_datetime(p.created_at),
         "updated_at": fmt_datetime(p.updated_at),
     }
