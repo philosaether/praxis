@@ -1,0 +1,63 @@
+{# Shared notes section for all item types #}
+{# Expects: item_type ('task' or 'priority'), item_id, notes (raw or rendered), notes_raw (always raw) #}
+
+<div class="notes-section" id="notes-section">
+    <div class="notes-header">
+        <h3>Notes</h3>
+        <div class="notes-toggle">
+            <button type="button"
+                    class="toggle-btn {% if not edit_notes %}active{% endif %}"
+                    onclick="showNotesView()">
+                View
+            </button>
+            <button type="button"
+                    class="toggle-btn {% if edit_notes %}active{% endif %}"
+                    onclick="showNotesEdit()">
+                Edit
+            </button>
+        </div>
+    </div>
+
+    <!-- View Mode -->
+    <div id="notes-view" class="notes-content" {% if edit_notes %}style="display: none;"{% endif %}>
+        {% if notes %}
+        <div class="markdown-content">{{ notes|safe }}</div>
+        {% else %}
+        <p class="text-muted">No notes yet. Click Edit to add some.</p>
+        {% endif %}
+    </div>
+
+    <!-- Edit Mode -->
+    <div id="notes-edit" class="notes-content" {% if not edit_notes %}style="display: none;"{% endif %}>
+        <form hx-post="/{% if item_type == 'task' %}tasks{% else %}priorities{% endif %}/{{ item_id }}/notes"
+              hx-target="#notes-section"
+              hx-swap="outerHTML">
+            <textarea name="notes"
+                      rows="12"
+                      class="notes-textarea"
+                      placeholder="Add notes here... (supports Markdown)">{{ notes_raw or '' }}</textarea>
+            <div class="notes-actions">
+                <button type="submit" class="btn btn-primary">Save Notes</button>
+                <button type="button" class="btn btn-secondary" onclick="showNotesView()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showNotesView() {
+    document.getElementById('notes-view').style.display = 'block';
+    document.getElementById('notes-edit').style.display = 'none';
+    document.querySelectorAll('.notes-toggle .toggle-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === 0);
+    });
+}
+
+function showNotesEdit() {
+    document.getElementById('notes-view').style.display = 'none';
+    document.getElementById('notes-edit').style.display = 'block';
+    document.querySelectorAll('.notes-toggle .toggle-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === 1);
+    });
+}
+</script>

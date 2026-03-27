@@ -123,41 +123,64 @@ async def priority_detail(request: Request, priority_id: str):
             )
         data = response.json()
 
+    # Also fetch edit data to get raw notes and all_priorities
+    async with api_client() as client:
+        edit_response = await client.get(f"/api/priorities/{priority_id}/edit")
+        if edit_response.status_code == 200:
+            edit_data = edit_response.json()
+            data["priority"]["notes_raw"] = edit_data["priority"].get("notes", "")
+            data["all_priorities"] = edit_data.get("all_priorities", [])
+            data["priority_statuses"] = edit_data.get("priority_statuses", [])
+
     return templates.TemplateResponse(
         request,
-        "partials/priority_detail.html",
+        "partials/item_detail.html",
         data
     )
 
-@app.get("/priorities/{priority_id}/edit", response_class=HTMLResponse)
-async def priority_edit_form(request: Request, priority_id: str):
-    """HTMX partial: edit form for a priority."""
+
+@app.post("/priorities/{priority_id}/properties", response_class=HTMLResponse)
+async def priority_save_properties(request: Request, priority_id: str):
+    """Save priority properties and return updated properties section."""
+    form_data = await request.form()
+
     async with api_client() as client:
-        response = await client.get(f"/api/priorities/{priority_id}/edit")
+        response = await client.post(
+            f"/api/priorities/{priority_id}/properties",
+            data=dict(form_data)
+        )
         if response.status_code == 404:
             return HTMLResponse(
                 content="<div class='error'>Priority not found</div>",
                 status_code=404
             )
+        if response.status_code == 400:
+            error_data = response.json()
+            return HTMLResponse(
+                content=f"<div class='error'>{error_data.get('error', 'Validation error')}</div>",
+                status_code=400
+            )
         data = response.json()
+
+    # Determine which properties template to use based on priority type
+    priority_type = data["priority"]["priority_type"]
+    template_name = f"partials/properties/{priority_type}_properties.html"
 
     return templates.TemplateResponse(
         request,
-        "partials/priority_edit.html",
+        template_name,
         data
     )
 
-@app.post("/priorities/{priority_id}", response_class=HTMLResponse)
-async def priority_save(
-    request: Request,
-    priority_id: str,
-):
-    """Save edits to a priority and return updated detail view."""
+
+@app.post("/priorities/{priority_id}/notes", response_class=HTMLResponse)
+async def priority_save_notes(request: Request, priority_id: str):
+    """Save priority notes and return updated notes section."""
     form_data = await request.form()
 
     async with api_client() as client:
         response = await client.post(
-            f"/api/priorities/{priority_id}",
+            f"/api/priorities/{priority_id}/notes",
             data=dict(form_data)
         )
         if response.status_code == 404:
@@ -169,7 +192,7 @@ async def priority_save(
 
     return templates.TemplateResponse(
         request,
-        "partials/priority_detail.html",
+        "partials/item_notes.html",
         data
     )
 
@@ -211,38 +234,62 @@ async def task_detail(request: Request, task_id: int):
             )
         data = response.json()
 
+    # Add notes_raw for the edit form
+    task = data["task"]
+    notes = task.get("notes") or ""
+    task["notes_raw"] = notes if not notes.startswith("<") else ""
+    # For proper raw notes, we need to fetch from edit endpoint
+    async with api_client() as client:
+        edit_response = await client.get(f"/api/tasks/{task_id}/edit")
+        if edit_response.status_code == 200:
+            edit_data = edit_response.json()
+            task["notes_raw"] = edit_data["task"].get("notes", "")
+
     return templates.TemplateResponse(
         request,
-        "partials/task_detail.html",
+        "partials/item_detail.html",
         data
     )
 
-@app.get("/tasks/{task_id}/edit", response_class=HTMLResponse)
-async def task_edit_form(request: Request, task_id: int):
-    """HTMX partial: edit form for a task."""
+
+@app.post("/tasks/{task_id}/properties", response_class=HTMLResponse)
+async def task_save_properties(request: Request, task_id: int):
+    """Save task properties and return updated properties section."""
+    form_data = await request.form()
+
     async with api_client() as client:
-        response = await client.get(f"/api/tasks/{task_id}/edit")
+        response = await client.post(
+            f"/api/tasks/{task_id}/properties",
+            data=dict(form_data)
+        )
         if response.status_code == 404:
             return HTMLResponse(
                 content="<div class='error'>Task not found</div>",
                 status_code=404
             )
+        if response.status_code == 400:
+            error_data = response.json()
+            return HTMLResponse(
+                content=f"<div class='error'>{error_data.get('error', 'Validation error')}</div>",
+                status_code=400
+            )
         data = response.json()
 
     return templates.TemplateResponse(
         request,
-        "partials/task_edit.html",
+        "partials/properties/task_properties.html",
         data
     )
 
-@app.post("/tasks/{task_id}", response_class=HTMLResponse)
-async def task_save(request: Request, task_id: int):
-    """Save edits to a task and return updated detail view."""
+
+@app.post("/tasks/{task_id}/notes", response_class=HTMLResponse)
+async def task_save_notes(request: Request, task_id: int):
+    """Save task notes and return updated notes section."""
     form_data = await request.form()
 
     async with api_client() as client:
         response = await client.post(
-            f"/api/tasks/{task_id}",
+            f"/api/tasks/{task_id}/notes",
             data=dict(form_data)
         )
         if response.status_code == 404:
@@ -254,9 +301,10 @@ async def task_save(request: Request, task_id: int):
 
     return templates.TemplateResponse(
         request,
-        "partials/task_detail.html",
+        "partials/item_notes.html",
         data
     )
+
 
 @app.post("/tasks/{task_id}/toggle", response_class=HTMLResponse)
 async def task_toggle_done(request: Request, task_id: int):
