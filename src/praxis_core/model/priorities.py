@@ -39,6 +39,10 @@ class Priority:
     agent_context: str | None = None
     notes: str | None = None
 
+    # Importance ranking (only meaningful on root priorities)
+    # Lower rank = higher importance (rank 1 is most important)
+    rank: int | None = None
+
     # Metadata
     created_at: datetime | None = None
     updated_at: datetime | None = None

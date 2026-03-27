@@ -8,6 +8,11 @@
          hx-swap="innerHTML">
         <div class="task-title">{{ task.title }}</div>
         <div class="meta">
+            {% if task.score is defined %}
+            <span class="score-badge" title="Score: {{ task.score }} (imp={{ task.importance }}, urg={{ task.urgency }})">
+                {{ task.score }}
+            </span>
+            {% endif %}
             {% if task.priority_name %}
             <span class="priority-badge">{{ task.priority_name }}</span>
             {% endif %}

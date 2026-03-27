@@ -14,6 +14,7 @@ from praxis_core.persistence import (
     update_task,
     update_task_status,
 )
+from praxis_core.prioritization import rank_tasks
 
 
 router = APIRouter()
@@ -49,7 +50,7 @@ async def list_tasks_endpoint(
     priority: str | None = None,
     status: str | None = None,
 ):
-    """List tasks with optional filters."""
+    """List tasks with optional filters, ranked by priority score."""
     task_status = None
     if status:
         try:
@@ -61,8 +62,20 @@ async def list_tasks_endpoint(
     graph = _get_graph()
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
+    # Rank tasks by importance + urgency
+    scored_tasks = rank_tasks(tasks, graph)
+
+    # Serialize with score included
+    serialized = []
+    for st in scored_tasks:
+        task_data = _serialize_task(st.task)
+        task_data["score"] = round(st.score, 2)
+        task_data["importance"] = round(st.importance, 1)
+        task_data["urgency"] = round(st.urgency, 1)
+        serialized.append(task_data)
+
     return {
-        "tasks": [_serialize_task(t) for t in tasks],
+        "tasks": serialized,
         "priorities": [_serialize_priority(p) for p in priorities],
     }
 
