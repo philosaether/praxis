@@ -292,10 +292,104 @@
         htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
     });
 
-    // Listen for priority creation to refresh the list
+    // Listen for priority creation to refresh the list and update tree
     document.body.addEventListener('priorityCreated', function(event) {
         // Refresh the priority list
         htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+
+        // If in priorities mode, also add to the tree view
+        if (window.currentMode === 'priorities') {
+            const detail = event.detail;
+            const priorityId = detail?.id;
+            const parentId = detail?.parent_id;
+
+            if (priorityId) {
+                addPriorityToTree(priorityId, parentId);
+            }
+        }
     });
+
+    // Add a newly created priority to the tree without collapsing existing nodes
+    window.addPriorityToTree = function(priorityId, parentId) {
+        const treeContainer = document.getElementById('priority-tree');
+        if (!treeContainer) return;
+
+        // Fetch the tree node HTML
+        fetch('/priorities/' + priorityId + '/tree-node')
+            .then(response => response.text())
+            .then(html => {
+                // Create a temporary container to parse the HTML
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const newNode = temp.firstElementChild;
+                if (!newNode) return;
+
+                let targetContainer;
+                let newDepth = 0;
+
+                if (parentId) {
+                    // Find the parent's children container
+                    const parentNode = treeContainer.querySelector('[data-id="' + parentId + '"]');
+                    if (parentNode) {
+                        targetContainer = parentNode.querySelector(':scope > .tree-children');
+                        newDepth = parseInt(parentNode.dataset.depth || '0') + 1;
+
+                        // Expand parent if collapsed
+                        const toggle = parentNode.querySelector(':scope > .tree-node-row .tree-toggle');
+                        const childrenDiv = parentNode.querySelector(':scope > .tree-children');
+                        if (toggle && toggle.classList.contains('collapsed')) {
+                            toggle.classList.remove('collapsed');
+                            if (childrenDiv) childrenDiv.classList.remove('collapsed');
+                        }
+
+                        // If parent had no children before, add the toggle
+                        const spacer = parentNode.querySelector(':scope > .tree-node-row .tree-toggle-spacer');
+                        if (spacer) {
+                            const newToggle = document.createElement('span');
+                            newToggle.className = 'tree-toggle';
+                            newToggle.onclick = function(e) {
+                                e.stopPropagation();
+                                toggleTreeNode(this);
+                            };
+                            newToggle.innerHTML = '<span class="chevron"></span>';
+                            spacer.replaceWith(newToggle);
+                        }
+                    }
+                }
+
+                // Default to root container if no parent found
+                if (!targetContainer) {
+                    targetContainer = treeContainer;
+                    newDepth = 0;
+                }
+
+                // Update the node's depth and padding
+                newNode.dataset.depth = newDepth;
+                const row = newNode.querySelector(':scope > .tree-node-row');
+                if (row) {
+                    row.style.paddingLeft = (newDepth * 1.5 + 0.5) + 'rem';
+                }
+
+                // Add rank badge if root
+                if (newDepth === 0) {
+                    const rootCount = treeContainer.querySelectorAll(':scope > .tree-node').length;
+                    const content = newNode.querySelector(':scope > .tree-node-row .tree-node-content');
+                    if (content && !content.querySelector('.rank-badge')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'rank-badge';
+                        badge.textContent = '#' + (rootCount + 1);
+                        content.insertBefore(badge, content.firstChild);
+                    }
+                }
+
+                // Append to target container
+                targetContainer.appendChild(newNode);
+
+                // Select the new node
+                const nodeContent = newNode.querySelector('.tree-node-content');
+                if (nodeContent) selectTreeNode(nodeContent);
+            })
+            .catch(err => console.error('Failed to add priority to tree:', err));
+    };
 </script>
 {% endblock %}

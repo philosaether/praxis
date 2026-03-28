@@ -5,6 +5,7 @@ Run with: uvicorn praxis_web.app:app --port 8080
 Requires: PRAXIS_API_URL environment variable (default: http://localhost:8000)
 """
 
+import json
 import os
 import httpx
 from fastapi import FastAPI, Request, Form
@@ -217,6 +218,10 @@ async def priority_type_fields(request: Request, priority_type: str = "accomplis
 async def create_priority_submit(request: Request):
     """Create a new priority and return the detail view."""
     form_data = await request.form()
+    parent_id = form_data.get("parent_id")
+    # Normalize empty string to None
+    if parent_id and not parent_id.strip():
+        parent_id = None
 
     async with api_client(request) as client:
         response = await client.post("/api/priorities/create", data=dict(form_data))
@@ -236,7 +241,14 @@ async def create_priority_submit(request: Request):
         "partials/item_detail.html",
         data
     )
-    html_response.headers["HX-Trigger"] = "priorityCreated"
+    # Include priority data in trigger for tree update
+    trigger_data = {
+        "priorityCreated": {
+            "id": priority["id"],
+            "parent_id": parent_id
+        }
+    }
+    html_response.headers["HX-Trigger"] = json.dumps(trigger_data)
     html_response.headers["X-New-Item-Id"] = priority["id"]
     return html_response
 
@@ -245,6 +257,10 @@ async def create_priority_submit(request: Request):
 async def quick_add_priority(request: Request):
     """Create a priority via quick-add modal and return the row HTML."""
     form_data = await request.form()
+    parent_id = form_data.get("parent_id")
+    # Normalize empty string to None
+    if parent_id and not parent_id.strip():
+        parent_id = None
 
     async with api_client(request) as client:
         response = await client.post("/api/priorities/create", data=dict(form_data))
@@ -262,7 +278,14 @@ async def quick_add_priority(request: Request):
         "partials/priority_row_single.html",
         {"priority": priority}
     )
-    html_response.headers["HX-Trigger"] = "priorityCreated"
+    # Include priority data in trigger for tree update
+    trigger_data = {
+        "priorityCreated": {
+            "id": priority["id"],
+            "parent_id": parent_id
+        }
+    }
+    html_response.headers["HX-Trigger"] = json.dumps(trigger_data)
     return html_response
 
 
@@ -311,6 +334,26 @@ async def priority_tree_pane(request: Request):
         request,
         "partials/priority_tree_pane.html",
         {"roots": roots}
+    )
+
+
+@app.get("/priorities/{priority_id}/tree-node", response_class=HTMLResponse)
+async def priority_tree_node(request: Request, priority_id: str):
+    """Return a single tree node HTML for inserting into the tree."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/priorities/{priority_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+        data = response.json()
+
+    priority = data["priority"]
+    # New priorities have no children yet
+    priority["children"] = []
+
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_tree_node.html",
+        {"node": priority, "depth": 0}
     )
 
 
