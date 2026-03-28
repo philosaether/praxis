@@ -3,9 +3,10 @@
 {% set depth = depth|default(0) %}
 {% set node = node|default(root) %}
 
-<div class="tree-node" data-id="{{ node.id }}" data-depth="{{ depth }}">
+<div class="tree-node" data-id="{{ node.id }}" data-depth="{{ depth }}" data-name="{{ node.name }}">
     <div class="tree-node-row"
-         style="padding-left: {{ depth * 1.5 + 0.5 }}rem;">
+         style="padding-left: {{ depth * 1.5 + 0.5 }}rem;"
+         oncontextmenu="showTreeContextMenuFromElement(event, this)">
 
         {# Expand/collapse toggle #}
         {% if node.children %}
@@ -39,6 +40,13 @@
             <span class="status-dim">({{ node.status }})</span>
             {% endif %}
         </div>
+
+        {# Kebab menu button #}
+        <button class="tree-node-menu-btn"
+                onclick="event.stopPropagation(); toggleTreeMenuFromButton(event, this)"
+                title="More actions">
+            ⋮
+        </button>
     </div>
 
     {# Children container - always render so it's a valid drop target #}

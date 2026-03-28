@@ -147,3 +147,54 @@
     }
   }
 }
+
+// Confirmation modal specific styles
+.confirm-modal {
+  max-width: 400px;
+
+  .modal-body p {
+    margin: 0 0 $spacing-md 0;
+    color: $text-secondary;
+  }
+}
+
+.confirm-option {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  margin-bottom: $spacing-xs;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+  }
+
+  span {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+}
+
+// Danger button
+.btn-danger {
+  background: $error;
+  color: white;
+  border: none;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: #a52222;  // Darker shade of $error (#c62828)
+  }
+}

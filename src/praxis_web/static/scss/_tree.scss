@@ -226,3 +226,98 @@
 .tree-node-drag ~ .tree-children:empty {
   border-left-color: $border;
 }
+
+// -----------------------------------------------------------------------------
+// Context Menu
+// -----------------------------------------------------------------------------
+
+.tree-node-menu-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: $text-muted;
+  cursor: pointer;
+  border-radius: $radius-sm;
+  opacity: 0;
+  transition: opacity $transition-fast, background $transition-fast;
+  flex-shrink: 0;
+
+  &:hover {
+    background: $bg-tertiary;
+    color: $text-primary;
+  }
+
+  .tree-node-row:hover & {
+    opacity: 1;
+  }
+
+  // Always show when menu is open
+  &.active {
+    opacity: 1;
+    background: $bg-tertiary;
+    color: $text-primary;
+  }
+}
+
+.tree-context-menu {
+  position: fixed;
+  background: $bg-secondary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 160px;
+  z-index: 300;
+  padding: $spacing-xs 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity $transition-fast, transform $transition-fast, visibility $transition-fast;
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+  }
+}
+
+.tree-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  background: none;
+  border: none;
+  color: $text-primary;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.destructive {
+    color: $error;
+
+    &:hover {
+      background: rgba($error, 0.1);
+    }
+  }
+
+  .menu-icon {
+    width: 1rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+}
+
+.tree-context-menu-divider {
+  height: 1px;
+  background: $border;
+  margin: $spacing-xs 0;
+}

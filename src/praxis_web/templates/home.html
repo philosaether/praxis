@@ -122,6 +122,22 @@
 {% include "partials/quick_add_modal.html" %}
 {% include "partials/quick_add_priority_modal.html" %}
 
+<!-- Confirmation Modal -->
+{% include "partials/confirm_modal.html" %}
+
+<!-- Tree Context Menu -->
+<div class="tree-context-menu" id="tree-context-menu">
+    <button class="tree-context-menu-item" onclick="handleTreeMenuAddChild()">
+        <span class="menu-icon">+</span>
+        <span>Add child</span>
+    </button>
+    <div class="tree-context-menu-divider"></div>
+    <button class="tree-context-menu-item destructive" onclick="handleTreeMenuDelete()">
+        <span class="menu-icon">×</span>
+        <span>Delete</span>
+    </button>
+</div>
+
 <script>
     // Current view mode
     window.currentMode = 'tasks';
@@ -390,6 +406,216 @@
                 if (nodeContent) selectTreeNode(nodeContent);
             })
             .catch(err => console.error('Failed to add priority to tree:', err));
+    };
+
+    // -------------------------------------------------------------------------
+    // Tree Context Menu
+    // -------------------------------------------------------------------------
+
+    // Track current menu target
+    window.treeMenuTarget = { id: null, name: null };
+
+    window.showTreeContextMenuFromElement = function(event, element) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const treeNode = element.closest('.tree-node');
+        const priorityId = treeNode.dataset.id;
+        const priorityName = treeNode.dataset.name;
+
+        treeMenuTarget = { id: priorityId, name: priorityName };
+
+        const menu = document.getElementById('tree-context-menu');
+        menu.style.left = event.clientX + 'px';
+        menu.style.top = event.clientY + 'px';
+        menu.classList.add('open');
+
+        // Close menu when clicking elsewhere
+        setTimeout(() => {
+            document.addEventListener('click', closeTreeContextMenu, { once: true });
+        }, 0);
+    };
+
+    window.toggleTreeMenuFromButton = function(event, btn) {
+        event.stopPropagation();
+
+        const treeNode = btn.closest('.tree-node');
+        const priorityId = treeNode.dataset.id;
+        const priorityName = treeNode.dataset.name;
+
+        const menu = document.getElementById('tree-context-menu');
+
+        // If menu is open for this button, close it
+        if (menu.classList.contains('open') && treeMenuTarget.id === priorityId) {
+            closeTreeContextMenu();
+            return;
+        }
+
+        treeMenuTarget = { id: priorityId, name: priorityName };
+
+        // Position menu below the button
+        const rect = btn.getBoundingClientRect();
+        menu.style.left = (rect.right - 160) + 'px'; // Align right edge
+        menu.style.top = rect.bottom + 'px';
+        menu.classList.add('open');
+
+        // Mark button as active
+        document.querySelectorAll('.tree-node-menu-btn.active').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Close menu when clicking elsewhere
+        setTimeout(() => {
+            document.addEventListener('click', closeTreeContextMenu, { once: true });
+        }, 0);
+    };
+
+    window.closeTreeContextMenu = function() {
+        const menu = document.getElementById('tree-context-menu');
+        menu.classList.remove('open');
+        document.querySelectorAll('.tree-node-menu-btn.active').forEach(b => b.classList.remove('active'));
+    };
+
+    window.handleTreeMenuAddChild = function() {
+        closeTreeContextMenu();
+
+        // Open the quick-add priority modal with parent pre-selected
+        const parentSelect = document.getElementById('qap-parent');
+        if (parentSelect) {
+            parentSelect.value = treeMenuTarget.id;
+        }
+
+        openQuickAddPriority();
+    };
+
+    window.handleTreeMenuDelete = function() {
+        closeTreeContextMenu();
+        showDeleteConfirmation(treeMenuTarget.id, treeMenuTarget.name);
+    };
+
+    // -------------------------------------------------------------------------
+    // Confirmation Modal
+    // -------------------------------------------------------------------------
+
+    window.confirmModalCallback = null;
+
+    window.showDeleteConfirmation = function(priorityId, priorityName) {
+        // Check if priority has children
+        const treeNode = document.querySelector('.tree-node[data-id="' + priorityId + '"]');
+        const hasChildren = treeNode && treeNode.querySelector('.tree-children > .tree-node');
+
+        const modal = document.getElementById('confirm-modal-backdrop');
+        const title = document.getElementById('confirm-modal-title');
+        const message = document.getElementById('confirm-modal-message');
+        const options = document.getElementById('confirm-modal-options');
+        const actionBtn = document.getElementById('confirm-modal-action');
+
+        title.textContent = 'Delete Priority';
+
+        if (hasChildren) {
+            message.textContent = `"${priorityName}" has children. What would you like to do?`;
+            options.style.display = 'block';
+        } else {
+            message.textContent = `Delete "${priorityName}"? Any linked tasks will be moved to inbox.`;
+            options.style.display = 'none';
+        }
+
+        actionBtn.textContent = 'Delete';
+
+        confirmModalCallback = function() {
+            const deleteMode = hasChildren
+                ? document.querySelector('input[name="delete-mode"]:checked')?.value || 'orphan'
+                : 'orphan';
+            deletePriority(priorityId, deleteMode);
+        };
+
+        modal.classList.add('open');
+    };
+
+    window.closeConfirmModal = function() {
+        document.getElementById('confirm-modal-backdrop').classList.remove('open');
+        confirmModalCallback = null;
+    };
+
+    // Handle confirm button click
+    document.getElementById('confirm-modal-action').addEventListener('click', function() {
+        if (confirmModalCallback) {
+            confirmModalCallback();
+        }
+        closeConfirmModal();
+    });
+
+    // Close confirm modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeConfirmModal();
+        }
+    });
+
+    window.deletePriority = function(priorityId, deleteMode) {
+        fetch('/priorities/' + priorityId + '/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delete_mode: deleteMode })
+        })
+        .then(response => {
+            if (response.ok) {
+                // Remove from tree
+                const treeNode = document.querySelector('.tree-node[data-id="' + priorityId + '"]');
+                if (treeNode) {
+                    // If orphaning children, move them to parent
+                    if (deleteMode === 'orphan') {
+                        const children = treeNode.querySelector('.tree-children');
+                        const parentContainer = treeNode.parentElement;
+
+                        if (children && parentContainer) {
+                            // Move each child to the parent container
+                            const childNodes = Array.from(children.querySelectorAll(':scope > .tree-node'));
+                            const parentDepth = parseInt(treeNode.dataset.depth || '0');
+
+                            childNodes.forEach(child => {
+                                // Update depth
+                                child.dataset.depth = parentDepth;
+                                const row = child.querySelector(':scope > .tree-node-row');
+                                if (row) {
+                                    row.style.paddingLeft = (parentDepth * 1.5 + 0.5) + 'rem';
+                                }
+                                // Insert before the deleted node
+                                parentContainer.insertBefore(child, treeNode);
+                            });
+                        }
+                    }
+                    treeNode.remove();
+
+                    // Update rank badges for roots
+                    updateRootRankBadges();
+                }
+
+                // Refresh the priority list
+                htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+
+                // Clear detail pane if showing deleted priority
+                const detailPane = document.getElementById('detail-pane');
+                if (detailPane.innerHTML.includes('data-priority-id="' + priorityId + '"')) {
+                    detailPane.innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+                }
+            } else {
+                console.error('Failed to delete priority');
+            }
+        })
+        .catch(err => console.error('Failed to delete priority:', err));
+    };
+
+    window.updateRootRankBadges = function() {
+        const treeContainer = document.getElementById('priority-tree');
+        if (!treeContainer) return;
+
+        treeContainer.querySelectorAll(':scope > .tree-node').forEach((node, idx) => {
+            const badge = node.querySelector(':scope > .tree-node-row .rank-badge');
+            const newRank = idx + 1;
+            if (badge) {
+                badge.textContent = '#' + newRank;
+            }
+        });
     };
 </script>
 {% endblock %}

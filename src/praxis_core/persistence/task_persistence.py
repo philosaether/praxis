@@ -270,6 +270,17 @@ def delete_task(task_id: int) -> bool:
         return result.rowcount > 0
 
 
+def unlink_tasks_from_priority(priority_id: str) -> int:
+    """Unlink all tasks from a priority (move to inbox). Returns count of affected tasks."""
+    ensure_schema()
+    with get_connection() as conn:
+        result = conn.execute(
+            "UPDATE tasks SET priority_id = NULL WHERE priority_id = ?",
+            (priority_id,),
+        )
+        return result.rowcount
+
+
 def _row_to_task(row: sqlite3.Row) -> Task:
     """Convert a database row to a Task."""
     due_date = None

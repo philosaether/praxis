@@ -933,6 +933,88 @@ textarea.property-input {
   border-left-color: #333;
 }
 
+.tree-node-menu-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.tree-node-menu-btn:hover {
+  background: #0f3460;
+  color: #eee;
+}
+.tree-node-row:hover .tree-node-menu-btn {
+  opacity: 1;
+}
+.tree-node-menu-btn.active {
+  opacity: 1;
+  background: #0f3460;
+  color: #eee;
+}
+
+.tree-context-menu {
+  position: fixed;
+  background: #16213e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 160px;
+  z-index: 300;
+  padding: 0.25rem 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+}
+.tree-context-menu.open {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.tree-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  color: #eee;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+}
+.tree-context-menu-item:hover {
+  background: #0f3460;
+}
+.tree-context-menu-item.destructive {
+  color: #c62828;
+}
+.tree-context-menu-item.destructive:hover {
+  background: rgba(198, 40, 40, 0.1);
+}
+.tree-context-menu-item .menu-icon {
+  width: 1rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.tree-context-menu-divider {
+  height: 1px;
+  background: #333;
+  margin: 0.25rem 0;
+}
+
 .login-container {
   display: flex;
   align-items: center;
@@ -1174,6 +1256,50 @@ textarea.property-input {
 .more-options .property-row textarea {
   resize: vertical;
   min-height: 60px;
+}
+
+.confirm-modal {
+  max-width: 400px;
+}
+.confirm-modal .modal-body p {
+  margin: 0 0 0.75rem 0;
+  color: #aaa;
+}
+
+.confirm-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirm-option:hover {
+  background: #0f3460;
+}
+.confirm-option input[type=radio] {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+.confirm-option span {
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
+.btn-danger {
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+.btn-danger:hover {
+  background: #a52222;
 }
 
 .empty-state {

@@ -579,6 +579,87 @@ async def delete_priority(
     return {"success": True, "deleted_id": priority_id}
 
 
+class DeleteRequest(BaseModel):
+    delete_mode: str = "orphan"  # "orphan" or "cascade"
+
+
+@router.post("/{priority_id}/delete")
+async def delete_priority_with_options(
+    priority_id: str,
+    request_data: DeleteRequest,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """
+    Delete a priority with options for handling children and linked tasks.
+
+    delete_mode:
+    - "orphan": Move children to this priority's parent (or make them roots)
+    - "cascade": Delete all children recursively
+    """
+    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
+    priority = graph.get(priority_id)
+
+    if not priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    delete_mode = request_data.delete_mode
+    deleted_ids = [priority_id]
+
+    # Get this priority's parent (if any)
+    parent_ids = graph.parents.get(priority_id, set())
+    new_parent_id = next(iter(parent_ids), None) if parent_ids else None
+
+    # Get children
+    child_ids = list(graph.children.get(priority_id, set()))
+
+    if delete_mode == "cascade":
+        # Recursively collect all descendant IDs
+        def collect_descendants(pid):
+            descendants = []
+            for child_id in graph.children.get(pid, set()):
+                descendants.append(child_id)
+                descendants.extend(collect_descendants(child_id))
+            return descendants
+
+        all_descendants = collect_descendants(priority_id)
+
+        # Unlink tasks from all priorities being deleted
+        for pid in [priority_id] + all_descendants:
+            unlink_tasks_from_priority(pid)
+
+        # Delete descendants (deepest first to avoid issues)
+        for desc_id in reversed(all_descendants):
+            graph.delete(desc_id)
+            deleted_ids.append(desc_id)
+
+    else:  # orphan mode
+        # Move children to the deleted priority's parent
+        for child_id in child_ids:
+            # Unlink from this priority
+            graph.unlink(child_id, priority_id)
+            # Link to new parent if one exists
+            if new_parent_id:
+                try:
+                    graph.link(child_id, new_parent_id)
+                except ValueError:
+                    pass  # Ignore circular reference errors
+
+        # Unlink tasks from this priority only
+        unlink_tasks_from_priority(priority_id)
+
+    # Delete the priority itself
+    graph.delete(priority_id)
+
+    return {
+        "success": True,
+        "deleted_ids": deleted_ids,
+        "orphaned_children": child_ids if delete_mode == "orphan" else [],
+    }
+
+
 @router.post("/{priority_id}/move")
 async def move_priority(
     priority_id: str,

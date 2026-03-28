@@ -385,6 +385,27 @@ async def priority_move(request: Request, priority_id: str):
     return HTMLResponse(content="OK", status_code=200)
 
 
+@app.post("/priorities/{priority_id}/delete", response_class=HTMLResponse)
+async def priority_delete(request: Request, priority_id: str):
+    """Delete a priority, handling children and linked tasks."""
+    data = await request.json()
+    delete_mode = data.get("delete_mode", "orphan")
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/priorities/{priority_id}/delete",
+            json={"delete_mode": delete_mode}
+        )
+
+        if response.status_code != 200:
+            return HTMLResponse(
+                content="Failed to delete priority",
+                status_code=response.status_code
+            )
+
+    return HTMLResponse(content="OK", status_code=200)
+
+
 # -----------------------------------------------------------------------------
 # Routes: HTMX Partials - Priority Detail
 # -----------------------------------------------------------------------------
