@@ -14,6 +14,7 @@ from praxis_core.persistence.database import get_connection
 TASKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id),
     title TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued',
     notes TEXT,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS subtasks (
 
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 """
 
@@ -56,6 +58,10 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
         columns = {row["name"] for row in conn.execute(
             "PRAGMA table_info(tasks)"
         ).fetchall()}
+
+        # Add user_id column if missing
+        if "user_id" not in columns:
+            conn.execute("ALTER TABLE tasks ADD COLUMN user_id INTEGER REFERENCES users(id)")
 
         if "workstream_id" in columns:
             # Full migration: recreate table without workstream_id
@@ -101,6 +107,7 @@ def create_task(
     notes: str | None = None,
     due_date: datetime | None = None,
     priority_id: str | None = None,
+    user_id: int | None = None,
 ) -> Task:
     """Create a new task."""
     ensure_schema()
@@ -109,10 +116,10 @@ def create_task(
         due_str = due_date.isoformat() if due_date else None
         cursor = conn.execute(
             """
-            INSERT INTO tasks (title, notes, due_date, priority_id, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO tasks (user_id, title, notes, due_date, priority_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (title, notes, due_str, priority_id, now.isoformat()),
+            (user_id, title, notes, due_str, priority_id, now.isoformat()),
         )
         return Task(
             id=cursor.lastrowid,
@@ -150,6 +157,7 @@ def list_tasks(
     priority_id: str | None = None,
     status: TaskStatus | None = None,
     include_done: bool = True,
+    user_id: int | None = None,
 ) -> list[Task]:
     """List tasks with optional filters. Done tasks sorted to bottom."""
     ensure_schema()
@@ -161,6 +169,10 @@ def list_tasks(
             WHERE 1=1
         """
         params = []
+
+        if user_id is not None:
+            query += " AND t.user_id = ?"
+            params.append(user_id)
 
         if priority_id:
             query += " AND t.priority_id = ?"

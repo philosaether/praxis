@@ -22,6 +22,7 @@ from praxis_core.model.priorities import (
 PRIORITIES_SCHEMA = """
 CREATE TABLE IF NOT EXISTS priorities (
     id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
     priority_type TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
@@ -71,6 +72,7 @@ CREATE TABLE IF NOT EXISTS priority_edges (
 
 CREATE INDEX IF NOT EXISTS idx_priorities_type ON priorities(priority_type);
 CREATE INDEX IF NOT EXISTS idx_priorities_status ON priorities(status);
+CREATE INDEX IF NOT EXISTS idx_priorities_user ON priorities(user_id);
 CREATE INDEX IF NOT EXISTS idx_priority_edges_child ON priority_edges(child_id);
 CREATE INDEX IF NOT EXISTS idx_priority_edges_parent ON priority_edges(parent_id);
 """
@@ -236,10 +238,13 @@ class PriorityGraph:
     """
     In-memory graph of priorities. Loaded from SQLite, provides
     traversal operations, syncs changes back to storage.
+
+    Each graph is scoped to a specific user (user_id).
     """
 
-    def __init__(self, connection_factory):
+    def __init__(self, connection_factory, user_id: int | None = None):
         self.connection_factory = connection_factory
+        self.user_id = user_id  # None means load all (for migration/admin)
 
         self.nodes: dict[str, Priority] = {}
 
@@ -249,7 +254,11 @@ class PriorityGraph:
     # Loading / Persistence
 
     def load(self) -> None:
-        """Load all priorities and edges from SQLite into memory."""
+        """Load priorities and edges from SQLite into memory.
+
+        If user_id is set, only loads priorities for that user.
+        If user_id is None, loads all priorities (for migration/admin).
+        """
         with self.connection_factory() as conn:
             # Check if we need to migrate from old schema
             tables = conn.execute(
@@ -278,30 +287,54 @@ class PriorityGraph:
                 if "rank" not in column_names:
                     conn.execute("ALTER TABLE priorities ADD COLUMN rank INTEGER")
 
+                # Add user_id column if missing
+                if "user_id" not in column_names:
+                    conn.execute("ALTER TABLE priorities ADD COLUMN user_id INTEGER REFERENCES users(id)")
+
             # Ensure schema exists (creates if not present)
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Load priorities
-            rows = conn.execute("SELECT * FROM priorities").fetchall()
+            # Load priorities (filtered by user_id if set)
+            if self.user_id is not None:
+                rows = conn.execute(
+                    "SELECT * FROM priorities WHERE user_id = ?",
+                    (self.user_id,)
+                ).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM priorities").fetchall()
+
             for row in rows:
                 priority = priority_from_row(row)
                 self.nodes[priority.id] = priority
                 self.parents[priority.id] = set()
                 self.children[priority.id] = set()
 
-            # Load edges
-            edge_rows = conn.execute(
-                "SELECT child_id, parent_id FROM priority_edges"
-            ).fetchall()
+            # Load edges (only for loaded priorities)
+            if self.nodes:
+                # Build WHERE clause for loaded priority IDs
+                priority_ids = list(self.nodes.keys())
+                placeholders = ",".join("?" * len(priority_ids))
+                edge_rows = conn.execute(
+                    f"""SELECT child_id, parent_id FROM priority_edges
+                        WHERE child_id IN ({placeholders})
+                        AND parent_id IN ({placeholders})""",
+                    priority_ids + priority_ids
+                ).fetchall()
+            else:
+                edge_rows = []
+
             for edge in edge_rows:
                 child_id = edge["child_id"]
                 parent_id = edge["parent_id"]
-                self.parents[child_id].add(parent_id)
-                self.children[parent_id].add(child_id)
+                if child_id in self.nodes and parent_id in self.nodes:
+                    self.parents[child_id].add(parent_id)
+                    self.children[parent_id].add(child_id)
 
     def save_priority(self, priority: Priority) -> None:
         """Persist a single priority to SQLite (insert or update)."""
         values = priority_to_row_values(priority)
+        # Add user_id at the end of values tuple
+        values = values + (self.user_id,)
 
         with self.connection_factory() as conn:
             conn.execute("""
@@ -314,8 +347,8 @@ class PriorityGraph:
                     current_level, target_level,
                     success_criteria, due_date, progress,
                     rhythm_frequency, rhythm_constraints, generation_prompt,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    created_at, updated_at, user_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     priority_type = excluded.priority_type,
                     name = excluded.name,

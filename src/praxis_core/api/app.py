@@ -34,19 +34,33 @@ app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
 
 
 # ---------------------------------------------------------------------
-# Graph Singleton
+# Per-User Graph Cache
 # ---------------------------------------------------------------------
 
-_graph: PriorityGraph | None = None
+_graphs: dict[int | None, PriorityGraph] = {}
 
 
-def get_graph() -> PriorityGraph:
-    """Get the shared PriorityGraph instance."""
-    global _graph
-    if _graph is None:
-        _graph = PriorityGraph(get_connection)
-        _graph.load()
-    return _graph
+def get_graph(user_id: int | None = None) -> PriorityGraph:
+    """Get a PriorityGraph instance for the given user.
+
+    Args:
+        user_id: User ID, or None for global graph (backward compatibility)
+
+    Returns:
+        PriorityGraph scoped to the user (or global if user_id is None)
+    """
+    if user_id not in _graphs:
+        _graphs[user_id] = PriorityGraph(get_connection, user_id=user_id)
+        _graphs[user_id].load()
+    return _graphs[user_id]
+
+
+def clear_graph_cache(user_id: int | None = None) -> None:
+    """Clear cached graph for a user, or all if user_id is None."""
+    if user_id is None:
+        _graphs.clear()
+    elif user_id in _graphs:
+        del _graphs[user_id]
 
 
 # ---------------------------------------------------------------------
