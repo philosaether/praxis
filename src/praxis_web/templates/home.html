@@ -8,6 +8,14 @@
     <div class="left-pane">
         <div class="header">
             <h1>Praxis</h1>
+            {% if user %}
+            <div class="user-info">
+                <span class="username">{{ user.username }}</span>
+                <a href="/logout" class="logout-link">Logout</a>
+            </div>
+            {% else %}
+            <a href="/login" class="login-link">Login</a>
+            {% endif %}
         </div>
 
         <!-- Main Toggle: Tasks | Priorities -->

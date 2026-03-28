@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, Depends
 from fastapi.responses import JSONResponse
 
 from praxis_core.model import (
@@ -14,16 +14,18 @@ from praxis_core.model import (
     Capacity,
     Accomplishment,
     Practice,
+    User,
 )
+from praxis_core.api.auth import get_current_user_optional
 
 
 router = APIRouter()
 
 
-def _get_graph():
+def _get_graph(user_id: int | None = None):
     """Import here to avoid circular import."""
     from praxis_core.api.app import get_graph
-    return get_graph()
+    return get_graph(user_id=user_id)
 
 
 def _serialize_priority(p, render_markdown: bool = False):
@@ -71,9 +73,11 @@ def _create_priority_by_type(priority_type: str, id: str, name: str):
 @router.post("")
 async def create_priority_endpoint(
     new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "goal",
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Create a new priority with default values."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
 
     # Create name based on type
     type_label = new_priority_type.title()
@@ -95,9 +99,11 @@ async def create_priority_endpoint(
 async def list_priorities(
     type: str | None = None,
     active: bool = False,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """List priorities with optional filters."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
 
     if type:
         try:
@@ -126,9 +132,12 @@ def _sort_key(p):
 
 
 @router.get("/tree")
-async def priority_tree():
+async def priority_tree(
+    user: User | None = Depends(get_current_user_optional),
+):
     """Get tree structure for priorities."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     roots = sorted(graph.roots(), key=_sort_key)
 
     # Build children map for the entire tree
@@ -147,9 +156,13 @@ async def priority_tree():
 
 
 @router.get("/{priority_id}")
-async def get_priority(priority_id: str):
+async def get_priority(
+    priority_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
     """Get a single priority with its context."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -166,9 +179,13 @@ async def get_priority(priority_id: str):
 
 
 @router.get("/{priority_id}/edit")
-async def get_priority_for_edit(priority_id: str):
+async def get_priority_for_edit(
+    priority_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
     """Get priority data for edit form."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -214,9 +231,11 @@ async def update_priority(
     generation_prompt: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Update a priority and return updated data."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -300,9 +319,11 @@ async def update_priority_properties(
     generation_prompt: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Update priority properties (everything except notes)."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -382,9 +403,11 @@ async def update_priority_properties(
 async def update_priority_notes(
     priority_id: str,
     notes: Annotated[str | None, Form()] = None,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Update priority notes independently."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -415,9 +438,13 @@ class MoveRequest(BaseModel):
 
 
 @router.delete("/{priority_id}")
-async def delete_priority(priority_id: str):
+async def delete_priority(
+    priority_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
     """Delete a priority and all its edges."""
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
 
     if not graph.get(priority_id):
         return JSONResponse({"error": "Priority not found"}, status_code=404)
@@ -427,13 +454,18 @@ async def delete_priority(priority_id: str):
 
 
 @router.post("/{priority_id}/move")
-async def move_priority(priority_id: str, request_data: MoveRequest):
+async def move_priority(
+    priority_id: str,
+    request_data: MoveRequest,
+    user: User | None = Depends(get_current_user_optional),
+):
     """
     Move a priority in the tree (reparent and/or reorder).
 
     Handles drag-and-drop operations from the tree view.
     """
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priority = graph.get(priority_id)
 
     if not priority:

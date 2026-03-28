@@ -22,6 +22,12 @@ from praxis_core.model.filters import (
     apply_filters,
     load_filters,
 )
+from praxis_core.model.users import (
+    User,
+    Session,
+    UserRole,
+    SessionType,
+)
 
 __all__ = [
     # Priorities
@@ -43,4 +49,9 @@ __all__ = [
     "ConstraintType",
     "apply_filters",
     "load_filters",
+    # Users
+    "User",
+    "Session",
+    "UserRole",
+    "SessionType",
 ]

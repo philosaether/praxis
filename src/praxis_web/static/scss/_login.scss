@@ -1,0 +1,91 @@
+// =============================================================================
+// Login Page
+// =============================================================================
+@use 'variables' as *;
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: $bg-primary;
+  padding: $spacing-lg;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: $bg-secondary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-2xl;
+
+  h1 {
+    margin: 0 0 $spacing-xs;
+    font-size: 2rem;
+    font-weight: 600;
+    color: $accent;
+    text-align: center;
+  }
+}
+
+.login-subtitle {
+  margin: 0 0 $spacing-xl;
+  color: $text-secondary;
+  text-align: center;
+}
+
+.login-error {
+  background: rgba($error, 0.15);
+  border: 1px solid $error;
+  border-radius: $radius-sm;
+  padding: $spacing-md;
+  margin-bottom: $spacing-lg;
+  color: #ff8a80;
+  font-size: $font-size-sm;
+}
+
+.login-form {
+  .form-group {
+    margin-bottom: $spacing-lg;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-xs;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+
+    input {
+      width: 100%;
+      padding: $spacing-md;
+      background: $bg-primary;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      color: $text-primary;
+      font-size: $font-size-base;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+      }
+    }
+  }
+}
+
+.login-button {
+  width: 100%;
+  padding: $spacing-md $spacing-lg;
+  background: $accent;
+  border: none;
+  border-radius: $radius-sm;
+  color: white;
+  font-size: $font-size-base;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $accent-dim;
+  }
+}

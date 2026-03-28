@@ -3,10 +3,10 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, Depends
 from fastapi.responses import JSONResponse
 
-from praxis_core.model import TaskStatus
+from praxis_core.model import TaskStatus, User
 from praxis_core.persistence import (
     create_task,
     get_task,
@@ -16,15 +16,16 @@ from praxis_core.persistence import (
     delete_task,
 )
 from praxis_core.prioritization import rank_tasks
+from praxis_core.api.auth import get_current_user, get_current_user_optional
 
 
 router = APIRouter()
 
 
-def _get_graph():
+def _get_graph(user_id: int | None = None):
     """Import here to avoid circular import."""
     from praxis_core.api.app import get_graph
-    return get_graph()
+    return get_graph(user_id=user_id)
 
 
 def _serialize_priority(p):
@@ -40,9 +41,12 @@ def _serialize_task(t, render_markdown: bool = False):
 
 
 @router.post("")
-async def create_task_endpoint():
+async def create_task_endpoint(
+    user: User | None = Depends(get_current_user_optional),
+):
     """Create a new task with default values."""
-    task = create_task(title="New Task")
+    user_id = user.id if user else None
+    task = create_task(title="New Task", user_id=user_id)
     return {"task": _serialize_task(task)}
 
 
@@ -50,6 +54,7 @@ async def create_task_endpoint():
 async def list_tasks_endpoint(
     priority: str | None = None,
     status: str | None = None,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """List tasks with optional filters, ranked by priority score."""
     task_status = None
@@ -59,8 +64,9 @@ async def list_tasks_endpoint(
         except ValueError:
             pass
 
-    tasks = list_tasks(priority_id=priority, status=task_status)
-    graph = _get_graph()
+    user_id = user.id if user else None
+    tasks = list_tasks(priority_id=priority, status=task_status, user_id=user_id)
+    graph = _get_graph(user_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     # Rank tasks by importance + urgency
@@ -82,13 +88,17 @@ async def list_tasks_endpoint(
 
 
 @router.get("/{task_id}")
-async def get_task_endpoint(task_id: int):
+async def get_task_endpoint(
+    task_id: int,
+    user: User | None = Depends(get_current_user_optional),
+):
     """Get a single task."""
     task = get_task(task_id)
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
 
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
@@ -99,13 +109,17 @@ async def get_task_endpoint(task_id: int):
 
 
 @router.get("/{task_id}/edit")
-async def get_task_for_edit(task_id: int):
+async def get_task_for_edit(
+    task_id: int,
+    user: User | None = Depends(get_current_user_optional),
+):
     """Get task data for edit form (raw, no markdown rendering)."""
     task = get_task(task_id)
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
 
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
@@ -124,6 +138,7 @@ async def update_task_endpoint(
     priority_id: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Update a task and return updated data."""
     task = get_task(task_id)
@@ -148,7 +163,7 @@ async def update_task_endpoint(
     )
 
     # Return updated data
-    return await get_task_endpoint(task_id)
+    return await get_task_endpoint(task_id, user)
 
 
 @router.post("/{task_id}/toggle")
@@ -172,6 +187,7 @@ async def update_task_properties(
     status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Update task properties (everything except notes)."""
     task = get_task(task_id)
@@ -201,7 +217,8 @@ async def update_task_properties(
 
     # Return updated task with both raw and rendered notes
     task = get_task(task_id)
-    graph = _get_graph()
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     task_data = _serialize_task(task, render_markdown=True)
