@@ -37,15 +37,25 @@ def setup(config: PraxisHomeConfig | None = None):
     print("=" * 40)
     print()
 
-    # Check if admin already exists
-    existing = get_user_by_username("admin")
-    if existing:
-        print("Admin user already exists.")
-        print("Use 'praxis-home reset-password' to change the password.")
-        return
-
     # Get admin credentials
     print("Create admin account:")
+
+    # Get username
+    while True:
+        username = input("  Username: ").strip()
+        if not username:
+            print("  Username is required.")
+            continue
+        if len(username) < 3:
+            print("  Username must be at least 3 characters.")
+            continue
+        # Check if user already exists
+        existing = get_user_by_username(username)
+        if existing:
+            print(f"  User '{username}' already exists.")
+            continue
+        break
+
     while True:
         password = getpass.getpass("  Password: ")
         if len(password) < 8:
@@ -61,14 +71,14 @@ def setup(config: PraxisHomeConfig | None = None):
 
     # Create admin user
     user = create_user(
-        username="admin",
+        username=username,
         password=password,
         email=email,
         role=UserRole.ADMIN,
     )
 
     print()
-    print(f"Admin user created (ID: {user.id})")
+    print(f"Admin user '{username}' created (ID: {user.id})")
     print()
     print("Start the server with: praxis-home serve")
 

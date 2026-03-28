@@ -141,12 +141,28 @@ def get_user_by_username(username: str) -> User | None:
         return None
 
 
-def authenticate_user(username: str, password: str) -> User | None:
+def get_user_by_email(email: str) -> User | None:
+    """Get a user by email."""
+    ensure_schema()
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM users WHERE email = ?",
+            (email,)
+        ).fetchone()
+        if row:
+            return _row_to_user(row)
+        return None
+
+
+def authenticate_user(username_or_email: str, password: str) -> User | None:
     """
-    Authenticate a user by username and password.
+    Authenticate a user by username or email and password.
     Returns the user if credentials are valid, None otherwise.
     """
-    user = get_user_by_username(username)
+    # Try username first, then email
+    user = get_user_by_username(username_or_email)
+    if user is None and "@" in username_or_email:
+        user = get_user_by_email(username_or_email)
     if user is None:
         return None
     if not user.is_active:

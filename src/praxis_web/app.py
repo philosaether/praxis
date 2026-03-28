@@ -122,12 +122,19 @@ async def logout(request: Request):
 @app.get("/", response_class=HTMLResponse)
 async def home_page(request: Request):
     """Full page: two-pane layout with tasks as default view."""
+    # Check if user is logged in
+    if not request.cookies.get(SESSION_COOKIE_NAME):
+        return RedirectResponse(url="/login", status_code=302)
+
     async with api_client(request) as client:
-        # Fetch user info if logged in
-        user = None
+        # Fetch user info
         me_response = await client.get("/api/auth/me")
-        if me_response.status_code == 200:
-            user = me_response.json()
+        if me_response.status_code != 200:
+            # Session invalid, redirect to login
+            response = RedirectResponse(url="/login", status_code=302)
+            response.delete_cookie(key=SESSION_COOKIE_NAME)
+            return response
+        user = me_response.json()
 
         # Fetch both tasks and priorities for initial load
         tasks_response = await client.get("/api/tasks")
