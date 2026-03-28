@@ -3,6 +3,7 @@
 Usage:
     praxis-home serve     # Start both API and web servers
     praxis-home setup     # Create admin user (first-time setup)
+    praxis-home migrate   # Migrate existing data to admin user
 """
 
 import os
@@ -127,6 +128,71 @@ def serve(config: PraxisHomeConfig | None = None):
         api_process.join()
 
 
+def migrate(config: PraxisHomeConfig | None = None):
+    """Migrate existing tasks and priorities to admin user.
+
+    This command:
+    1. Runs setup if admin doesn't exist
+    2. Assigns all unowned tasks to admin
+    3. Assigns all unowned priorities to admin
+    """
+    if config is None:
+        config = PraxisHomeConfig()
+
+    # Ensure database directory exists
+    db_dir = os.path.dirname(config.db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
+    # Set database path for praxis_core
+    os.environ["PRAXIS_DB_PATH"] = config.db_path
+
+    # Import after setting env var
+    from praxis_core.persistence import get_user_by_username, get_connection
+
+    print("Praxis Home Migration")
+    print("=" * 40)
+    print()
+
+    # Check if admin exists, create if not
+    admin = get_user_by_username("admin")
+    if not admin:
+        print("No admin user found. Running setup first...")
+        print()
+        setup(config)
+        admin = get_user_by_username("admin")
+        if not admin:
+            print("Failed to create admin user.")
+            sys.exit(1)
+
+    admin_id = admin.id
+    print(f"Migrating data to admin user (ID: {admin_id})...")
+    print()
+
+    # Migrate tasks
+    with get_connection() as conn:
+        result = conn.execute(
+            "UPDATE tasks SET user_id = ? WHERE user_id IS NULL",
+            (admin_id,)
+        )
+        task_count = result.rowcount
+        print(f"  Tasks migrated: {task_count}")
+
+    # Migrate priorities
+    with get_connection() as conn:
+        result = conn.execute(
+            "UPDATE priorities SET user_id = ? WHERE user_id IS NULL",
+            (admin_id,)
+        )
+        priority_count = result.rowcount
+        print(f"  Priorities migrated: {priority_count}")
+
+    print()
+    print("Migration complete!")
+    print()
+    print("Start the server with: praxis-home serve")
+
+
 def main():
     """CLI entry point."""
     if len(sys.argv) < 2:
@@ -140,6 +206,8 @@ def main():
         serve(config)
     elif command == "setup":
         setup(config)
+    elif command == "migrate":
+        migrate(config)
     else:
         print(f"Unknown command: {command}")
         print(__doc__)
