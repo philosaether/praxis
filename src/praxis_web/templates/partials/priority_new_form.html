@@ -19,7 +19,7 @@
                             hx-swap="innerHTML"
                             hx-trigger="change">
                         {% for t in priority_types %}
-                        <option value="{{ t }}" {% if t == 'accomplishment' %}selected{% endif %}>
+                        <option value="{{ t }}" {% if t == 'goal' %}selected{% endif %}>
                             {{ t|title }}
                         </option>
                         {% endfor %}
@@ -76,7 +76,7 @@
 
                 <!-- Type-specific fields (dynamic) -->
                 <div id="type-specific-fields">
-                    {% include "partials/type_fields/accomplishment_fields.html" %}
+                    {% include "partials/type_fields/goal_fields.html" %}
                 </div>
 
                 <!-- Actions -->

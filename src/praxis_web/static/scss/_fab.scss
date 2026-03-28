@@ -3,9 +3,9 @@
 // =============================================================================
 @use 'variables' as *;
 
-// Accomplishment purple color
-$priority-purple: #6a1b9a;
-$priority-purple-hover: #5c1786;
+// Goal purple color
+$goal-purple: #6a1b9a;
+$goal-purple-hover: #5c1786;
 
 .fab {
   position: fixed;
@@ -32,12 +32,12 @@ $priority-purple-hover: #5c1786;
     transform: scale(0.95);
   }
 
-  // Priority mode variant (purple for accomplishments)
+  // Priority mode variant (purple for goals)
   &.fab-priority {
-    background: $priority-purple;
+    background: $goal-purple;
 
     &:hover {
-      background: $priority-purple-hover;
+      background: $goal-purple-hover;
     }
   }
 }

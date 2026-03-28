@@ -7,10 +7,8 @@ from praxis_core.model.priorities import (
     Priority,
     PriorityType,
     PriorityStatus,
+    Value,
     Goal,
-    Obligation,
-    Capacity,
-    Accomplishment,
     Practice,
 )
 
@@ -32,24 +30,22 @@ CREATE TABLE IF NOT EXISTS priorities (
     notes TEXT,
     rank INTEGER,
 
-    -- Goal
+    -- Value (direction/principle, never completes)
     success_looks_like TEXT,
     obsolete_when TEXT,
 
-    -- Obligation
-    consequence_of_neglect TEXT,
+    -- Goal (concrete outcome with end state)
+    success_criteria TEXT,
+    due_date TEXT,
+    progress TEXT,
 
-    -- Capacity
+    -- Legacy columns (kept for data migration)
+    consequence_of_neglect TEXT,
     measurement_method TEXT,
     measurement_rubric TEXT,
     measurement_scale TEXT,
     current_level TEXT,
     target_level TEXT,
-
-    -- Accomplishment
-    success_criteria TEXT,
-    due_date TEXT,
-    progress TEXT,
 
     -- Practice
     rhythm_frequency TEXT,
@@ -86,15 +82,38 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     """Convert a database row to a Priority subclass."""
     # Handle both old column name (generator_type) and new (priority_type)
     type_value = row["priority_type"] if "priority_type" in row.keys() else row["generator_type"]
+
+    # Map old type names to new ones (for migration)
+    type_mapping = {
+        "goal": "value",           # old goal -> new value
+        "accomplishment": "goal",  # old accomplishment -> new goal
+        "obligation": "practice",  # obligation -> practice (best fit)
+        "capacity": "practice",    # capacity -> practice (best fit)
+    }
+    type_value = type_mapping.get(type_value, type_value)
     priority_type = PriorityType(type_value)
 
     created_at = _parse_datetime(row["created_at"])
     updated_at = _parse_datetime(row["updated_at"])
 
+    # Map old status names if needed
+    status_value = row["status"]
+    status_mapping = {
+        "achieved": "completed",
+        "lapsed": "abandoned",
+    }
+    status_value = status_mapping.get(status_value, status_value)
+
+    # Handle potentially invalid statuses gracefully
+    try:
+        status = PriorityStatus(status_value)
+    except ValueError:
+        status = PriorityStatus.ACTIVE
+
     common_kwargs = {
         "id": row["id"],
         "name": row["name"],
-        "status": PriorityStatus(row["status"]),
+        "status": status,
         "agent_context": row["agent_context"],
         "notes": row["notes"] if "notes" in row.keys() else None,
         "rank": row["rank"] if "rank" in row.keys() else None,
@@ -103,34 +122,16 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     }
 
     match priority_type:
-        case PriorityType.GOAL:
-            return Goal(
+        case PriorityType.VALUE:
+            return Value(
                 **common_kwargs,
                 priority_type=priority_type,
                 success_looks_like=row["success_looks_like"],
                 obsolete_when=row["obsolete_when"],
             )
 
-        case PriorityType.OBLIGATION:
-            return Obligation(
-                **common_kwargs,
-                priority_type=priority_type,
-                consequence_of_neglect=row["consequence_of_neglect"],
-            )
-
-        case PriorityType.CAPACITY:
-            return Capacity(
-                **common_kwargs,
-                priority_type=priority_type,
-                measurement_method=row["measurement_method"],
-                measurement_rubric=row["measurement_rubric"],
-                measurement_scale=row["measurement_scale"],
-                current_level=row["current_level"],
-                target_level=row["target_level"],
-            )
-
-        case PriorityType.ACCOMPLISHMENT:
-            return Accomplishment(
+        case PriorityType.GOAL:
+            return Goal(
                 **common_kwargs,
                 priority_type=priority_type,
                 success_criteria=row["success_criteria"],
@@ -164,12 +165,12 @@ def priority_to_row_values(priority: Priority) -> tuple:
     # Type-specific fields default to None
     success_looks_like = None
     obsolete_when = None
-    consequence_of_neglect = None
-    measurement_method = None
-    measurement_rubric = None
-    measurement_scale = None
-    current_level = None
-    target_level = None
+    consequence_of_neglect = None  # Legacy, kept for schema compatibility
+    measurement_method = None      # Legacy
+    measurement_rubric = None      # Legacy
+    measurement_scale = None       # Legacy
+    current_level = None           # Legacy
+    target_level = None            # Legacy
     success_criteria = None
     due_date = None
     progress = None
@@ -178,21 +179,11 @@ def priority_to_row_values(priority: Priority) -> tuple:
     generation_prompt = None
 
     # Extract type-specific fields based on actual type
-    if isinstance(priority, Goal):
+    if isinstance(priority, Value):
         success_looks_like = priority.success_looks_like
         obsolete_when = priority.obsolete_when
 
-    elif isinstance(priority, Obligation):
-        consequence_of_neglect = priority.consequence_of_neglect
-
-    elif isinstance(priority, Capacity):
-        measurement_method = priority.measurement_method
-        measurement_rubric = priority.measurement_rubric
-        measurement_scale = priority.measurement_scale
-        current_level = priority.current_level
-        target_level = priority.target_level
-
-    elif isinstance(priority, Accomplishment):
+    elif isinstance(priority, Goal):
         success_criteria = priority.success_criteria
         due_date = priority.due_date.isoformat() if priority.due_date else None
         progress = priority.progress
@@ -293,6 +284,16 @@ class PriorityGraph:
 
             # Ensure schema exists (creates if not present)
             conn.executescript(PRIORITIES_SCHEMA)
+
+            # Migrate priority types: goal->value, accomplishment->goal, obligation/capacity->practice
+            conn.execute("UPDATE priorities SET priority_type = 'value' WHERE priority_type = 'goal'")
+            conn.execute("UPDATE priorities SET priority_type = 'goal' WHERE priority_type = 'accomplishment'")
+            conn.execute("UPDATE priorities SET priority_type = 'practice' WHERE priority_type = 'obligation'")
+            conn.execute("UPDATE priorities SET priority_type = 'practice' WHERE priority_type = 'capacity'")
+
+            # Migrate status values
+            conn.execute("UPDATE priorities SET status = 'completed' WHERE status = 'achieved'")
+            conn.execute("UPDATE priorities SET status = 'abandoned' WHERE status = 'lapsed'")
 
             # Load priorities (filtered by user_id if set)
             if self.user_id is not None:
@@ -549,21 +550,13 @@ class PriorityGraph:
             if priority.status == PriorityStatus.ACTIVE
         ]
 
+    def values(self) -> list[Value]:
+        """Get all Value priorities."""
+        return [p for p in self.nodes.values() if isinstance(p, Value)]
+
     def goals(self) -> list[Goal]:
         """Get all Goal priorities."""
         return [p for p in self.nodes.values() if isinstance(p, Goal)]
-
-    def obligations(self) -> list[Obligation]:
-        """Get all Obligation priorities."""
-        return [p for p in self.nodes.values() if isinstance(p, Obligation)]
-
-    def capacities(self) -> list[Capacity]:
-        """Get all Capacity priorities."""
-        return [p for p in self.nodes.values() if isinstance(p, Capacity)]
-
-    def accomplishments(self) -> list[Accomplishment]:
-        """Get all Accomplishment priorities."""
-        return [p for p in self.nodes.values() if isinstance(p, Accomplishment)]
 
     def practices(self) -> list[Practice]:
         """Get all Practice priorities."""

@@ -216,10 +216,10 @@
         // Reset form
         const form = document.querySelector('#quick-add-priority-backdrop form');
         if (form) form.reset();
-        // Reset type-specific fields to accomplishment defaults
+        // Reset type-specific fields to goal defaults
         const typeFieldsContainer = document.getElementById('qap-type-fields');
         if (typeFieldsContainer) {
-            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=accomplishment', {target: '#qap-type-fields', swap: 'innerHTML'});
+            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=goal', {target: '#qap-type-fields', swap: 'innerHTML'});
         }
     };
 

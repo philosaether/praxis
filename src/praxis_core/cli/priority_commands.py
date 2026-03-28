@@ -7,17 +7,15 @@ from rich.table import Table
 from praxis_core.model import (
     PriorityType,
     PriorityStatus,
+    Value,
     Goal,
-    Obligation,
-    Capacity,
-    Accomplishment,
     Practice,
 )
 
 
 priority_app = typer.Typer(
     name="priority",
-    help="Manage priorities (goals, obligations, capacities, accomplishments, practices).",
+    help="Manage priorities (values, goals, practices).",
     no_args_is_help=True,
 )
 
@@ -34,7 +32,7 @@ def priority_list(
         None,
         "--type",
         "-t",
-        help="Filter by type: goal, obligation, capacity, accomplishment, practice",
+        help="Filter by type: value, goal, practice",
     ),
     active_only: bool = typer.Option(
         False,
@@ -52,7 +50,7 @@ def priority_list(
             priorities = graph.by_type(ptype)
         except ValueError:
             rprint(f"[red]Unknown type:[/red] {priority_type}")
-            rprint("Valid types: goal, obligation, capacity, accomplishment, practice")
+            rprint("Valid types: value, goal, practice")
             raise typer.Exit(1)
     else:
         priorities = list(graph.nodes.values())
@@ -114,24 +112,13 @@ def priority_show(
         rprint(f"\n[bold]Context:[/bold]\n{p.agent_context}")
 
     # Type-specific fields
-    if isinstance(p, Goal):
+    if isinstance(p, Value):
         if p.success_looks_like:
             rprint(f"\n[bold]Success looks like:[/bold]\n{p.success_looks_like}")
         if p.obsolete_when:
             rprint(f"\n[bold]Obsolete when:[/bold]\n{p.obsolete_when}")
 
-    elif isinstance(p, Obligation):
-        if p.consequence_of_neglect:
-            rprint(f"\n[bold]Consequence of neglect:[/bold]\n{p.consequence_of_neglect}")
-
-    elif isinstance(p, Capacity):
-        rprint(f"\n[bold]Delta:[/bold] {p.delta_description}")
-        if p.measurement_method:
-            rprint(f"[bold]Measurement:[/bold] {p.measurement_method}")
-        if p.measurement_rubric:
-            rprint(f"[bold]Rubric:[/bold] {p.measurement_rubric}")
-
-    elif isinstance(p, Accomplishment):
+    elif isinstance(p, Goal):
         if p.success_criteria:
             rprint(f"\n[bold]Success criteria:[/bold]\n{p.success_criteria}")
         if p.progress:
@@ -222,7 +209,7 @@ def priority_tree(
 
 @priority_app.command(name="add")
 def priority_add(
-    priority_type: str = typer.Argument(..., help="Type: goal, obligation, capacity, accomplishment, practice"),
+    priority_type: str = typer.Argument(..., help="Type: value, goal, practice"),
     priority_id: str = typer.Argument(..., help="Unique ID for this priority"),
     name: str = typer.Argument(..., help="Human-readable name"),
     parent: str | None = typer.Option(
@@ -246,7 +233,7 @@ def priority_add(
         ptype = PriorityType(priority_type.lower())
     except ValueError:
         rprint(f"[red]Unknown type:[/red] {priority_type}")
-        rprint("Valid types: goal, obligation, capacity, accomplishment, practice")
+        rprint("Valid types: value, goal, practice")
         raise typer.Exit(1)
 
     # Check for duplicate ID
@@ -264,14 +251,10 @@ def priority_add(
 
     # Create the appropriate subclass
     match ptype:
+        case PriorityType.VALUE:
+            p = Value(id=priority_id, name=name, agent_context=context)
         case PriorityType.GOAL:
             p = Goal(id=priority_id, name=name, agent_context=context)
-        case PriorityType.OBLIGATION:
-            p = Obligation(id=priority_id, name=name, agent_context=context)
-        case PriorityType.CAPACITY:
-            p = Capacity(id=priority_id, name=name, agent_context=context)
-        case PriorityType.ACCOMPLISHMENT:
-            p = Accomplishment(id=priority_id, name=name, agent_context=context)
         case PriorityType.PRACTICE:
             p = Practice(id=priority_id, name=name, agent_context=context)
 

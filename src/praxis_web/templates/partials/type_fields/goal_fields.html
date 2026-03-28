@@ -2,19 +2,29 @@
 {# Used in: priority_new_form.html, quick_add_priority_modal.html, goal_properties.html #}
 
 <div class="property-row">
-    <label for="success_looks_like">Success Looks Like</label>
-    <textarea id="success_looks_like"
-              name="success_looks_like"
+    <label for="success_criteria">Success Criteria</label>
+    <textarea id="success_criteria"
+              name="success_criteria"
               rows="3"
               class="property-input"
-              placeholder="What does success look like?">{{ priority.success_looks_like or '' if priority else '' }}</textarea>
+              placeholder="How will you know when this is done?">{{ priority.success_criteria or '' if priority else '' }}</textarea>
 </div>
 
 <div class="property-row">
-    <label for="obsolete_when">Obsolete When</label>
-    <textarea id="obsolete_when"
-              name="obsolete_when"
-              rows="2"
-              class="property-input"
-              placeholder="When does this goal become irrelevant?">{{ priority.obsolete_when or '' if priority else '' }}</textarea>
+    <label for="progress">Progress</label>
+    <input type="text"
+           id="progress"
+           name="progress"
+           value="{{ priority.progress or '' if priority else '' }}"
+           class="property-input"
+           placeholder="e.g., 3/10, 70%">
+</div>
+
+<div class="property-row">
+    <label for="due_date">Due Date</label>
+    <input type="date"
+           id="due_date"
+           name="due_date"
+           value="{{ priority.due_date or '' if priority else '' }}"
+           class="property-input">
 </div>

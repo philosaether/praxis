@@ -30,7 +30,7 @@
                                 hx-swap="innerHTML"
                                 hx-trigger="change">
                             {% for t in priority_types %}
-                            <option value="{{ t }}" {% if t == 'accomplishment' %}selected{% endif %}>
+                            <option value="{{ t }}" {% if t == 'goal' %}selected{% endif %}>
                                 {{ t|title }}
                             </option>
                             {% endfor %}
@@ -46,7 +46,7 @@
                         </select>
                     </div>
                     <div id="qap-type-fields">
-                        {# Accomplishment fields by default #}
+                        {# Goal fields by default #}
                         <div class="property-row">
                             <label for="qap-success">Success Criteria</label>
                             <textarea id="qap-success" name="success_criteria" rows="2"
