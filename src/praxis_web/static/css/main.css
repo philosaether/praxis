@@ -62,10 +62,35 @@ a:hover {
   padding: 1rem;
   border-bottom: 1px solid #333;
   background: #0f3460;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .header h1 {
   font-size: 1.25rem;
   font-weight: 600;
+  color: #e94560;
+  margin: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+.user-info .username {
+  color: #aaa;
+}
+
+.logout-link,
+.login-link {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.logout-link:hover,
+.login-link:hover {
   color: #e94560;
 }
 
@@ -906,6 +931,86 @@ textarea.property-input {
 
 .tree-node-drag ~ .tree-children:empty {
   border-left-color: #333;
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #1a1a2e;
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: #16213e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 2rem;
+}
+.login-card h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #e94560;
+  text-align: center;
+}
+
+.login-subtitle {
+  margin: 0 0 1.5rem;
+  color: #aaa;
+  text-align: center;
+}
+
+.login-error {
+  background: rgba(198, 40, 40, 0.15);
+  border: 1px solid #c62828;
+  border-radius: 3px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  color: #ff8a80;
+  font-size: 0.8rem;
+}
+
+.login-form .form-group {
+  margin-bottom: 1rem;
+}
+.login-form .form-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #aaa;
+  font-size: 0.8rem;
+}
+.login-form .form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 3px;
+  color: #eee;
+  font-size: 0.9rem;
+}
+.login-form .form-group input:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.login-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #e94560;
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.login-button:hover {
+  background: #c73e54;
 }
 
 .empty-state {

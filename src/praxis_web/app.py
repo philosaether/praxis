@@ -8,7 +8,7 @@ Requires: PRAXIS_API_URL environment variable (default: http://localhost:8000)
 import os
 import httpx
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
@@ -22,6 +22,7 @@ app = FastAPI(title="Praxis Web")
 
 # Config
 API_URL = os.getenv("PRAXIS_API_URL", "http://localhost:8000")
+SESSION_COOKIE_NAME = "praxis_session"
 
 # Static files and templates
 STATIC_DIR = Path(__file__).parent / "static"
@@ -34,8 +35,85 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 # API Client Helper
 # -----------------------------------------------------------------------------
 
-def api_client():
-    return httpx.AsyncClient(base_url=API_URL, timeout=30.0)
+def api_client(request: Request | None = None):
+    """Create an API client, optionally with auth from session cookie."""
+    headers = {}
+    if request:
+        session_token = request.cookies.get(SESSION_COOKIE_NAME)
+        if session_token:
+            headers["Authorization"] = f"Bearer {session_token}"
+    return httpx.AsyncClient(base_url=API_URL, timeout=30.0, headers=headers)
+
+
+# -----------------------------------------------------------------------------
+# Auth Routes
+# -----------------------------------------------------------------------------
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, error: str | None = None):
+    """Display login page."""
+    # If already logged in, redirect to home
+    if request.cookies.get(SESSION_COOKIE_NAME):
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {"error": error}
+    )
+
+
+@app.post("/login")
+async def login_submit(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+):
+    """Handle login form submission."""
+    async with httpx.AsyncClient(base_url=API_URL, timeout=30.0) as client:
+        response = await client.post(
+            "/api/auth/login",
+            json={"username": username, "password": password}
+        )
+
+        if response.status_code != 200:
+            return templates.TemplateResponse(
+                request,
+                "login.html",
+                {"error": "Invalid username or password"},
+                status_code=401
+            )
+
+        data = response.json()
+        session_id = data["session_id"]
+
+        # Set session cookie and redirect to home
+        redirect = RedirectResponse(url="/", status_code=302)
+        redirect.set_cookie(
+            key=SESSION_COOKIE_NAME,
+            value=session_id,
+            httponly=True,
+            samesite="lax",
+            # secure=True,  # Enable in production with HTTPS
+            max_age=7 * 24 * 60 * 60,  # 7 days
+        )
+        return redirect
+
+
+@app.get("/logout")
+@app.post("/logout")
+async def logout(request: Request):
+    """Log out and clear session."""
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+
+    # Call API to invalidate session
+    if session_token:
+        async with api_client(request) as client:
+            await client.post("/api/auth/logout")
+
+    # Clear cookie and redirect to login
+    redirect = RedirectResponse(url="/login", status_code=302)
+    redirect.delete_cookie(key=SESSION_COOKIE_NAME)
+    return redirect
 
 # -----------------------------------------------------------------------------
 # Routes: Pages
@@ -44,7 +122,13 @@ def api_client():
 @app.get("/", response_class=HTMLResponse)
 async def home_page(request: Request):
     """Full page: two-pane layout with tasks as default view."""
-    async with api_client() as client:
+    async with api_client(request) as client:
+        # Fetch user info if logged in
+        user = None
+        me_response = await client.get("/api/auth/me")
+        if me_response.status_code == 200:
+            user = me_response.json()
+
         # Fetch both tasks and priorities for initial load
         tasks_response = await client.get("/api/tasks")
         priorities_response = await client.get("/api/priorities")
@@ -55,6 +139,7 @@ async def home_page(request: Request):
         request,
         "home.html",
         {
+            "user": user,
             "tasks": tasks_data["tasks"],
             "priorities": priorities_data["priorities"],
             "priority_types": priorities_data["priority_types"],
@@ -79,7 +164,7 @@ async def priorities_list_partial(
     active: bool = False,
 ):
     """HTMX partial: filtered list of priorities."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         params = {}
         if type:
             params["type"] = type
@@ -100,7 +185,7 @@ async def create_new_priority(request: Request):
     """Create a new priority and return the row HTML."""
     form_data = await request.form()
 
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post("/api/priorities", data=dict(form_data))
         data = response.json()
 
@@ -117,7 +202,7 @@ async def create_new_priority(request: Request):
 @app.get("/priorities/tree", response_class=HTMLResponse)
 async def priority_tree(request: Request):
     """HTMX partial: tree view of priority hierarchy."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.get("/api/priorities/tree")
         data = response.json()
 
@@ -131,7 +216,7 @@ async def priority_tree(request: Request):
 @app.get("/priorities/tree-pane", response_class=HTMLResponse)
 async def priority_tree_pane(request: Request):
     """HTMX partial: full tree view for right pane."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.get("/api/priorities/tree")
         data = response.json()
 
@@ -163,7 +248,7 @@ async def priority_move(request: Request, priority_id: str):
     sibling_ids = data.get("sibling_ids", [])
     new_index = data.get("new_index", 0)
 
-    async with api_client() as client:
+    async with api_client(request) as client:
         # Update parent relationship
         response = await client.post(
             f"/api/priorities/{priority_id}/move",
@@ -190,7 +275,7 @@ async def priority_move(request: Request, priority_id: str):
 @app.get("/priorities/{priority_id}", response_class=HTMLResponse)
 async def priority_detail(request: Request, priority_id: str):
     """HTMX partial: detail view for a single priority."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.get(f"/api/priorities/{priority_id}")
         if response.status_code == 404:
             return HTMLResponse(
@@ -200,7 +285,7 @@ async def priority_detail(request: Request, priority_id: str):
         data = response.json()
 
     # Also fetch edit data to get raw notes and all_priorities
-    async with api_client() as client:
+    async with api_client(request) as client:
         edit_response = await client.get(f"/api/priorities/{priority_id}/edit")
         if edit_response.status_code == 200:
             edit_data = edit_response.json()
@@ -220,7 +305,7 @@ async def priority_save_properties(request: Request, priority_id: str):
     """Save priority properties and return updated properties section + OOB row update."""
     form_data = await request.form()
 
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post(
             f"/api/priorities/{priority_id}/properties",
             data=dict(form_data)
@@ -264,7 +349,7 @@ async def priority_save_notes(request: Request, priority_id: str):
     """Save priority notes and return updated notes section."""
     form_data = await request.form()
 
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post(
             f"/api/priorities/{priority_id}/notes",
             data=dict(form_data)
@@ -293,7 +378,7 @@ async def tasks_list_partial(
     status: str | None = None,
 ):
     """HTMX partial: filtered list of tasks."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         params = {}
         if priority:
             params["priority"] = priority
@@ -312,7 +397,7 @@ async def tasks_list_partial(
 @app.post("/tasks/new", response_class=HTMLResponse)
 async def create_new_task(request: Request):
     """Create a new task and return the row HTML."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post("/api/tasks")
         data = response.json()
 
@@ -328,7 +413,7 @@ async def create_new_task(request: Request):
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
 async def task_detail(request: Request, task_id: int):
     """HTMX partial: detail view for a single task."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.get(f"/api/tasks/{task_id}")
         if response.status_code == 404:
             return HTMLResponse(
@@ -342,7 +427,7 @@ async def task_detail(request: Request, task_id: int):
     notes = task.get("notes") or ""
     task["notes_raw"] = notes if not notes.startswith("<") else ""
     # For proper raw notes, we need to fetch from edit endpoint
-    async with api_client() as client:
+    async with api_client(request) as client:
         edit_response = await client.get(f"/api/tasks/{task_id}/edit")
         if edit_response.status_code == 200:
             edit_data = edit_response.json()
@@ -360,7 +445,7 @@ async def task_save_properties(request: Request, task_id: int):
     """Save task properties and return updated properties section + OOB row update."""
     form_data = await request.form()
 
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post(
             f"/api/tasks/{task_id}/properties",
             data=dict(form_data)
@@ -400,7 +485,7 @@ async def task_save_notes(request: Request, task_id: int):
     """Save task notes and return updated notes section."""
     form_data = await request.form()
 
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post(
             f"/api/tasks/{task_id}/notes",
             data=dict(form_data)
@@ -422,7 +507,7 @@ async def task_save_notes(request: Request, task_id: int):
 @app.post("/tasks/{task_id}/toggle", response_class=HTMLResponse)
 async def task_toggle_done(request: Request, task_id: int):
     """Toggle task between done and queued."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.post(f"/api/tasks/{task_id}/toggle")
         if response.status_code == 404:
             return HTMLResponse(content="", status_code=404)
@@ -438,7 +523,7 @@ async def task_toggle_done(request: Request, task_id: int):
 @app.delete("/tasks/{task_id}", response_class=HTMLResponse)
 async def delete_task(request: Request, task_id: int):
     """Delete a task and return empty content."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.delete(f"/api/tasks/{task_id}")
         if response.status_code == 404:
             return HTMLResponse(content="", status_code=404)
@@ -450,7 +535,7 @@ async def delete_task(request: Request, task_id: int):
 @app.delete("/priorities/{priority_id}", response_class=HTMLResponse)
 async def delete_priority(request: Request, priority_id: str):
     """Delete a priority and return empty content."""
-    async with api_client() as client:
+    async with api_client(request) as client:
         response = await client.delete(f"/api/priorities/{priority_id}")
         if response.status_code == 404:
             return HTMLResponse(content="", status_code=404)
