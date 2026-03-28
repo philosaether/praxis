@@ -4,10 +4,8 @@ from praxis_core.model.priorities import (
     Priority,
     PriorityType,
     PriorityStatus,
+    Value,
     Goal,
-    Obligation,
-    Capacity,
-    Accomplishment,
     Practice,
 )
 from praxis_core.model.tasks import (
@@ -34,10 +32,8 @@ __all__ = [
     "Priority",
     "PriorityType",
     "PriorityStatus",
+    "Value",
     "Goal",
-    "Obligation",
-    "Capacity",
-    "Accomplishment",
     "Practice",
     # Tasks
     "Task",

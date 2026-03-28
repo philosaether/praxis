@@ -9,10 +9,8 @@ from fastapi import FastAPI
 import markdown
 
 from praxis_core.model import (
+    Value,
     Goal,
-    Obligation,
-    Capacity,
-    Accomplishment,
     Practice,
 )
 from praxis_core.persistence import get_connection, PriorityGraph
@@ -105,18 +103,10 @@ def serialize_priority(p, render_markdown: bool = False) -> dict:
     }
 
     # Add type-specific fields
-    if isinstance(p, Goal):
+    if isinstance(p, Value):
         data["success_looks_like"] = p.success_looks_like
         data["obsolete_when"] = p.obsolete_when
-    elif isinstance(p, Obligation):
-        data["consequence_of_neglect"] = p.consequence_of_neglect
-    elif isinstance(p, Capacity):
-        data["measurement_method"] = p.measurement_method
-        data["measurement_rubric"] = p.measurement_rubric
-        data["current_level"] = p.current_level
-        data["target_level"] = p.target_level
-        data["delta_description"] = p.delta_description
-    elif isinstance(p, Accomplishment):
+    elif isinstance(p, Goal):
         data["success_criteria"] = p.success_criteria
         data["progress"] = p.progress
         data["due_date"] = fmt_date(p.due_date)

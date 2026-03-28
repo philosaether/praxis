@@ -9,10 +9,8 @@ from fastapi.responses import JSONResponse
 from praxis_core.model import (
     PriorityType,
     PriorityStatus,
+    Value,
     Goal,
-    Obligation,
-    Capacity,
-    Accomplishment,
     Practice,
     User,
 )
@@ -55,14 +53,10 @@ def _generate_priority_id(name: str, graph) -> str:
 def _create_priority_by_type(priority_type: str, id: str, name: str):
     """Create a priority instance of the appropriate subclass."""
     now = datetime.now()
-    if priority_type == "goal":
+    if priority_type == "value":
+        return Value(id=id, name=name, created_at=now, updated_at=now)
+    elif priority_type == "goal":
         return Goal(id=id, name=name, created_at=now, updated_at=now)
-    elif priority_type == "obligation":
-        return Obligation(id=id, name=name, created_at=now, updated_at=now)
-    elif priority_type == "capacity":
-        return Capacity(id=id, name=name, created_at=now, updated_at=now)
-    elif priority_type == "accomplishment":
-        return Accomplishment(id=id, name=name, created_at=now, updated_at=now)
     elif priority_type == "practice":
         return Practice(id=id, name=name, created_at=now, updated_at=now)
     else:
@@ -72,7 +66,7 @@ def _create_priority_by_type(priority_type: str, id: str, name: str):
 
 @router.post("")
 async def create_priority_endpoint(
-    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "accomplishment",
+    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "goal",
     user: User | None = Depends(get_current_user_optional),
 ):
     """Create a new priority with default values (legacy endpoint)."""
@@ -97,22 +91,15 @@ async def create_priority_endpoint(
 
 @router.post("/create")
 async def create_priority_full(
-    priority_type: Annotated[str, Form()] = "accomplishment",
+    priority_type: Annotated[str, Form()] = "goal",
     name: Annotated[str, Form()] = "",
     status: Annotated[str, Form()] = "active",
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
-    # Goal fields
+    # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
-    # Obligation fields
-    consequence_of_neglect: Annotated[str | None, Form()] = None,
-    # Capacity fields
-    measurement_method: Annotated[str | None, Form()] = None,
-    measurement_rubric: Annotated[str | None, Form()] = None,
-    current_level: Annotated[str | None, Form()] = None,
-    target_level: Annotated[str | None, Form()] = None,
-    # Accomplishment fields
+    # Goal fields
     success_criteria: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
@@ -137,17 +124,10 @@ async def create_priority_full(
     priority.agent_context = agent_context.strip() if agent_context else None
 
     # Set type-specific fields
-    if isinstance(priority, Goal):
+    if isinstance(priority, Value):
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Obligation):
-        priority.consequence_of_neglect = consequence_of_neglect.strip() if consequence_of_neglect else None
-    elif isinstance(priority, Capacity):
-        priority.measurement_method = measurement_method.strip() if measurement_method else None
-        priority.measurement_rubric = measurement_rubric.strip() if measurement_rubric else None
-        priority.current_level = current_level.strip() if current_level else None
-        priority.target_level = target_level.strip() if target_level else None
-    elif isinstance(priority, Accomplishment):
+    elif isinstance(priority, Goal):
         priority.success_criteria = success_criteria.strip() if success_criteria else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -299,17 +279,10 @@ async def update_priority(
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Goal fields
+    # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
-    # Obligation fields
-    consequence_of_neglect: Annotated[str | None, Form()] = None,
-    # Capacity fields
-    measurement_method: Annotated[str | None, Form()] = None,
-    measurement_rubric: Annotated[str | None, Form()] = None,
-    current_level: Annotated[str | None, Form()] = None,
-    target_level: Annotated[str | None, Form()] = None,
-    # Accomplishment fields
+    # Goal fields
     success_criteria: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
@@ -336,17 +309,10 @@ async def update_priority(
     priority.notes = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
-    if isinstance(priority, Goal):
+    if isinstance(priority, Value):
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Obligation):
-        priority.consequence_of_neglect = consequence_of_neglect.strip() if consequence_of_neglect else None
-    elif isinstance(priority, Capacity):
-        priority.measurement_method = measurement_method.strip() if measurement_method else None
-        priority.measurement_rubric = measurement_rubric.strip() if measurement_rubric else None
-        priority.current_level = current_level.strip() if current_level else None
-        priority.target_level = target_level.strip() if target_level else None
-    elif isinstance(priority, Accomplishment):
+    elif isinstance(priority, Goal):
         priority.success_criteria = success_criteria.strip() if success_criteria else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -425,17 +391,10 @@ async def update_priority_properties(
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
-    # Goal fields
+    # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
-    # Obligation fields
-    consequence_of_neglect: Annotated[str | None, Form()] = None,
-    # Capacity fields
-    measurement_method: Annotated[str | None, Form()] = None,
-    measurement_rubric: Annotated[str | None, Form()] = None,
-    current_level: Annotated[str | None, Form()] = None,
-    target_level: Annotated[str | None, Form()] = None,
-    # Accomplishment fields
+    # Goal fields
     success_criteria: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
@@ -467,17 +426,10 @@ async def update_priority_properties(
     priority.updated_at = datetime.now()
 
     # Update type-specific fields
-    if isinstance(priority, Goal):
+    if isinstance(priority, Value):
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Obligation):
-        priority.consequence_of_neglect = consequence_of_neglect.strip() if consequence_of_neglect else None
-    elif isinstance(priority, Capacity):
-        priority.measurement_method = measurement_method.strip() if measurement_method else None
-        priority.measurement_rubric = measurement_rubric.strip() if measurement_rubric else None
-        priority.current_level = current_level.strip() if current_level else None
-        priority.target_level = target_level.strip() if target_level else None
-    elif isinstance(priority, Accomplishment):
+    elif isinstance(priority, Goal):
         priority.success_criteria = success_criteria.strip() if success_criteria else None
         priority.progress = progress.strip() if progress else None
         if due_date:

@@ -3,7 +3,7 @@ Prioritization engine for ranking tasks.
 
 Two-dimensional scoring:
 - Importance: inherited from priority hierarchy (static, based on root rank)
-- Urgency: calculated based on due dates, capacity deltas, etc. (dynamic)
+- Urgency: calculated based on due dates (dynamic)
 
 Combined score determines task queue ordering.
 """
@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from praxis_core.model import Task
-from praxis_core.model.priorities import Capacity
 from praxis_core.persistence import PriorityGraph
 
 
@@ -80,20 +79,10 @@ def get_urgency(task: Task, graph: PriorityGraph) -> float:
 
     Factors:
     - Due date proximity (0-10 scale)
-    - Capacity delta (0-5 scale, additive)
 
-    Returns combined urgency, capped at 10.
+    Returns urgency, capped at 10.
     """
-    urgency = 0.0
-
-    # Due date urgency
-    urgency += _due_date_urgency(task.due_date)
-
-    # Capacity delta urgency (if task is under a Capacity)
-    if task.priority_id:
-        urgency += _capacity_delta_urgency(task.priority_id, graph)
-
-    return min(urgency, 10.0)
+    return min(_due_date_urgency(task.due_date), 10.0)
 
 
 def _due_date_urgency(due_date: datetime | None) -> float:
@@ -131,86 +120,6 @@ def _due_date_urgency(due_date: datetime | None) -> float:
         return 5.0 - (days_until - 7) * (3.0 / 23.0)
     else:
         return 1.0   # > 30 days
-
-
-def _capacity_delta_urgency(priority_id: str, graph: PriorityGraph) -> float:
-    """
-    Calculate urgency based on capacity delta in the priority chain.
-
-    Walks up the DAG to find a Capacity. If found, calculates urgency
-    based on the gap between current and target level.
-
-    Returns 0-5 (additive to due date urgency).
-    """
-    path = graph.path_to_root(priority_id)
-
-    for pid in path:
-        priority = graph.get(pid)
-        if isinstance(priority, Capacity):
-            return _parse_capacity_delta(priority)
-
-    return 0.0
-
-
-def _parse_capacity_delta(capacity: Capacity) -> float:
-    """
-    Parse current/target levels and return urgency based on delta.
-
-    Handles various formats: "3", "3/10", "70%", etc.
-    Returns 0-5 urgency score.
-    """
-    current = _parse_level(capacity.current_level)
-    target = _parse_level(capacity.target_level)
-
-    if current is None or target is None:
-        return 0.0
-
-    if target <= current:
-        return 0.0  # At or above target
-
-    # Delta as percentage of target
-    delta_pct = (target - current) / target
-
-    # Map to 0-5 scale
-    return delta_pct * 5.0
-
-
-def _parse_level(level_str: str | None) -> float | None:
-    """
-    Parse a level string into a numeric value.
-
-    Handles:
-    - "7" -> 7.0
-    - "3/10" -> 3.0 (uses numerator for current, denominator for target)
-    - "70%" -> 70.0 (percentage as number, not decimal)
-    """
-    if not level_str:
-        return None
-
-    level_str = level_str.strip()
-
-    # Percentage: "70%" -> 70.0
-    if level_str.endswith('%'):
-        try:
-            return float(level_str[:-1])
-        except ValueError:
-            pass
-
-    # Fraction: "3/10" -> 3.0 (numerator only)
-    if '/' in level_str:
-        try:
-            num, _ = level_str.split('/', 1)
-            return float(num.strip())
-        except ValueError:
-            pass
-
-    # Plain number
-    try:
-        return float(level_str)
-    except ValueError:
-        pass
-
-    return None
 
 
 # ---------------------------------------------------------------------------

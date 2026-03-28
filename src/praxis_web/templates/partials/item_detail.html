@@ -21,14 +21,10 @@
         {% if task %}
             {% include "partials/properties/task_properties.html" %}
         {% elif priority %}
-            {% if priority.priority_type == 'goal' %}
+            {% if priority.priority_type == 'value' %}
+                {% include "partials/properties/value_properties.html" %}
+            {% elif priority.priority_type == 'goal' %}
                 {% include "partials/properties/goal_properties.html" %}
-            {% elif priority.priority_type == 'obligation' %}
-                {% include "partials/properties/obligation_properties.html" %}
-            {% elif priority.priority_type == 'capacity' %}
-                {% include "partials/properties/capacity_properties.html" %}
-            {% elif priority.priority_type == 'accomplishment' %}
-                {% include "partials/properties/accomplishment_properties.html" %}
             {% elif priority.priority_type == 'practice' %}
                 {% include "partials/properties/practice_properties.html" %}
             {% endif %}

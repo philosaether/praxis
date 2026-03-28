@@ -1,7 +1,7 @@
-{# Capacity properties form - always editable #}
+{# Value properties form - always editable #}
 {# Expects: priority, priority_statuses, all_priorities, parents, priority_types #}
 
-<div class="properties-section priority-properties capacity-properties">
+<div class="properties-section priority-properties value-properties">
     <form hx-post="/priorities/{{ priority.id }}/properties"
           hx-target="#properties-section"
           hx-swap="outerHTML">
@@ -17,7 +17,7 @@
                     hx-swap="outerHTML"
                     hx-confirm="Changing type will clear type-specific fields. Continue?">
                 {% for t in priority_types %}
-                <option value="{{ t }}" {% if t == 'capacity' %}selected{% endif %}>
+                <option value="{{ t }}" {% if t == 'value' %}selected{% endif %}>
                     {{ t|title }}
                 </option>
                 {% endfor %}
@@ -73,46 +73,24 @@
                       placeholder="Context for AI agent...">{{ priority.agent_context or '' }}</textarea>
         </div>
 
-        <!-- Capacity-specific: Measurement Method -->
+        <!-- Value-specific: Success Looks Like -->
         <div class="property-row">
-            <label for="measurement_method">Measurement Method</label>
-            <textarea id="measurement_method"
-                      name="measurement_method"
-                      rows="2"
-                      class="property-input"
-                      placeholder="How do you measure this capacity?">{{ priority.measurement_method or '' }}</textarea>
-        </div>
-
-        <!-- Capacity-specific: Rubric -->
-        <div class="property-row">
-            <label for="measurement_rubric">Rubric</label>
-            <textarea id="measurement_rubric"
-                      name="measurement_rubric"
+            <label for="success_looks_like">Success Looks Like</label>
+            <textarea id="success_looks_like"
+                      name="success_looks_like"
                       rows="3"
                       class="property-input"
-                      placeholder="Scoring criteria...">{{ priority.measurement_rubric or '' }}</textarea>
+                      placeholder="What does success look like?">{{ priority.success_looks_like or '' }}</textarea>
         </div>
 
-        <!-- Capacity-specific: Current Level -->
+        <!-- Value-specific: Obsolete When -->
         <div class="property-row">
-            <label for="current_level">Current Level</label>
-            <input type="text"
-                   id="current_level"
-                   name="current_level"
-                   value="{{ priority.current_level or '' }}"
-                   class="property-input"
-                   placeholder="Where are you now?">
-        </div>
-
-        <!-- Capacity-specific: Target Level -->
-        <div class="property-row">
-            <label for="target_level">Target Level</label>
-            <input type="text"
-                   id="target_level"
-                   name="target_level"
-                   value="{{ priority.target_level or '' }}"
-                   class="property-input"
-                   placeholder="Where do you want to be?">
+            <label for="obsolete_when">Obsolete When</label>
+            <textarea id="obsolete_when"
+                      name="obsolete_when"
+                      rows="2"
+                      class="property-input"
+                      placeholder="When does this goal become irrelevant?">{{ priority.obsolete_when or '' }}</textarea>
         </div>
 
         <!-- Save Button -->
