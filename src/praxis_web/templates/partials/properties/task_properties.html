@@ -6,13 +6,13 @@
           hx-target="#properties-section"
           hx-swap="outerHTML">
 
-        <!-- Title -->
+        <!-- Name -->
         <div class="property-row">
-            <label for="title">Title</label>
+            <label for="name">Name</label>
             <input type="text"
-                   id="title"
-                   name="title"
-                   value="{{ task.title }}"
+                   id="name"
+                   name="name"
+                   value="{{ task.name }}"
                    required
                    class="property-input title-input">
         </div>
@@ -60,7 +60,7 @@
                     class="btn btn-danger"
                     hx-delete="/tasks/{{ task.id }}"
                     hx-swap="none"
-                    hx-confirm="Delete '{{ task.title }}'? This cannot be undone."
+                    hx-confirm="Delete '{{ task.name }}'? This cannot be undone."
                     hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
                 Delete
             </button>

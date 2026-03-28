@@ -15,7 +15,7 @@ TASKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER REFERENCES users(id),
-    title TEXT NOT NULL,
+    name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued',
     notes TEXT,
     due_date TEXT,
@@ -53,7 +53,7 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()}
 
-    # Check if tasks table has old schema (workstream_id column)
+    # Check if tasks table has old schema
     if "tasks" in tables:
         columns = {row["name"] for row in conn.execute(
             "PRAGMA table_info(tasks)"
@@ -63,16 +63,22 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
         if "user_id" not in columns:
             conn.execute("ALTER TABLE tasks ADD COLUMN user_id INTEGER REFERENCES users(id)")
 
+        # Rename title → name
+        if "title" in columns and "name" not in columns:
+            conn.execute("ALTER TABLE tasks RENAME COLUMN title TO name")
+
         if "workstream_id" in columns:
             # Full migration: recreate table without workstream_id
             # Disable foreign keys during migration
-            conn.executescript("""
+            # Note: old schemas have 'title', new ones have 'name'
+            name_col = "name" if "name" in columns else "title"
+            conn.executescript(f"""
                 PRAGMA foreign_keys=OFF;
 
                 -- Create new table with correct schema
                 CREATE TABLE IF NOT EXISTS tasks_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
+                    name TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'queued',
                     notes TEXT,
                     due_date TEXT,
@@ -81,8 +87,8 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
                 );
 
                 -- Copy data (map workstream_id to priority_id if priority_id doesn't exist)
-                INSERT INTO tasks_new (id, title, status, notes, due_date, priority_id, created_at)
-                SELECT id, title, status, notes, due_date,
+                INSERT INTO tasks_new (id, name, status, notes, due_date, priority_id, created_at)
+                SELECT id, {name_col}, status, notes, due_date,
                        COALESCE(priority_id, workstream_id), created_at
                 FROM tasks;
 
@@ -103,7 +109,7 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
 # ---------------------------------------------------------------------
 
 def create_task(
-    title: str,
+    name: str,
     notes: str | None = None,
     due_date: datetime | None = None,
     priority_id: str | None = None,
@@ -116,14 +122,14 @@ def create_task(
         due_str = due_date.isoformat() if due_date else None
         cursor = conn.execute(
             """
-            INSERT INTO tasks (user_id, title, notes, due_date, priority_id, created_at)
+            INSERT INTO tasks (user_id, name, notes, due_date, priority_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (user_id, title, notes, due_str, priority_id, now.isoformat()),
+            (user_id, name, notes, due_str, priority_id, now.isoformat()),
         )
         return Task(
             id=cursor.lastrowid,
-            title=title,
+            name=name,
             status=TaskStatus.QUEUED,
             notes=notes,
             due_date=due_date,
@@ -158,6 +164,7 @@ def list_tasks(
     status: TaskStatus | None = None,
     include_done: bool = True,
     user_id: int | None = None,
+    inbox_only: bool = False,
 ) -> list[Task]:
     """List tasks with optional filters. Done tasks sorted to bottom."""
     ensure_schema()
@@ -174,7 +181,9 @@ def list_tasks(
             query += " AND t.user_id = ?"
             params.append(user_id)
 
-        if priority_id:
+        if inbox_only:
+            query += " AND t.priority_id IS NULL"
+        elif priority_id:
             query += " AND t.priority_id = ?"
             params.append(priority_id)
 
@@ -212,7 +221,7 @@ def update_task_status(task_id: int, status: TaskStatus) -> None:
 
 def update_task(
     task_id: int,
-    title: str | None = None,
+    name: str | None = None,
     notes: str | None = None,
     status: TaskStatus | None = None,
     due_date: datetime | None = None,
@@ -224,9 +233,9 @@ def update_task(
         updates = []
         params = []
 
-        if title is not None:
-            updates.append("title = ?")
-            params.append(title)
+        if name is not None:
+            updates.append("name = ?")
+            params.append(name)
         if notes is not None:
             updates.append("notes = ?")
             params.append(notes if notes else None)
@@ -273,7 +282,7 @@ def _row_to_task(row: sqlite3.Row) -> Task:
 
     return Task(
         id=row["id"],
-        title=row["title"],
+        name=row["name"],
         status=TaskStatus(row["status"]),
         notes=row["notes"],
         due_date=due_date,
@@ -426,8 +435,8 @@ def seed_database() -> dict:
     ]
 
     task_count = 0
-    for title, notes in tasks_data:
-        create_task(title, notes)
+    for name, notes in tasks_data:
+        create_task(name, notes)
         task_count += 1
 
     return {"tasks": task_count}

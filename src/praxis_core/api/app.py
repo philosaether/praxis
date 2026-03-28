@@ -136,7 +136,7 @@ def serialize_task(t, render_markdown: bool = False) -> dict:
 
     return {
         "id": t.id,
-        "title": t.title,
+        "name": t.name,
         "status": t.status.value,
         "notes": notes,
         "due_date": fmt_date(t.due_date),

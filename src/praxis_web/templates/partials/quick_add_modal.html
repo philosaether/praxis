@@ -1,0 +1,45 @@
+<div class="modal-backdrop" id="quick-add-backdrop" onclick="closeQuickAdd()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>New Task</h2>
+            <button type="button" class="modal-close" onclick="closeQuickAdd()">&times;</button>
+        </div>
+        <form hx-post="/tasks/quick-add"
+              hx-target="#item-list"
+              hx-swap="afterbegin"
+              hx-on::after-request="handleQuickAddResponse(event)">
+            <div class="modal-body">
+                <input type="text"
+                       name="name"
+                       placeholder="What needs to be done?"
+                       class="quick-add-input"
+                       required>
+
+                <details class="more-options">
+                    <summary>More options</summary>
+                    <div class="property-row">
+                        <label for="qa-priority">Priority</label>
+                        <select id="qa-priority" name="priority_id">
+                            <option value="">Inbox (no priority)</option>
+                            {% for p in priorities %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="property-row">
+                        <label for="qa-due-date">Due Date</label>
+                        <input type="date" id="qa-due-date" name="due_date">
+                    </div>
+                    <div class="property-row">
+                        <label for="qa-notes">Notes</label>
+                        <textarea id="qa-notes" name="notes" rows="3"></textarea>
+                    </div>
+                </details>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeQuickAdd()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Task</button>
+            </div>
+        </form>
+    </div>
+</div>
