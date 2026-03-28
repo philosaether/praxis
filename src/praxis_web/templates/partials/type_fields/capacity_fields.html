@@ -1,0 +1,40 @@
+{# Capacity-specific fields #}
+{# Used in: priority_new_form.html, quick_add_priority_modal.html, capacity_properties.html #}
+
+<div class="property-row">
+    <label for="measurement_method">Measurement Method</label>
+    <textarea id="measurement_method"
+              name="measurement_method"
+              rows="2"
+              class="property-input"
+              placeholder="How do you measure this capacity?">{{ priority.measurement_method or '' if priority else '' }}</textarea>
+</div>
+
+<div class="property-row">
+    <label for="measurement_rubric">Rubric</label>
+    <textarea id="measurement_rubric"
+              name="measurement_rubric"
+              rows="3"
+              class="property-input"
+              placeholder="Scoring criteria...">{{ priority.measurement_rubric or '' if priority else '' }}</textarea>
+</div>
+
+<div class="property-row">
+    <label for="current_level">Current Level</label>
+    <input type="text"
+           id="current_level"
+           name="current_level"
+           value="{{ priority.current_level or '' if priority else '' }}"
+           class="property-input"
+           placeholder="Where are you now?">
+</div>
+
+<div class="property-row">
+    <label for="target_level">Target Level</label>
+    <input type="text"
+           id="target_level"
+           name="target_level"
+           value="{{ priority.target_level or '' if priority else '' }}"
+           class="property-input"
+           placeholder="Where do you want to be?">
+</div>

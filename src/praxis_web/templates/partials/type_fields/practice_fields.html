@@ -1,0 +1,30 @@
+{# Practice-specific fields #}
+{# Used in: priority_new_form.html, quick_add_priority_modal.html, practice_properties.html #}
+
+<div class="property-row">
+    <label for="rhythm_frequency">Rhythm</label>
+    <input type="text"
+           id="rhythm_frequency"
+           name="rhythm_frequency"
+           value="{{ priority.rhythm_frequency or '' if priority else '' }}"
+           class="property-input"
+           placeholder="e.g., daily, weekly, 2x daily">
+</div>
+
+<div class="property-row">
+    <label for="rhythm_constraints">Constraints</label>
+    <textarea id="rhythm_constraints"
+              name="rhythm_constraints"
+              rows="2"
+              class="property-input"
+              placeholder="e.g., morning only, not after 9pm">{{ priority.rhythm_constraints or '' if priority else '' }}</textarea>
+</div>
+
+<div class="property-row">
+    <label for="generation_prompt">Generation Prompt</label>
+    <textarea id="generation_prompt"
+              name="generation_prompt"
+              rows="3"
+              class="property-input"
+              placeholder="How should AI generate specific tasks?">{{ priority.generation_prompt or '' if priority else '' }}</textarea>
+</div>

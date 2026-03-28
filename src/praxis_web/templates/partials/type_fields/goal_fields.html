@@ -1,0 +1,20 @@
+{# Goal-specific fields #}
+{# Used in: priority_new_form.html, quick_add_priority_modal.html, goal_properties.html #}
+
+<div class="property-row">
+    <label for="success_looks_like">Success Looks Like</label>
+    <textarea id="success_looks_like"
+              name="success_looks_like"
+              rows="3"
+              class="property-input"
+              placeholder="What does success look like?">{{ priority.success_looks_like or '' if priority else '' }}</textarea>
+</div>
+
+<div class="property-row">
+    <label for="obsolete_when">Obsolete When</label>
+    <textarea id="obsolete_when"
+              name="obsolete_when"
+              rows="2"
+              class="property-input"
+              placeholder="When does this goal become irrelevant?">{{ priority.obsolete_when or '' if priority else '' }}</textarea>
+</div>

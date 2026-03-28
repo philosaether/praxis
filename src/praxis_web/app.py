@@ -5,6 +5,7 @@ Run with: uvicorn praxis_web.app:app --port 8080
 Requires: PRAXIS_API_URL environment variable (default: http://localhost:8000)
 """
 
+import json
 import os
 import httpx
 from fastapi import FastAPI, Request, Form
@@ -187,13 +188,88 @@ async def priorities_list_partial(
     )
 
 
-@app.post("/priorities/new", response_class=HTMLResponse)
-async def create_new_priority(request: Request):
-    """Create a new priority and return the row HTML."""
+@app.get("/priorities/new", response_class=HTMLResponse)
+async def new_priority_form(request: Request):
+    """Show empty form for creating a new priority."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    from praxis_core.model import PriorityType, PriorityStatus
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_new_form.html",
+        {
+            "all_priorities": data["priorities"],
+            "priority_types": [t.value for t in PriorityType],
+            "priority_statuses": [s.value for s in PriorityStatus],
+        }
+    )
+
+
+@app.get("/priorities/new/fields", response_class=HTMLResponse)
+async def priority_type_fields(request: Request, priority_type: str = "accomplishment"):
+    """Return type-specific fields for the selected priority type."""
+    template_name = f"partials/type_fields/{priority_type}_fields.html"
+    return templates.TemplateResponse(request, template_name, {})
+
+
+@app.post("/priorities/create", response_class=HTMLResponse)
+async def create_priority_submit(request: Request):
+    """Create a new priority and return the detail view."""
     form_data = await request.form()
+    parent_id = form_data.get("parent_id")
+    # Normalize empty string to None
+    if parent_id and not parent_id.strip():
+        parent_id = None
 
     async with api_client(request) as client:
-        response = await client.post("/api/priorities", data=dict(form_data))
+        response = await client.post("/api/priorities/create", data=dict(form_data))
+        if response.status_code == 400:
+            error_data = response.json()
+            return HTMLResponse(
+                content=f"<div class='error'>{error_data.get('error', 'Name is required')}</div>",
+                status_code=400
+            )
+        data = response.json()
+
+    priority = data["priority"]
+
+    # Return priority detail view and trigger list refresh
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/item_detail.html",
+        data
+    )
+    # Include priority data in trigger for tree update
+    trigger_data = {
+        "priorityCreated": {
+            "id": priority["id"],
+            "parent_id": parent_id
+        }
+    }
+    html_response.headers["HX-Trigger"] = json.dumps(trigger_data)
+    html_response.headers["X-New-Item-Id"] = priority["id"]
+    return html_response
+
+
+@app.post("/priorities/quick-add", response_class=HTMLResponse)
+async def quick_add_priority(request: Request):
+    """Create a priority via quick-add modal and return the row HTML."""
+    form_data = await request.form()
+    parent_id = form_data.get("parent_id")
+    # Normalize empty string to None
+    if parent_id and not parent_id.strip():
+        parent_id = None
+
+    async with api_client(request) as client:
+        response = await client.post("/api/priorities/create", data=dict(form_data))
+        if response.status_code == 400:
+            error_data = response.json()
+            return HTMLResponse(
+                content=f"<div class='error'>{error_data.get('error', 'Name is required')}</div>",
+                status_code=400
+            )
         data = response.json()
 
     priority = data["priority"]
@@ -202,8 +278,22 @@ async def create_new_priority(request: Request):
         "partials/priority_row_single.html",
         {"priority": priority}
     )
-    html_response.headers["X-New-Item-Id"] = priority["id"]
+    # Include priority data in trigger for tree update
+    trigger_data = {
+        "priorityCreated": {
+            "id": priority["id"],
+            "parent_id": parent_id
+        }
+    }
+    html_response.headers["HX-Trigger"] = json.dumps(trigger_data)
     return html_response
+
+
+@app.get("/priorities/quick-add/fields", response_class=HTMLResponse)
+async def quick_add_priority_fields(request: Request, priority_type: str = "accomplishment"):
+    """Return type-specific fields for quick-add modal."""
+    template_name = f"partials/type_fields/{priority_type}_fields.html"
+    return templates.TemplateResponse(request, template_name, {})
 
 
 @app.get("/priorities/tree", response_class=HTMLResponse)
@@ -247,6 +337,26 @@ async def priority_tree_pane(request: Request):
     )
 
 
+@app.get("/priorities/{priority_id}/tree-node", response_class=HTMLResponse)
+async def priority_tree_node(request: Request, priority_id: str):
+    """Return a single tree node HTML for inserting into the tree."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/priorities/{priority_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+        data = response.json()
+
+    priority = data["priority"]
+    # New priorities have no children yet
+    priority["children"] = []
+
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_tree_node.html",
+        {"node": priority, "depth": 0}
+    )
+
+
 @app.post("/priorities/{priority_id}/move", response_class=HTMLResponse)
 async def priority_move(request: Request, priority_id: str):
     """Handle drag-and-drop move of a priority in the tree."""
@@ -269,6 +379,27 @@ async def priority_move(request: Request, priority_id: str):
         if response.status_code != 200:
             return HTMLResponse(
                 content="Failed to move priority",
+                status_code=response.status_code
+            )
+
+    return HTMLResponse(content="OK", status_code=200)
+
+
+@app.post("/priorities/{priority_id}/delete", response_class=HTMLResponse)
+async def priority_delete(request: Request, priority_id: str):
+    """Delete a priority, handling children and linked tasks."""
+    data = await request.json()
+    delete_mode = data.get("delete_mode", "orphan")
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/priorities/{priority_id}/delete",
+            json={"delete_mode": delete_mode}
+        )
+
+        if response.status_code != 200:
+            return HTMLResponse(
+                content="Failed to delete priority",
                 status_code=response.status_code
             )
 
@@ -299,12 +430,37 @@ async def priority_detail(request: Request, priority_id: str):
             data["priority"]["notes_raw"] = edit_data["priority"].get("notes", "")
             data["all_priorities"] = edit_data.get("all_priorities", [])
             data["priority_statuses"] = edit_data.get("priority_statuses", [])
+            data["priority_types"] = edit_data.get("priority_types", [])
 
     return templates.TemplateResponse(
         request,
         "partials/item_detail.html",
         data
     )
+
+
+@app.post("/priorities/{priority_id}/change-type", response_class=HTMLResponse)
+async def priority_change_type(request: Request, priority_id: str):
+    """Change priority type and return updated properties form."""
+    form_data = await request.form()
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/priorities/{priority_id}/change-type",
+            data=dict(form_data)
+        )
+        if response.status_code != 200:
+            return HTMLResponse(content="<div class='error'>Failed to change type</div>", status_code=400)
+        data = response.json()
+
+    priority_type = data["priority"]["priority_type"]
+    template_name = f"partials/properties/{priority_type}_properties.html"
+
+    # Add priority_types to the data for the dropdown
+    from praxis_core.model import PriorityType
+    data["priority_types"] = [t.value for t in PriorityType]
+
+    return templates.TemplateResponse(request, template_name, data)
 
 
 @app.post("/priorities/{priority_id}/properties", response_class=HTMLResponse)
@@ -333,6 +489,10 @@ async def priority_save_properties(request: Request, priority_id: str):
     # Determine which properties template to use based on priority type
     priority_type = data["priority"]["priority_type"]
     template_name = f"partials/properties/{priority_type}_properties.html"
+
+    # Add priority_types for the type dropdown
+    from praxis_core.model import PriorityType
+    data["priority_types"] = [t.value for t in PriorityType]
 
     # Render properties section
     properties_html = templates.TemplateResponse(

@@ -1,0 +1,27 @@
+{# Confirmation modal for destructive actions #}
+
+<div class="modal-backdrop" id="confirm-modal-backdrop" onclick="closeConfirmModal()">
+    <div class="modal confirm-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="confirm-modal-title">Confirm</h2>
+            <button type="button" class="modal-close" onclick="closeConfirmModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirm-modal-message">Are you sure?</p>
+            <div id="confirm-modal-options" style="display: none;">
+                <label class="confirm-option">
+                    <input type="radio" name="delete-mode" value="orphan" checked>
+                    <span>Move children up to parent (or make them roots)</span>
+                </label>
+                <label class="confirm-option">
+                    <input type="radio" name="delete-mode" value="cascade">
+                    <span>Delete all children too</span>
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirm-modal-action">Delete</button>
+        </div>
+    </div>
+</div>
