@@ -1,0 +1,149 @@
+// =============================================================================
+// Modal
+// =============================================================================
+@use 'variables' as *;
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity $transition-fast, visibility $transition-fast;
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.modal {
+  background: $bg-secondary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.95);
+  transition: transform $transition-fast;
+
+  .open & {
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  border-bottom: 1px solid $border;
+
+  h2 {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $text-primary;
+  }
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: $text-muted;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+
+  &:hover {
+    color: $text-primary;
+  }
+}
+
+.modal-body {
+  padding: $spacing-lg;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  border-top: 1px solid $border;
+}
+
+// Quick add specific styles
+.quick-add-input {
+  width: 100%;
+  padding: $spacing-md;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  font-size: $font-size-base;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.more-options {
+  margin-top: $spacing-lg;
+
+  summary {
+    cursor: pointer;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+
+  .property-row {
+    margin-top: $spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-xs;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: $spacing-sm;
+      background: $bg-primary;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      color: $text-primary;
+      font-size: $font-size-sm;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+  }
+}

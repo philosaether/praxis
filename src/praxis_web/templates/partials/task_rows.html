@@ -6,7 +6,7 @@
          hx-get="/tasks/{{ task.id }}"
          hx-target="#detail-pane"
          hx-swap="innerHTML">
-        <div class="task-title">{{ task.title }}</div>
+        <div class="task-title">{{ task.name }}</div>
         <div class="meta">
             {% if task.score is defined %}
             <span class="score-badge" title="Score: {{ task.score }} (imp={{ task.importance }}, urg={{ task.urgency }})">

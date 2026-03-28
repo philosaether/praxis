@@ -1,0 +1,88 @@
+{# New task creation form #}
+{# Expects: priorities, task_statuses #}
+
+<div class="detail-view">
+    <div id="properties-section">
+        <div class="properties-section task-properties">
+            <form hx-post="/tasks/create"
+                  hx-target="#detail-pane"
+                  hx-swap="innerHTML">
+
+                <!-- Name (required) -->
+                <div class="property-row">
+                    <label for="name">Name</label>
+                    <input type="text"
+                           id="name"
+                           name="name"
+                           placeholder="Task name"
+                           required
+                           autofocus
+                           class="property-input title-input">
+                </div>
+
+                <!-- Priority -->
+                <div class="property-row">
+                    <label for="priority_id">Priority</label>
+                    <select id="priority_id" name="priority_id" class="property-input">
+                        <option value="">Inbox (no priority)</option>
+                        {% for p in priorities %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="property-row">
+                    <label for="status">Status</label>
+                    <select id="status" name="status" class="property-input">
+                        {% for s in task_statuses %}
+                        <option value="{{ s }}" {% if s == 'queued' %}selected{% endif %}>
+                            {{ s }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Due Date -->
+                <div class="property-row">
+                    <label for="due_date">Due Date</label>
+                    <input type="date"
+                           id="due_date"
+                           name="due_date"
+                           class="property-input">
+                </div>
+
+                <!-- Save Button -->
+                <div class="property-actions">
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                    <button type="button"
+                            class="btn btn-secondary"
+                            onclick="document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
+                        Cancel
+                    </button>
+                </div>
+
+                <!-- Validation errors -->
+                <div id="property-errors" class="property-errors"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notes Section (for new task) -->
+    <div class="notes-section">
+        <div class="notes-header">
+            <h3>Notes</h3>
+        </div>
+        <div class="notes-content">
+            <form hx-post="/tasks/create"
+                  hx-target="#detail-pane"
+                  hx-swap="innerHTML"
+                  style="display: none;">
+                <!-- Notes will be editable after task is created -->
+            </form>
+            <div class="notes-display empty">
+                <p class="empty-notes">Save the task first to add notes.</p>
+            </div>
+        </div>
+    </div>
+</div>

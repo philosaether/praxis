@@ -33,7 +33,7 @@ class Subtask:
 class Task:
     # Stored fields
     id: int
-    title: str
+    name: str
     status: TaskStatus
     notes: str | None = None
     due_date: datetime | None = None

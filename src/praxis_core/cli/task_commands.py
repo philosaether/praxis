@@ -52,7 +52,7 @@ def register_task_commands(app: typer.Typer) -> None:
 
     @app.command()
     def add(
-        title: str = typer.Argument(..., help="Task title"),
+        name: str = typer.Argument(..., help="Task name"),
         priority: str | None = typer.Option(
             None,
             "--priority",
@@ -77,8 +77,8 @@ def register_task_commands(app: typer.Typer) -> None:
                 rprint(f"[red]Priority not found:[/red] {priority}")
                 raise typer.Exit(1)
 
-        task = create_task(title, notes, priority_id=priority)
-        rprint(f"[green]Created task #{task.id}:[/green] {title}")
+        task = create_task(name, notes, priority_id=priority)
+        rprint(f"[green]Created task #{task.id}:[/green] {name}")
         if priority:
             rprint(f"[dim]Priority: {priority}[/dim]")
 
@@ -120,7 +120,7 @@ def _select_task(tasks: list) -> Task | None:
 def _display_task(task: Task) -> None:
     """Display a task in the terminal."""
     rprint()
-    rprint(f"[bold green]{task.title}[/bold green]")
+    rprint(f"[bold green]{task.name}[/bold green]")
     if task.priority_name:
         rprint(f"[dim]{task.priority_name}[/dim]")
     if task.current_subtask:

@@ -42,11 +42,33 @@ def _serialize_task(t, render_markdown: bool = False):
 
 @router.post("")
 async def create_task_endpoint(
+    name: Annotated[str, Form()],
+    priority_id: Annotated[str | None, Form()] = None,
+    due_date: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
-    """Create a new task with default values."""
+    """Create a new task."""
+    if not name.strip():
+        return JSONResponse({"error": "Name is required"}, status_code=400)
+
     user_id = user.id if user else None
-    task = create_task(title="New Task", user_id=user_id)
+
+    # Parse due_date if provided
+    parsed_due_date = None
+    if due_date:
+        try:
+            parsed_due_date = datetime.fromisoformat(due_date)
+        except ValueError:
+            pass
+
+    task = create_task(
+        name=name.strip(),
+        notes=notes.strip() if notes else None,
+        due_date=parsed_due_date,
+        priority_id=priority_id.strip() if priority_id else None,
+        user_id=user_id,
+    )
     return {"task": _serialize_task(task)}
 
 
@@ -54,6 +76,7 @@ async def create_task_endpoint(
 async def list_tasks_endpoint(
     priority: str | None = None,
     status: str | None = None,
+    inbox: bool = False,
     user: User | None = Depends(get_current_user_optional),
 ):
     """List tasks with optional filters, ranked by priority score."""
@@ -65,7 +88,7 @@ async def list_tasks_endpoint(
             pass
 
     user_id = user.id if user else None
-    tasks = list_tasks(priority_id=priority, status=task_status, user_id=user_id)
+    tasks = list_tasks(priority_id=priority, status=task_status, user_id=user_id, inbox_only=inbox)
     graph = _get_graph(user_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
@@ -133,7 +156,7 @@ async def get_task_for_edit(
 @router.post("/{task_id}")
 async def update_task_endpoint(
     task_id: int,
-    title: Annotated[str, Form()],
+    name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
@@ -155,7 +178,7 @@ async def update_task_endpoint(
 
     update_task(
         task_id,
-        title=title.strip(),
+        name=name.strip(),
         status=TaskStatus(status),
         priority_id=priority_id.strip() if priority_id else "",
         notes=notes.strip() if notes else "",
@@ -183,7 +206,7 @@ async def toggle_task(task_id: int):
 @router.post("/{task_id}/properties")
 async def update_task_properties(
     task_id: int,
-    title: Annotated[str, Form()],
+    name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
@@ -194,9 +217,9 @@ async def update_task_properties(
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
 
-    # Validate title
-    if not title.strip():
-        return JSONResponse({"error": "Title is required"}, status_code=400)
+    # Validate name
+    if not name.strip():
+        return JSONResponse({"error": "Name is required"}, status_code=400)
 
     # Parse due_date if provided
     parsed_due_date = None
@@ -208,7 +231,7 @@ async def update_task_properties(
 
     update_task(
         task_id,
-        title=title.strip(),
+        name=name.strip(),
         status=TaskStatus(status),
         priority_id=priority_id.strip() if priority_id else "",
         notes=task.notes or "",  # Preserve existing notes
@@ -243,7 +266,7 @@ async def update_task_notes(
 
     update_task(
         task_id,
-        title=task.title,
+        name=task.name,
         status=task.status,
         priority_id=task.priority_id or "",
         notes=notes.strip() if notes else "",

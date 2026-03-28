@@ -18,15 +18,22 @@
             {% endif %}
         </div>
 
-        <!-- Main Toggle: Tasks | Priorities -->
+        <!-- Main Toggle: Inbox | Queue | Priorities -->
         <div class="filters">
             <div class="view-toggle">
+                <button class="view-btn"
+                        id="inbox-view-btn"
+                        hx-get="/tasks/inbox"
+                        hx-target="#item-list"
+                        onclick="setMode('inbox')">
+                    Inbox
+                </button>
                 <button class="view-btn active"
                         id="tasks-view-btn"
                         hx-get="/tasks/list"
                         hx-target="#item-list"
                         onclick="setMode('tasks')">
-                    Tasks
+                    Queue
                 </button>
                 <button class="view-btn"
                         id="priorities-view-btn"
@@ -77,10 +84,9 @@
         <div class="add-new-bar">
             <div id="add-task-bar" style="display: flex;">
                 <button class="btn btn-primary btn-sm"
-                        hx-post="/tasks/new"
-                        hx-target="#item-list"
-                        hx-swap="afterbegin"
-                        hx-on::after-request="loadNewTask(event)">
+                        hx-get="/tasks/new"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
                     + New Task
                 </button>
             </div>
@@ -114,20 +120,33 @@
             <p>Click an item on the left to view details</p>
         </div>
     </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="openQuickAdd()" title="Quick add task">+</button>
 </div>
 
+<!-- Quick Add Modal -->
+{% include "partials/quick_add_modal.html" %}
+
 <script>
+    // Current view mode
+    window.currentMode = 'tasks';
+
     window.setMode = function(mode) {
+        window.currentMode = mode;
+
         // Toggle button states
+        document.getElementById('inbox-view-btn').classList.toggle('active', mode === 'inbox');
         document.getElementById('tasks-view-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-view-btn').classList.toggle('active', mode === 'priorities');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
+        // Hide task filters in inbox mode (all inbox tasks have no priority)
         document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
 
         // Toggle add-new bar visibility
-        document.getElementById('add-task-bar').style.display = mode === 'tasks' ? 'flex' : 'none';
+        document.getElementById('add-task-bar').style.display = (mode === 'tasks' || mode === 'inbox') ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
 
         // Update detail pane based on mode
@@ -135,10 +154,40 @@
             // Load tree view in detail pane
             htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
         } else {
-            // Clear detail pane for tasks mode
+            // Clear detail pane for tasks/inbox mode
             document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
         }
     };
+
+    // Quick Add Modal
+    window.openQuickAdd = function() {
+        document.getElementById('quick-add-backdrop').classList.add('open');
+        setTimeout(() => {
+            document.querySelector('.quick-add-input').focus();
+        }, 100);
+    };
+
+    window.closeQuickAdd = function() {
+        document.getElementById('quick-add-backdrop').classList.remove('open');
+        // Reset form
+        const form = document.querySelector('#quick-add-backdrop form');
+        if (form) form.reset();
+    };
+
+    window.handleQuickAddResponse = function(event) {
+        if (event.detail.successful) {
+            closeQuickAdd();
+            // If we're in inbox mode and task has priority, or in queue and task has no priority,
+            // we might want to switch views. For now, just close the modal.
+        }
+    };
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeQuickAdd();
+        }
+    });
 
     window.selectTreeNode = function(element) {
         // Remove selected class from all tree nodes
@@ -159,12 +208,12 @@
             // Load the detail view
             htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-pane', swap: 'innerHTML'})
                 .then(() => {
-                    // Focus the title input after detail loads
+                    // Focus the name input after detail loads
                     setTimeout(() => {
-                        const titleInput = document.querySelector('#detail-pane #title');
-                        if (titleInput) {
-                            titleInput.focus();
-                            titleInput.select();
+                        const nameInput = document.querySelector('#detail-pane #name');
+                        if (nameInput) {
+                            nameInput.focus();
+                            nameInput.select();
                         }
                     }, 100);
                 });
@@ -201,5 +250,12 @@
         // Add selected class to clicked row
         element.classList.add('selected');
     };
+
+    // Listen for task creation to refresh the list
+    document.body.addEventListener('taskCreated', function(event) {
+        // Refresh the task list based on current mode
+        const listUrl = window.currentMode === 'inbox' ? '/tasks/inbox' : '/tasks/list';
+        htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+    });
 </script>
 {% endblock %}

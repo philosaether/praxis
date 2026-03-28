@@ -401,11 +401,90 @@ async def tasks_list_partial(
     )
 
 
-@app.post("/tasks/new", response_class=HTMLResponse)
-async def create_new_task(request: Request):
-    """Create a new task and return the row HTML."""
+@app.get("/tasks/inbox", response_class=HTMLResponse)
+async def tasks_inbox_partial(request: Request):
+    """HTMX partial: inbox tasks (no priority assigned)."""
     async with api_client(request) as client:
-        response = await client.post("/api/tasks")
+        response = await client.get("/api/tasks", params={"inbox": "true"})
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/task_rows.html",
+        {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
+    )
+
+
+@app.get("/tasks/new", response_class=HTMLResponse)
+async def new_task_form(request: Request):
+    """Show empty form for creating a new task."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    from praxis_core.model import TaskStatus
+    return templates.TemplateResponse(
+        request,
+        "partials/task_new_form.html",
+        {
+            "priorities": data["priorities"],
+            "task_statuses": [s.value for s in TaskStatus],
+        }
+    )
+
+
+@app.post("/tasks/create", response_class=HTMLResponse)
+async def create_task_submit(request: Request):
+    """Create a new task and return the detail view."""
+    form_data = await request.form()
+
+    async with api_client(request) as client:
+        response = await client.post("/api/tasks", data=dict(form_data))
+        if response.status_code == 400:
+            error_data = response.json()
+            return HTMLResponse(
+                content=f"<div class='error'>{error_data.get('error', 'Name is required')}</div>",
+                status_code=400
+            )
+        data = response.json()
+
+    task = data["task"]
+
+    # Return task detail view and trigger list refresh
+    async with api_client(request) as client:
+        detail_response = await client.get(f"/api/tasks/{task['id']}")
+        detail_data = detail_response.json()
+
+        # Get raw notes for edit form
+        edit_response = await client.get(f"/api/tasks/{task['id']}/edit")
+        if edit_response.status_code == 200:
+            edit_data = edit_response.json()
+            detail_data["task"]["notes_raw"] = edit_data["task"].get("notes", "")
+
+    # Include HX-Trigger to refresh the task list
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/item_detail.html",
+        detail_data
+    )
+    html_response.headers["HX-Trigger"] = "taskCreated"
+    html_response.headers["X-New-Item-Id"] = str(task["id"])
+    return html_response
+
+
+@app.post("/tasks/quick-add", response_class=HTMLResponse)
+async def quick_add_task(request: Request):
+    """Create a task via quick-add modal and return the row HTML."""
+    form_data = await request.form()
+
+    async with api_client(request) as client:
+        response = await client.post("/api/tasks", data=dict(form_data))
+        if response.status_code == 400:
+            error_data = response.json()
+            return HTMLResponse(
+                content=f"<div class='error'>{error_data.get('error', 'Name is required')}</div>",
+                status_code=400
+            )
         data = response.json()
 
     task = data["task"]
@@ -414,7 +493,8 @@ async def create_new_task(request: Request):
         "partials/task_row_single.html",
         {"task": task}
     )
-    html_response.headers["X-New-Item-Id"] = str(task["id"])
+    # Trigger event to close modal
+    html_response.headers["HX-Trigger"] = "taskCreated"
     return html_response
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
