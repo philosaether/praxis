@@ -26,6 +26,28 @@ from praxis_core.persistence.task_persistence import (
     seed_database,
     TASKS_SCHEMA,
 )
+from praxis_core.persistence.user_persistence import (
+    # Schema
+    USERS_SCHEMA,
+    # Password utils
+    hash_password,
+    verify_password,
+    # User CRUD
+    create_user,
+    get_user,
+    get_user_by_username,
+    authenticate_user,
+    list_users,
+    update_user_password,
+    delete_user,
+    # Session CRUD
+    create_session,
+    get_session,
+    validate_session,
+    delete_session,
+    delete_user_sessions,
+    cleanup_expired_sessions,
+)
 
 __all__ = [
     # Database
@@ -51,4 +73,21 @@ __all__ = [
     "clear_tasks",
     "seed_database",
     "TASKS_SCHEMA",
+    # User persistence
+    "USERS_SCHEMA",
+    "hash_password",
+    "verify_password",
+    "create_user",
+    "get_user",
+    "get_user_by_username",
+    "authenticate_user",
+    "list_users",
+    "update_user_password",
+    "delete_user",
+    "create_session",
+    "get_session",
+    "validate_session",
+    "delete_session",
+    "delete_user_sessions",
+    "cleanup_expired_sessions",
 ]
