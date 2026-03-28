@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, Depends
 from fastapi.responses import JSONResponse
 
 from praxis_core.model import (
@@ -14,7 +14,9 @@ from praxis_core.model import (
     Capacity,
     Accomplishment,
     Practice,
+    User,
 )
+from praxis_core.api.auth import get_current_user_optional
 
 
 router = APIRouter()

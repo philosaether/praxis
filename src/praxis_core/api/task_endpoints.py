@@ -3,10 +3,10 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, Depends
 from fastapi.responses import JSONResponse
 
-from praxis_core.model import TaskStatus
+from praxis_core.model import TaskStatus, User
 from praxis_core.persistence import (
     create_task,
     get_task,
@@ -16,6 +16,7 @@ from praxis_core.persistence import (
     delete_task,
 )
 from praxis_core.prioritization import rank_tasks
+from praxis_core.api.auth import get_current_user_optional
 
 
 router = APIRouter()
