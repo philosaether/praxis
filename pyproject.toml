@@ -19,6 +19,8 @@ dependencies = [
     "uvicorn>=0.27.0",
     "markdown>=3.5.0",
     "argon2-cffi>=23.1.0",
+    "httpx>=0.27.0",
+    "jinja2>=3.1.0",
 ]
 
 [project.optional-dependencies]
@@ -29,9 +31,10 @@ dev = [
 
 [project.scripts]
 praxis = "praxis_core.cli:app"
+praxis-home = "praxis_home.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/praxis_core"]
+packages = ["src/praxis_core", "src/praxis_web", "src/praxis_home"]
 
 [tool.ruff]
 line-length = 100

@@ -1,0 +1,150 @@
+"""Praxis Home server entry point.
+
+Usage:
+    praxis-home serve     # Start both API and web servers
+    praxis-home setup     # Create admin user (first-time setup)
+"""
+
+import os
+import sys
+import getpass
+import asyncio
+import uvicorn
+from multiprocessing import Process
+
+from praxis_home.config import PraxisHomeConfig
+
+
+def setup(config: PraxisHomeConfig | None = None):
+    """Create the initial admin user for first-time setup."""
+    if config is None:
+        config = PraxisHomeConfig()
+
+    # Ensure database directory exists
+    db_dir = os.path.dirname(config.db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
+    # Set database path for praxis_core
+    os.environ["PRAXIS_DB_PATH"] = config.db_path
+
+    # Import after setting env var
+    from praxis_core.persistence import get_user_by_username, create_user
+    from praxis_core.model import UserRole
+
+    print("Praxis Home Setup")
+    print("=" * 40)
+    print()
+
+    # Check if admin already exists
+    existing = get_user_by_username("admin")
+    if existing:
+        print("Admin user already exists.")
+        print("Use 'praxis-home reset-password' to change the password.")
+        return
+
+    # Get admin credentials
+    print("Create admin account:")
+    while True:
+        password = getpass.getpass("  Password: ")
+        if len(password) < 8:
+            print("  Password must be at least 8 characters.")
+            continue
+        confirm = getpass.getpass("  Confirm password: ")
+        if password != confirm:
+            print("  Passwords do not match.")
+            continue
+        break
+
+    email = input("  Email (optional): ").strip() or None
+
+    # Create admin user
+    user = create_user(
+        username="admin",
+        password=password,
+        email=email,
+        role=UserRole.ADMIN,
+    )
+
+    print()
+    print(f"Admin user created (ID: {user.id})")
+    print()
+    print("Start the server with: praxis-home serve")
+
+
+def run_api_server(config: PraxisHomeConfig):
+    """Run the API server."""
+    os.environ["PRAXIS_DB_PATH"] = config.db_path
+    uvicorn.run(
+        "praxis_core.api.app:app",
+        host=config.api_host,
+        port=config.api_port,
+        log_level="info",
+    )
+
+
+def run_web_server(config: PraxisHomeConfig):
+    """Run the web server."""
+    os.environ["PRAXIS_API_URL"] = f"http://localhost:{config.api_port}"
+    uvicorn.run(
+        "praxis_web.app:app",
+        host=config.web_host,
+        port=config.web_port,
+        log_level="info",
+    )
+
+
+def serve(config: PraxisHomeConfig | None = None):
+    """Start both API and web servers."""
+    if config is None:
+        config = PraxisHomeConfig()
+
+    # Ensure database directory exists
+    db_dir = os.path.dirname(config.db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
+    print("Starting Praxis Home...")
+    print(f"  API:  http://{config.api_host}:{config.api_port}")
+    print(f"  Web:  http://{config.web_host}:{config.web_port}")
+    print()
+
+    # Start API server in background process
+    api_process = Process(target=run_api_server, args=(config,))
+    api_process.start()
+
+    # Give API a moment to start
+    import time
+    time.sleep(1)
+
+    # Run web server in main process
+    try:
+        run_web_server(config)
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+    finally:
+        api_process.terminate()
+        api_process.join()
+
+
+def main():
+    """CLI entry point."""
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+
+    command = sys.argv[1]
+    config = PraxisHomeConfig()
+
+    if command == "serve":
+        serve(config)
+    elif command == "setup":
+        setup(config)
+    else:
+        print(f"Unknown command: {command}")
+        print(__doc__)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
