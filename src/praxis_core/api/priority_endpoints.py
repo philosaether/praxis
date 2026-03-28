@@ -72,10 +72,10 @@ def _create_priority_by_type(priority_type: str, id: str, name: str):
 
 @router.post("")
 async def create_priority_endpoint(
-    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "goal",
+    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "accomplishment",
     user: User | None = Depends(get_current_user_optional),
 ):
-    """Create a new priority with default values."""
+    """Create a new priority with default values (legacy endpoint)."""
     user_id = user.id if user else None
     graph = _get_graph(user_id)
 
@@ -93,6 +93,94 @@ async def create_priority_endpoint(
     graph.add(priority)
 
     return {"priority": _serialize_priority(priority)}
+
+
+@router.post("/create")
+async def create_priority_full(
+    priority_type: Annotated[str, Form()] = "accomplishment",
+    name: Annotated[str, Form()] = "",
+    status: Annotated[str, Form()] = "active",
+    parent_id: Annotated[str | None, Form()] = None,
+    agent_context: Annotated[str | None, Form()] = None,
+    # Goal fields
+    success_looks_like: Annotated[str | None, Form()] = None,
+    obsolete_when: Annotated[str | None, Form()] = None,
+    # Obligation fields
+    consequence_of_neglect: Annotated[str | None, Form()] = None,
+    # Capacity fields
+    measurement_method: Annotated[str | None, Form()] = None,
+    measurement_rubric: Annotated[str | None, Form()] = None,
+    current_level: Annotated[str | None, Form()] = None,
+    target_level: Annotated[str | None, Form()] = None,
+    # Accomplishment fields
+    success_criteria: Annotated[str | None, Form()] = None,
+    progress: Annotated[str | None, Form()] = None,
+    due_date: Annotated[str | None, Form()] = None,
+    # Practice fields
+    rhythm_frequency: Annotated[str | None, Form()] = None,
+    rhythm_constraints: Annotated[str | None, Form()] = None,
+    generation_prompt: Annotated[str | None, Form()] = None,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Create a priority with all fields (form-first flow)."""
+    if not name.strip():
+        return JSONResponse({"error": "Name is required"}, status_code=400)
+
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
+
+    priority_id = _generate_priority_id(name.strip(), graph)
+    priority = _create_priority_by_type(priority_type, priority_id, name.strip())
+
+    # Set common fields
+    priority.status = PriorityStatus(status)
+    priority.agent_context = agent_context.strip() if agent_context else None
+
+    # Set type-specific fields
+    if isinstance(priority, Goal):
+        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
+        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
+    elif isinstance(priority, Obligation):
+        priority.consequence_of_neglect = consequence_of_neglect.strip() if consequence_of_neglect else None
+    elif isinstance(priority, Capacity):
+        priority.measurement_method = measurement_method.strip() if measurement_method else None
+        priority.measurement_rubric = measurement_rubric.strip() if measurement_rubric else None
+        priority.current_level = current_level.strip() if current_level else None
+        priority.target_level = target_level.strip() if target_level else None
+    elif isinstance(priority, Accomplishment):
+        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.progress = progress.strip() if progress else None
+        if due_date:
+            try:
+                priority.due_date = datetime.fromisoformat(due_date)
+            except ValueError:
+                priority.due_date = None
+    elif isinstance(priority, Practice):
+        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
+        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
+        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
+
+    graph.add(priority)
+
+    # Handle parent link
+    if parent_id and parent_id.strip():
+        try:
+            graph.link(priority.id, parent_id.strip())
+        except ValueError:
+            pass
+
+    # Return full detail data for rendering
+    parent_ids = graph.parents.get(priority.id, set())
+    child_ids = graph.children.get(priority.id, set())
+    all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
+
+    return {
+        "priority": _serialize_priority(priority, render_markdown=True),
+        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
+        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "priority_statuses": [s.value for s in PriorityStatus],
+    }
 
 
 @router.get("")
@@ -291,6 +379,44 @@ async def update_priority(
 
     # Return updated data
     return await get_priority(priority_id)
+
+
+@router.post("/{priority_id}/change-type")
+async def change_priority_type(
+    priority_id: str,
+    new_priority_type: Annotated[str, Form()],
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Change a priority's type, preserving common fields."""
+    user_id = user.id if user else None
+    graph = _get_graph(user_id)
+    old_priority = graph.get(priority_id)
+
+    if not old_priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    if old_priority.priority_type.value == new_priority_type:
+        # No change, return current data
+        return await get_priority_for_edit(priority_id, user)
+
+    # Create new priority of new type, preserving common fields
+    now = datetime.now()
+    new_priority = _create_priority_by_type(new_priority_type, priority_id, old_priority.name)
+
+    # Copy common fields
+    new_priority.status = old_priority.status
+    new_priority.agent_context = old_priority.agent_context
+    new_priority.notes = old_priority.notes
+    new_priority.rank = old_priority.rank
+    new_priority.created_at = old_priority.created_at
+    new_priority.updated_at = now
+
+    # Replace in graph
+    graph.nodes[priority_id] = new_priority
+    graph.save_priority(new_priority)
+
+    # Return edit data for new type
+    return await get_priority_for_edit(priority_id, user)
 
 
 @router.post("/{priority_id}/properties")

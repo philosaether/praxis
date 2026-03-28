@@ -1,0 +1,11 @@
+{# Obligation-specific fields #}
+{# Used in: priority_new_form.html, quick_add_priority_modal.html, obligation_properties.html #}
+
+<div class="property-row">
+    <label for="consequence_of_neglect">Consequence of Neglect</label>
+    <textarea id="consequence_of_neglect"
+              name="consequence_of_neglect"
+              rows="3"
+              class="property-input"
+              placeholder="What happens if this obligation is neglected?">{{ priority.consequence_of_neglect or '' if priority else '' }}</textarea>
+</div>

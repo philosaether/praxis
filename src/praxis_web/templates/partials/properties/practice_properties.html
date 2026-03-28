@@ -1,13 +1,27 @@
 {# Practice properties form - always editable #}
-{# Expects: priority, priority_statuses, all_priorities, parents #}
+{# Expects: priority, priority_statuses, all_priorities, parents, priority_types #}
 
 <div class="properties-section priority-properties practice-properties">
     <form hx-post="/priorities/{{ priority.id }}/properties"
           hx-target="#properties-section"
           hx-swap="outerHTML">
 
-        <div class="property-header">
-            <span class="type-badge practice">Practice</span>
+        <!-- Type selector -->
+        <div class="property-row">
+            <label for="priority_type">Type</label>
+            <select id="priority_type"
+                    name="new_priority_type"
+                    class="property-input type-select"
+                    hx-post="/priorities/{{ priority.id }}/change-type"
+                    hx-target="#properties-section"
+                    hx-swap="outerHTML"
+                    hx-confirm="Changing type will clear type-specific fields. Continue?">
+                {% for t in priority_types %}
+                <option value="{{ t }}" {% if t == 'practice' %}selected{% endif %}>
+                    {{ t|title }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
 
         <!-- Name -->

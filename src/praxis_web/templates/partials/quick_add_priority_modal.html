@@ -1,0 +1,67 @@
+{# Priority quick-add modal #}
+{# Expects: priorities (for parent dropdown), priority_types #}
+
+<div class="modal-backdrop" id="quick-add-priority-backdrop" onclick="if(event.target === this) closeQuickAddPriority()">
+    <div class="modal priority-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>New Priority</h2>
+            <button type="button" class="modal-close" onclick="closeQuickAddPriority()">&times;</button>
+        </div>
+        <form hx-post="/priorities/quick-add"
+              hx-target="#item-list"
+              hx-swap="afterbegin"
+              hx-on::after-request="handleQuickAddPriorityResponse(event)">
+            <div class="modal-body">
+                <input type="text"
+                       name="name"
+                       placeholder="What's the priority?"
+                       class="quick-add-input"
+                       required>
+
+                <details class="more-options">
+                    <summary>More options</summary>
+                    <div class="property-row">
+                        <label for="qap-type">Type</label>
+                        <select id="qap-type"
+                                name="priority_type"
+                                hx-get="/priorities/quick-add/fields"
+                                hx-target="#qap-type-fields"
+                                hx-swap="innerHTML"
+                                hx-trigger="change">
+                            {% for t in priority_types %}
+                            <option value="{{ t }}" {% if t == 'accomplishment' %}selected{% endif %}>
+                                {{ t|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="property-row">
+                        <label for="qap-parent">Parent</label>
+                        <select id="qap-parent" name="parent_id">
+                            <option value="">None</option>
+                            {% for p in priorities %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="qap-type-fields">
+                        {# Accomplishment fields by default #}
+                        <div class="property-row">
+                            <label for="qap-success">Success Criteria</label>
+                            <textarea id="qap-success" name="success_criteria" rows="2"
+                                      placeholder="How will you know when this is done?"></textarea>
+                        </div>
+                        <div class="property-row">
+                            <label for="qap-due">Due Date</label>
+                            <input type="date" id="qap-due" name="due_date">
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeQuickAddPriority()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Priority</button>
+            </div>
+        </form>
+    </div>
+</div>

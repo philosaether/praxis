@@ -91,18 +91,11 @@
                 </button>
             </div>
             <div id="add-priority-bar" style="display: none;">
-                <select id="new-priority-type" name="new-priority-type" class="priority-type-select">
-                    {% for t in priority_types %}
-                    <option value="{{ t }}">{{ t|title }}</option>
-                    {% endfor %}
-                </select>
                 <button class="btn btn-primary btn-sm"
-                        hx-post="/priorities/new"
-                        hx-target="#item-list"
-                        hx-swap="afterbegin"
-                        hx-include="#new-priority-type"
-                        hx-on::after-request="loadNewPriority(event)">
-                    + New
+                        hx-get="/priorities/new"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
+                    + New Priority
                 </button>
             </div>
         </div>
@@ -122,11 +115,12 @@
     </div>
 
     <!-- Floating Action Button -->
-    <button class="fab" onclick="openQuickAdd()" title="Quick add task">+</button>
+    <button class="fab" id="fab-button" onclick="handleFabClick()" title="Quick add">+</button>
 </div>
 
-<!-- Quick Add Modal -->
+<!-- Quick Add Modals -->
 {% include "partials/quick_add_modal.html" %}
+{% include "partials/quick_add_priority_modal.html" %}
 
 <script>
     // Current view mode
@@ -149,6 +143,10 @@
         document.getElementById('add-task-bar').style.display = (mode === 'tasks' || mode === 'inbox') ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
 
+        // Update FAB color based on mode
+        const fab = document.getElementById('fab-button');
+        fab.classList.toggle('fab-priority', mode === 'priorities');
+
         // Update detail pane based on mode
         if (mode === 'priorities') {
             // Load tree view in detail pane
@@ -159,11 +157,20 @@
         }
     };
 
-    // Quick Add Modal
+    // FAB handler - opens appropriate modal based on mode
+    window.handleFabClick = function() {
+        if (window.currentMode === 'priorities') {
+            openQuickAddPriority();
+        } else {
+            openQuickAdd();
+        }
+    };
+
+    // Task Quick Add Modal
     window.openQuickAdd = function() {
         document.getElementById('quick-add-backdrop').classList.add('open');
         setTimeout(() => {
-            document.querySelector('.quick-add-input').focus();
+            document.querySelector('#quick-add-backdrop .quick-add-input').focus();
         }, 100);
     };
 
@@ -177,15 +184,42 @@
     window.handleQuickAddResponse = function(event) {
         if (event.detail.successful) {
             closeQuickAdd();
-            // If we're in inbox mode and task has priority, or in queue and task has no priority,
-            // we might want to switch views. For now, just close the modal.
         }
     };
 
-    // Close modal on Escape key
+    // Priority Quick Add Modal
+    window.openQuickAddPriority = function() {
+        document.getElementById('quick-add-priority-backdrop').classList.add('open');
+        setTimeout(() => {
+            document.querySelector('#quick-add-priority-backdrop .quick-add-input').focus();
+        }, 100);
+    };
+
+    window.closeQuickAddPriority = function() {
+        document.getElementById('quick-add-priority-backdrop').classList.remove('open');
+        // Reset form
+        const form = document.querySelector('#quick-add-priority-backdrop form');
+        if (form) form.reset();
+        // Reset type-specific fields to accomplishment defaults
+        const typeFieldsContainer = document.getElementById('qap-type-fields');
+        if (typeFieldsContainer) {
+            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=accomplishment', {target: '#qap-type-fields', swap: 'innerHTML'});
+        }
+    };
+
+    window.handleQuickAddPriorityResponse = function(event) {
+        // Only close on successful form submission, not field loading
+        // Check if the triggering element is the form itself
+        if (event.detail.successful && event.detail.elt.tagName === 'FORM') {
+            closeQuickAddPriority();
+        }
+    };
+
+    // Close modals on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeQuickAdd();
+            closeQuickAddPriority();
         }
     });
 
@@ -256,6 +290,12 @@
         // Refresh the task list based on current mode
         const listUrl = window.currentMode === 'inbox' ? '/tasks/inbox' : '/tasks/list';
         htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+    });
+
+    // Listen for priority creation to refresh the list
+    document.body.addEventListener('priorityCreated', function(event) {
+        // Refresh the priority list
+        htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
     });
 </script>
 {% endblock %}

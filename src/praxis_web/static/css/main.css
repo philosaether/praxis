@@ -1036,6 +1036,12 @@ textarea.property-input {
 .fab:active {
   transform: scale(0.95);
 }
+.fab.fab-priority {
+  background: #6a1b9a;
+}
+.fab.fab-priority:hover {
+  background: #5c1786;
+}
 
 .modal-backdrop {
   position: fixed;
