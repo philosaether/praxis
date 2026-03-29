@@ -4,6 +4,34 @@
 
 {% block body %}
 <div class="container">
+    <!-- Mode Navigation (Icon Bar) -->
+    <nav class="mode-nav" role="navigation" aria-label="View mode">
+        <button class="mode-nav-btn"
+                id="inbox-nav-btn"
+                hx-get="/tasks/inbox"
+                hx-target="#item-list"
+                onclick="setMode('inbox')"
+                title="Inbox">
+            <span class="mode-nav-icon mode-nav-icon--inbox"></span>
+        </button>
+        <button class="mode-nav-btn active"
+                id="tasks-nav-btn"
+                hx-get="/tasks/list"
+                hx-target="#item-list"
+                onclick="setMode('tasks')"
+                title="Queue">
+            <span class="mode-nav-icon mode-nav-icon--tasks"></span>
+        </button>
+        <button class="mode-nav-btn"
+                id="priorities-nav-btn"
+                hx-get="/priorities/list"
+                hx-target="#item-list"
+                onclick="setMode('priorities')"
+                title="Priorities">
+            <span class="mode-nav-icon mode-nav-icon--priorities"></span>
+        </button>
+    </nav>
+
     <!-- Left Pane -->
     <div class="left-pane">
         <div class="header">
@@ -18,32 +46,8 @@
             {% endif %}
         </div>
 
-        <!-- Main Toggle: Inbox | Queue | Priorities -->
+        <!-- Filters -->
         <div class="filters">
-            <div class="view-toggle">
-                <button class="view-btn"
-                        id="inbox-view-btn"
-                        hx-get="/tasks/inbox"
-                        hx-target="#item-list"
-                        onclick="setMode('inbox')">
-                    Inbox
-                </button>
-                <button class="view-btn active"
-                        id="tasks-view-btn"
-                        hx-get="/tasks/list"
-                        hx-target="#item-list"
-                        onclick="setMode('tasks')">
-                    Queue
-                </button>
-                <button class="view-btn"
-                        id="priorities-view-btn"
-                        hx-get="/priorities/list"
-                        hx-target="#item-list"
-                        onclick="setMode('priorities')">
-                    Priorities
-                </button>
-            </div>
-
             <!-- Task filters (shown by default) -->
             <div id="task-filters" class="filter-group">
                 <select name="priority"
@@ -146,9 +150,9 @@
         window.currentMode = mode;
 
         // Toggle button states
-        document.getElementById('inbox-view-btn').classList.toggle('active', mode === 'inbox');
-        document.getElementById('tasks-view-btn').classList.toggle('active', mode === 'tasks');
-        document.getElementById('priorities-view-btn').classList.toggle('active', mode === 'priorities');
+        document.getElementById('inbox-nav-btn').classList.toggle('active', mode === 'inbox');
+        document.getElementById('tasks-nav-btn').classList.toggle('active', mode === 'tasks');
+        document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';

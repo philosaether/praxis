@@ -1,0 +1,136 @@
+// =============================================================================
+// Mode Navigation (Activity Bar)
+// =============================================================================
+@use 'variables' as *;
+
+// -----------------------------------------------------------------------------
+// Variables
+// -----------------------------------------------------------------------------
+$mode-nav-width: 48px;
+$mode-nav-btn-size: 40px;
+
+// Unicode icons (no dependencies)
+$mode-icons: (
+  inbox: "\2709",      // envelope
+  tasks: "\2630",      // three lines (queue)
+  priorities: "\2605"  // star
+);
+
+// -----------------------------------------------------------------------------
+// Navigation Container
+// -----------------------------------------------------------------------------
+.mode-nav {
+  display: flex;
+  flex-direction: column;
+  width: $mode-nav-width;
+  background: $bg-tertiary;
+  border-right: 1px solid $border;
+  padding: $spacing-sm 0;
+  gap: $spacing-xs;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+// -----------------------------------------------------------------------------
+// Navigation Button
+// -----------------------------------------------------------------------------
+.mode-nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $mode-nav-btn-size;
+  height: $mode-nav-btn-size;
+  background: transparent;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  color: $text-muted;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $bg-secondary;
+    color: $text-secondary;
+  }
+
+  &.active {
+    color: $text-primary;
+    background: $bg-secondary;
+
+    // Left accent bar (VS Code style)
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 24px;
+      background: $accent;
+      border-radius: 0 $radius-sm $radius-sm 0;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Icon Styling
+// -----------------------------------------------------------------------------
+.mode-nav-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+
+  @each $mode, $unicode in $mode-icons {
+    &--#{$mode}::before {
+      content: $unicode;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Label (hidden on desktop, shown on mobile)
+// -----------------------------------------------------------------------------
+.mode-nav-label {
+  display: none;
+  font-size: $font-size-xs;
+  margin-top: 2px;
+}
+
+// -----------------------------------------------------------------------------
+// Mobile Bottom Nav (future - uncomment when implementing)
+// -----------------------------------------------------------------------------
+// @media (max-width: $breakpoint-md) {
+//   .mode-nav {
+//     position: fixed;
+//     bottom: 0;
+//     left: 0;
+//     right: 0;
+//     width: 100%;
+//     height: 56px;
+//     flex-direction: row;
+//     justify-content: space-around;
+//     border-right: none;
+//     border-top: 1px solid $border;
+//     z-index: 100;
+//   }
+//
+//   .mode-nav-btn {
+//     width: auto;
+//     flex: 1;
+//     max-width: 80px;
+//     flex-direction: column;
+//
+//     &.active::before {
+//       // Top bar instead of left
+//       left: 50%;
+//       top: 0;
+//       transform: translateX(-50%);
+//       width: 24px;
+//       height: 3px;
+//       border-radius: $radius-sm $radius-sm 0 0;
+//     }
+//   }
+//
+//   .mode-nav-label {
+//     display: block;
+//   }
+// }
