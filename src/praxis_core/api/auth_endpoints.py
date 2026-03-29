@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from praxis_core.model import User, Session, SessionType
 from praxis_core.persistence import (
     authenticate_user,
+    create_user,
+    get_user_by_username,
     create_session,
     delete_session,
     delete_user_sessions,
@@ -20,9 +22,21 @@ router = APIRouter()
 # Request/Response Models
 # -----------------------------------------------------------------------------
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    email: str | None = None
+
+
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class RegisterResponse(BaseModel):
+    user_id: int
+    username: str
+    message: str
 
 
 class LoginResponse(BaseModel):
@@ -43,6 +57,60 @@ class UserResponse(BaseModel):
 # -----------------------------------------------------------------------------
 # Endpoints
 # -----------------------------------------------------------------------------
+
+@router.post("/register", response_model=RegisterResponse)
+async def register(credentials: RegisterRequest):
+    """
+    Register a new user account.
+
+    Username must be unique. Password will be hashed with Argon2id.
+    """
+    # Check if username already exists
+    existing = get_user_by_username(credentials.username)
+    if existing is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Username already taken",
+        )
+
+    # Validate username format
+    username = credentials.username.strip()
+    if len(username) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Username must be at least 3 characters",
+        )
+    if len(username) > 50:
+        raise HTTPException(
+            status_code=400,
+            detail="Username must be 50 characters or less",
+        )
+    if not username.replace("_", "").replace("-", "").isalnum():
+        raise HTTPException(
+            status_code=400,
+            detail="Username can only contain letters, numbers, underscores, and hyphens",
+        )
+
+    # Validate password
+    if len(credentials.password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 8 characters",
+        )
+
+    # Create the user
+    user = create_user(
+        username=username,
+        password=credentials.password,
+        email=credentials.email,
+    )
+
+    return RegisterResponse(
+        user_id=user.id,
+        username=user.username,
+        message="Account created successfully",
+    )
+
 
 @router.post("/login", response_model=LoginResponse)
 async def login(request: Request, credentials: LoginRequest):

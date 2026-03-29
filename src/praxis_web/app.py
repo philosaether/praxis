@@ -116,6 +116,77 @@ async def logout(request: Request):
     redirect.delete_cookie(key=SESSION_COOKIE_NAME)
     return redirect
 
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request, error: str | None = None):
+    """Display signup page."""
+    # If already logged in, redirect to home
+    if request.cookies.get(SESSION_COOKIE_NAME):
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse(
+        request,
+        "signup.html",
+        {"error": error}
+    )
+
+
+@app.post("/signup")
+async def signup_submit(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    password_confirm: Annotated[str, Form()],
+):
+    """Handle signup form submission."""
+    # Validate passwords match
+    if password != password_confirm:
+        return templates.TemplateResponse(
+            request,
+            "signup.html",
+            {"error": "Passwords do not match"},
+            status_code=400
+        )
+
+    async with httpx.AsyncClient(base_url=API_URL, timeout=30.0) as client:
+        response = await client.post(
+            "/api/auth/register",
+            json={"username": username, "password": password}
+        )
+
+        if response.status_code != 200:
+            error_data = response.json()
+            error_msg = error_data.get("detail", "Registration failed")
+            return templates.TemplateResponse(
+                request,
+                "signup.html",
+                {"error": error_msg},
+                status_code=400
+            )
+
+        # Registration successful - log them in automatically
+        login_response = await client.post(
+            "/api/auth/login",
+            json={"username": username, "password": password}
+        )
+
+        if login_response.status_code == 200:
+            data = login_response.json()
+            session_id = data["session_id"]
+
+            redirect = RedirectResponse(url="/", status_code=302)
+            redirect.set_cookie(
+                key=SESSION_COOKIE_NAME,
+                value=session_id,
+                httponly=True,
+                samesite="lax",
+                max_age=7 * 24 * 60 * 60,
+            )
+            return redirect
+
+        # Fallback: redirect to login page
+        return RedirectResponse(url="/login", status_code=302)
+
+
 # -----------------------------------------------------------------------------
 # Routes: Pages
 # -----------------------------------------------------------------------------
