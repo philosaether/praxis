@@ -115,10 +115,23 @@ textarea.property-input {
 .property-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-md;
   margin-top: $spacing-lg;
   padding-top: $spacing-lg;
   border-top: 1px solid $border;
+}
+
+.actions-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.actions-right {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
 }
 
 .save-status {

@@ -198,3 +198,48 @@
     background: #a52222;  // Darker shade of $error (#c62828)
   }
 }
+
+// Share modal specific styles
+.share-modal {
+  .share-priority-name {
+    font-size: $font-size-lg;
+    font-weight: 500;
+    color: $text-primary;
+    margin: 0 0 $spacing-lg 0;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $border;
+  }
+
+  .property-row {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-xs;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .property-input {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      background: $bg-tertiary;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      color: $text-primary;
+      font-size: $font-size-base;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}

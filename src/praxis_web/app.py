@@ -860,3 +860,55 @@ async def delete_priority(request: Request, priority_id: str):
 
     # Return empty response - HTMX will remove the node
     return HTMLResponse(content="")
+
+
+# -----------------------------------------------------------------------------
+# Routes: Sharing
+# -----------------------------------------------------------------------------
+
+@app.get("/users", response_class=HTMLResponse)
+async def get_users_for_share(request: Request):
+    """Get list of users for share dropdown (as partial HTML)."""
+    async with api_client(request) as client:
+        response = await client.get("/api/auth/users")
+        if response.status_code != 200:
+            return HTMLResponse(content="[]")
+        users = response.json()
+    return Response(content=json.dumps(users), media_type="application/json")
+
+
+@app.post("/priorities/{priority_id}/share")
+async def share_priority(request: Request, priority_id: str):
+    """Share a priority with another user."""
+    data = await request.json()
+    user_id = data.get("user_id")
+    permission = data.get("permission", "contributor")
+
+    if not user_id:
+        return Response(
+            content=json.dumps({"success": False, "error": "User ID required"}),
+            media_type="application/json",
+            status_code=400
+        )
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/priorities/{priority_id}/share",
+            json={"user_id": user_id, "permission": permission}
+        )
+
+        if response.status_code != 200:
+            error_data = response.json() if response.content else {}
+            return Response(
+                content=json.dumps({
+                    "success": False,
+                    "error": error_data.get("detail", "Failed to share")
+                }),
+                media_type="application/json",
+                status_code=response.status_code
+            )
+
+        return Response(
+            content=json.dumps({"success": True}),
+            media_type="application/json"
+        )

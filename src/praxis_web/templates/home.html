@@ -122,6 +122,9 @@
 {% include "partials/quick_add_modal.html" %}
 {% include "partials/quick_add_priority_modal.html" %}
 
+<!-- Share Priority Modal -->
+{% include "partials/share_priority_modal.html" %}
+
 <!-- Confirmation Modal -->
 {% include "partials/confirm_modal.html" %}
 
@@ -617,5 +620,85 @@
             }
         });
     };
+
+    // -------------------------------------------------------------------------
+    // Share Priority Modal
+    // -------------------------------------------------------------------------
+
+    window.sharePriorityId = null;
+
+    window.openShareModal = function(priorityId, priorityName) {
+        sharePriorityId = priorityId;
+        document.getElementById('share-priority-name').textContent = priorityName;
+        document.getElementById('share-permission').value = 'contributor';
+        document.getElementById('share-submit-btn').disabled = true;
+
+        // Load users for the dropdown
+        const userSelect = document.getElementById('share-user');
+        userSelect.innerHTML = '<option value="">Loading...</option>';
+        userSelect.disabled = true;
+
+        fetch('/users')
+            .then(response => response.json())
+            .then(users => {
+                userSelect.innerHTML = '<option value="">Select a user...</option>';
+                users.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.id;
+                    option.textContent = u.username;
+                    userSelect.appendChild(option);
+                });
+                userSelect.disabled = false;
+            })
+            .catch(err => {
+                console.error('Failed to load users:', err);
+                userSelect.innerHTML = '<option value="">Failed to load users</option>';
+            });
+
+        document.getElementById('share-priority-backdrop').classList.add('open');
+    };
+
+    window.closeShareModal = function() {
+        document.getElementById('share-priority-backdrop').classList.remove('open');
+        sharePriorityId = null;
+    };
+
+    window.updateShareButton = function() {
+        const userId = document.getElementById('share-user').value;
+        document.getElementById('share-submit-btn').disabled = !userId;
+    };
+
+    window.submitShare = function() {
+        const userId = document.getElementById('share-user').value;
+        const permission = document.getElementById('share-permission').value;
+
+        if (!userId || !sharePriorityId) return;
+
+        fetch('/priorities/' + sharePriorityId + '/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: parseInt(userId), permission: permission })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeShareModal();
+                // Could show a success message here
+            } else {
+                alert(data.error || 'Failed to share priority');
+            }
+        })
+        .catch(err => {
+            console.error('Failed to share priority:', err);
+            alert('Failed to share priority');
+        });
+    };
+
+    // Close share modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeShareModal();
+        }
+    });
 </script>
 {% endblock %}

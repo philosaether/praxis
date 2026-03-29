@@ -666,3 +666,113 @@ async def move_priority(
                     graph.save_priority(sibling)
 
     return {"success": True, "priority_id": priority_id}
+
+
+# -----------------------------------------------------------------------------
+# Sharing Endpoints
+# -----------------------------------------------------------------------------
+
+class ShareRequest(BaseModel):
+    user_id: int
+    permission: str = "contributor"  # viewer, contributor, editor
+
+
+@router.post("/{priority_id}/share")
+async def share_priority(
+    priority_id: str,
+    request_data: ShareRequest,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """
+    Share a priority with another user.
+
+    Only the owner can share a priority.
+    permission: viewer (see only), contributor (add tasks), editor (full edit)
+    """
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    user_id = user.id
+    graph = _get_graph(user_id)
+    priority = graph.get(priority_id)
+
+    if not priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    # Check ownership
+    permission = graph.get_permission(priority_id, user_id)
+    if permission != "owner":
+        return JSONResponse({"error": "Only the owner can share this priority"}, status_code=403)
+
+    # Validate permission level
+    if request_data.permission not in ("viewer", "contributor", "editor"):
+        return JSONResponse({"error": "Invalid permission level"}, status_code=400)
+
+    # Can't share with yourself
+    if request_data.user_id == user_id:
+        return JSONResponse({"error": "Cannot share with yourself"}, status_code=400)
+
+    graph.share(priority_id, request_data.user_id, request_data.permission)
+
+    return {
+        "success": True,
+        "priority_id": priority_id,
+        "shared_with": request_data.user_id,
+        "permission": request_data.permission,
+    }
+
+
+@router.delete("/{priority_id}/share/{target_user_id}")
+async def unshare_priority(
+    priority_id: str,
+    target_user_id: int,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Remove sharing for a priority with a user."""
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    user_id = user.id
+    graph = _get_graph(user_id)
+
+    # Check ownership
+    permission = graph.get_permission(priority_id, user_id)
+    if permission != "owner":
+        return JSONResponse({"error": "Only the owner can unshare this priority"}, status_code=403)
+
+    removed = graph.unshare(priority_id, target_user_id)
+
+    return {
+        "success": removed,
+        "priority_id": priority_id,
+        "removed_user_id": target_user_id,
+    }
+
+
+@router.get("/{priority_id}/shares")
+async def get_priority_shares(
+    priority_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Get list of users a priority is shared with."""
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    user_id = user.id
+    graph = _get_graph(user_id)
+    priority = graph.get(priority_id)
+
+    if not priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    # Only owner can view shares
+    permission = graph.get_permission(priority_id, user_id)
+    if permission != "owner":
+        return JSONResponse({"error": "Only the owner can view shares"}, status_code=403)
+
+    shares = graph.get_shares(priority_id)
+
+    return {
+        "priority_id": priority_id,
+        "shares": shares,
+    }

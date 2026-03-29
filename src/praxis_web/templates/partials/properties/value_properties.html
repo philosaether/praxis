@@ -93,18 +93,27 @@
                       placeholder="When does this goal become irrelevant?">{{ priority.obsolete_when or '' }}</textarea>
         </div>
 
-        <!-- Save Button -->
+        <!-- Actions -->
         <div class="property-actions">
-            <button type="submit" class="btn btn-primary">Save</button>
-            <span class="save-status" id="save-status"></span>
-            <button type="button"
-                    class="btn btn-danger"
-                    hx-delete="/priorities/{{ priority.id }}"
-                    hx-swap="none"
-                    hx-confirm="Delete '{{ priority.name }}'? This cannot be undone."
-                    hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'}); }">
-                Delete
-            </button>
+            <div class="actions-left">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <span class="save-status" id="save-status"></span>
+                <button type="button"
+                        class="btn btn-danger"
+                        hx-delete="/priorities/{{ priority.id }}"
+                        hx-swap="none"
+                        hx-confirm="Delete '{{ priority.name }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'}); }">
+                    Delete
+                </button>
+            </div>
+            <div class="actions-right">
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="openShareModal('{{ priority.id }}', '{{ priority.name }}')">
+                    Share
+                </button>
+            </div>
         </div>
 
         <div id="property-errors" class="property-errors"></div>

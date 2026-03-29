@@ -193,3 +193,25 @@ async def get_me(user: User = Depends(get_current_user)):
         role=user.role.value,
         is_active=user.is_active,
     )
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def get_users(user: User = Depends(get_current_user)):
+    """
+    List all users (excluding the current user).
+
+    Used for sharing priorities with other users.
+    """
+    from praxis_core.persistence import list_users
+    all_users = list_users()
+    return [
+        UserResponse(
+            id=u.id,
+            username=u.username,
+            email=u.email,
+            role=u.role.value,
+            is_active=u.is_active,
+        )
+        for u in all_users
+        if u.id != user.id and u.is_active
+    ]
