@@ -3,6 +3,8 @@
 import sqlite3
 from datetime import datetime
 
+from ulid import ULID
+
 from praxis_core.model.tasks import Task, TaskStatus, Subtask
 from praxis_core.persistence.database import get_connection
 
@@ -13,8 +15,11 @@ from praxis_core.persistence.database import get_connection
 
 TASKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER REFERENCES users(id),
+    id TEXT PRIMARY KEY,
+    entity_id TEXT REFERENCES entities(id),
+    assigned_to INTEGER REFERENCES users(id),
+    created_by INTEGER REFERENCES users(id),
+    user_id INTEGER REFERENCES users(id),  -- deprecated, use entity_id
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued',
     notes TEXT,
@@ -24,8 +29,8 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 CREATE TABLE IF NOT EXISTS subtasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     completed INTEGER NOT NULL DEFAULT 0,
     sort_order INTEGER NOT NULL DEFAULT 0,
@@ -34,7 +39,9 @@ CREATE TABLE IF NOT EXISTS subtasks (
 
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_entity ON tasks(entity_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);  -- deprecated
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 """
 
@@ -42,7 +49,8 @@ CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 def ensure_schema() -> None:
     """Ensure the tasks schema exists."""
     with get_connection() as conn:
-        _maybe_migrate(conn)
+        # Migrations disabled - database is up-to-date
+        # _maybe_migrate(conn)
         conn.executescript(TASKS_SCHEMA)
 
 
@@ -53,55 +61,108 @@ def _maybe_migrate(conn: sqlite3.Connection) -> None:
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()}
 
-    # Check if tasks table has old schema
-    if "tasks" in tables:
-        columns = {row["name"] for row in conn.execute(
-            "PRAGMA table_info(tasks)"
-        ).fetchall()}
+    if "tasks" not in tables:
+        return  # Fresh install, no migration needed
 
-        # Add user_id column if missing
-        if "user_id" not in columns:
-            conn.execute("ALTER TABLE tasks ADD COLUMN user_id INTEGER REFERENCES users(id)")
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(tasks)"
+    ).fetchall()}
 
-        # Rename title → name
-        if "title" in columns and "name" not in columns:
-            conn.execute("ALTER TABLE tasks RENAME COLUMN title TO name")
+    # Check if already migrated to ULID (id is TEXT, entity_id exists)
+    if "entity_id" in columns:
+        return  # Already migrated
 
-        if "workstream_id" in columns:
-            # Full migration: recreate table without workstream_id
-            # Disable foreign keys during migration
-            # Note: old schemas have 'title', new ones have 'name'
-            name_col = "name" if "name" in columns else "title"
-            conn.executescript(f"""
-                PRAGMA foreign_keys=OFF;
+    # Need to migrate from integer IDs to ULIDs
+    _migrate_to_ulid(conn)
 
-                -- Create new table with correct schema
-                CREATE TABLE IF NOT EXISTS tasks_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    status TEXT NOT NULL DEFAULT 'queued',
-                    notes TEXT,
-                    due_date TEXT,
-                    priority_id TEXT REFERENCES priorities(id),
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
 
-                -- Copy data (map workstream_id to priority_id if priority_id doesn't exist)
-                INSERT INTO tasks_new (id, name, status, notes, due_date, priority_id, created_at)
-                SELECT id, {name_col}, status, notes, due_date,
-                       COALESCE(priority_id, workstream_id), created_at
-                FROM tasks;
+def _migrate_to_ulid(conn: sqlite3.Connection) -> None:
+    """Migrate tasks from integer IDs to ULIDs with entity ownership."""
+    # Get user entity mappings
+    user_entities = {}
+    for row in conn.execute("SELECT id, entity_id FROM users WHERE entity_id IS NOT NULL").fetchall():
+        user_entities[row["id"]] = row["entity_id"]
 
-                -- Drop old table and rename new one
-                DROP TABLE tasks;
-                ALTER TABLE tasks_new RENAME TO tasks;
+    # Get valid priority IDs
+    valid_priorities = {row["id"] for row in conn.execute("SELECT id FROM priorities").fetchall()}
 
-                -- Recreate indexes
-                CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
-                CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
+    # Read existing tasks
+    old_tasks = conn.execute("""
+        SELECT id, user_id, name, status, notes, due_date, priority_id, created_at
+        FROM tasks
+    """).fetchall()
 
-                PRAGMA foreign_keys=ON;
-            """)
+    # Create ID mapping (old int -> new ULID)
+    id_mapping = {}
+    for row in old_tasks:
+        id_mapping[row["id"]] = str(ULID())
+
+    # Read existing subtasks (if any)
+    old_subtasks = conn.execute("""
+        SELECT id, task_id, title, completed, sort_order, completed_at
+        FROM subtasks
+    """).fetchall()
+
+    subtask_id_mapping = {}
+    for row in old_subtasks:
+        subtask_id_mapping[row["id"]] = str(ULID())
+
+    # Drop old tables and create new ones
+    conn.executescript("""
+        PRAGMA foreign_keys=OFF;
+        DROP TABLE IF EXISTS subtasks;
+        DROP TABLE IF EXISTS tasks;
+        PRAGMA foreign_keys=ON;
+    """)
+
+    # Create new schema
+    conn.executescript(TASKS_SCHEMA)
+
+    # Insert migrated tasks
+    for row in old_tasks:
+        new_id = id_mapping[row["id"]]
+        user_id = row["user_id"]
+        entity_id = user_entities.get(user_id) if user_id else None
+
+        # Clean up invalid priority_id references
+        priority_id = row["priority_id"]
+        if priority_id and priority_id not in valid_priorities:
+            priority_id = None  # Orphaned reference, move to inbox
+
+        conn.execute("""
+            INSERT INTO tasks (id, entity_id, assigned_to, created_by, user_id,
+                             name, status, notes, due_date, priority_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            new_id,
+            entity_id,
+            user_id,  # assigned_to = original user
+            user_id,  # created_by = original user
+            user_id,  # deprecated user_id
+            row["name"],
+            row["status"],
+            row["notes"],
+            row["due_date"],
+            priority_id,
+            row["created_at"],
+        ))
+
+    # Insert migrated subtasks
+    for row in old_subtasks:
+        new_id = subtask_id_mapping[row["id"]]
+        new_task_id = id_mapping.get(row["task_id"])
+        if new_task_id:  # Only if parent task exists
+            conn.execute("""
+                INSERT INTO subtasks (id, task_id, title, completed, sort_order, completed_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                new_id,
+                new_task_id,
+                row["title"],
+                row["completed"],
+                row["sort_order"],
+                row["completed_at"],
+            ))
 
 
 # ---------------------------------------------------------------------
@@ -113,24 +174,43 @@ def create_task(
     notes: str | None = None,
     due_date: datetime | None = None,
     priority_id: str | None = None,
-    user_id: int | None = None,
+    entity_id: str | None = None,
+    assigned_to: int | None = None,
+    created_by: int | None = None,
+    user_id: int | None = None,  # deprecated, use entity_id
 ) -> Task:
     """Create a new task."""
     ensure_schema()
+    task_id = str(ULID())
     now = datetime.now()
+
+    # If entity_id not provided but user_id is, look up user's entity
+    if entity_id is None and user_id is not None:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT entity_id FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
+            if row:
+                entity_id = row["entity_id"]
+
     with get_connection() as conn:
         due_str = due_date.isoformat() if due_date else None
-        cursor = conn.execute(
+        conn.execute(
             """
-            INSERT INTO tasks (user_id, name, notes, due_date, priority_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO tasks (id, entity_id, assigned_to, created_by, user_id,
+                             name, notes, due_date, priority_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (user_id, name, notes, due_str, priority_id, now.isoformat()),
+            (task_id, entity_id, assigned_to, created_by, user_id,
+             name, notes, due_str, priority_id, now.isoformat()),
         )
         return Task(
-            id=cursor.lastrowid,
+            id=task_id,
             name=name,
             status=TaskStatus.QUEUED,
+            entity_id=entity_id,
+            assigned_to=assigned_to,
+            created_by=created_by,
             notes=notes,
             due_date=due_date,
             priority_id=priority_id,
@@ -139,7 +219,7 @@ def create_task(
         )
 
 
-def get_task(task_id: int) -> Task | None:
+def get_task(task_id: str) -> Task | None:
     """Get a task by ID."""
     ensure_schema()
     with get_connection() as conn:
@@ -163,10 +243,17 @@ def list_tasks(
     priority_id: str | None = None,
     status: TaskStatus | None = None,
     include_done: bool = True,
-    user_id: int | None = None,
+    entity_id: str | None = None,
+    user_id: int | None = None,  # deprecated, use entity_id
     inbox_only: bool = False,
+    assigned_to: int | None = None,  # Filter by assigned user
 ) -> list[Task]:
-    """List tasks with optional filters. Done tasks sorted to bottom."""
+    """List tasks with optional filters. Done tasks sorted to bottom.
+
+    For the main queue, pass both entity_id and assigned_to (user_id) to get:
+    - Tasks assigned to the user (from any entity)
+    - OR unassigned tasks owned by the user's entity
+    """
     ensure_schema()
     with get_connection() as conn:
         query = """
@@ -177,7 +264,19 @@ def list_tasks(
         """
         params = []
 
-        if user_id is not None:
+        # If both entity_id and assigned_to provided, use combined filter for queue
+        if entity_id is not None and assigned_to is not None:
+            # Show tasks assigned to me OR my unassigned tasks
+            query += " AND (t.assigned_to = ? OR (t.entity_id = ? AND t.assigned_to IS NULL))"
+            params.extend([assigned_to, entity_id])
+        elif entity_id is not None:
+            query += " AND t.entity_id = ?"
+            params.append(entity_id)
+        elif assigned_to is not None:
+            query += " AND t.assigned_to = ?"
+            params.append(assigned_to)
+        elif user_id is not None:
+            # Fallback to deprecated user_id filter
             query += " AND t.user_id = ?"
             params.append(user_id)
 
@@ -209,7 +308,7 @@ def list_tasks(
         return tasks
 
 
-def update_task_status(task_id: int, status: TaskStatus) -> None:
+def update_task_status(task_id: str, status: TaskStatus) -> None:
     """Update a task's status."""
     ensure_schema()
     with get_connection() as conn:
@@ -220,7 +319,7 @@ def update_task_status(task_id: int, status: TaskStatus) -> None:
 
 
 def update_task(
-    task_id: int,
+    task_id: str,
     name: str | None = None,
     notes: str | None = None,
     status: TaskStatus | None = None,
@@ -262,7 +361,7 @@ def update_task(
     return get_task(task_id)
 
 
-def delete_task(task_id: int) -> bool:
+def delete_task(task_id: str) -> bool:
     """Delete a task. Returns True if deleted."""
     ensure_schema()
     with get_connection() as conn:
@@ -291,19 +390,28 @@ def _row_to_task(row: sqlite3.Row) -> Task:
     if row["created_at"]:
         created_at = datetime.fromisoformat(row["created_at"])
 
+    # Read entity fields (may not exist in older schemas during migration)
+    keys = row.keys()
+    entity_id = row["entity_id"] if "entity_id" in keys else None
+    assigned_to = row["assigned_to"] if "assigned_to" in keys else None
+    created_by = row["created_by"] if "created_by" in keys else None
+
     return Task(
         id=row["id"],
         name=row["name"],
         status=TaskStatus(row["status"]),
+        entity_id=entity_id,
+        assigned_to=assigned_to,
+        created_by=created_by,
         notes=row["notes"],
         due_date=due_date,
         created_at=created_at,
-        priority_id=row["priority_id"] if "priority_id" in row.keys() else None,
-        priority_name=row["priority_name"] if "priority_name" in row.keys() else None,
+        priority_id=row["priority_id"] if "priority_id" in keys else None,
+        priority_name=row["priority_name"] if "priority_name" in keys else None,
     )
 
 
-def _get_subtasks(conn: sqlite3.Connection, task_id: int) -> list[Subtask]:
+def _get_subtasks(conn: sqlite3.Connection, task_id: str) -> list[Subtask]:
     """Get subtasks for a task, ordered by sort_order."""
     rows = conn.execute(
         """
@@ -337,9 +445,10 @@ def _row_to_subtask(row: sqlite3.Row) -> Subtask:
 # Subtask Operations
 # ---------------------------------------------------------------------
 
-def create_subtask(task_id: int, title: str, sort_order: int | None = None) -> Subtask:
+def create_subtask(task_id: str, title: str, sort_order: int | None = None) -> Subtask:
     """Create a subtask. If sort_order not specified, appends to end."""
     ensure_schema()
+    subtask_id = str(ULID())
     with get_connection() as conn:
         if sort_order is None:
             # Get max sort_order for this task
@@ -349,22 +458,22 @@ def create_subtask(task_id: int, title: str, sort_order: int | None = None) -> S
             ).fetchone()
             sort_order = (result["max_order"] or 0) + 1
 
-        cursor = conn.execute(
+        conn.execute(
             """
-            INSERT INTO subtasks (task_id, title, sort_order)
-            VALUES (?, ?, ?)
+            INSERT INTO subtasks (id, task_id, title, sort_order)
+            VALUES (?, ?, ?, ?)
             """,
-            (task_id, title, sort_order),
+            (subtask_id, task_id, title, sort_order),
         )
         return Subtask(
-            id=cursor.lastrowid,
+            id=subtask_id,
             task_id=task_id,
             title=title,
             sort_order=sort_order,
         )
 
 
-def toggle_subtask(subtask_id: int) -> Subtask | None:
+def toggle_subtask(subtask_id: str) -> Subtask | None:
     """Toggle subtask completion status. Returns updated subtask."""
     ensure_schema()
     with get_connection() as conn:
@@ -392,7 +501,7 @@ def toggle_subtask(subtask_id: int) -> Subtask | None:
         )
 
 
-def delete_subtask(subtask_id: int) -> bool:
+def delete_subtask(subtask_id: str) -> bool:
     """Delete a subtask. Returns True if deleted."""
     ensure_schema()
     with get_connection() as conn:
@@ -400,7 +509,7 @@ def delete_subtask(subtask_id: int) -> bool:
         return result.rowcount > 0
 
 
-def reorder_subtasks(task_id: int, subtask_ids: list[int]) -> None:
+def reorder_subtasks(task_id: str, subtask_ids: list[str]) -> None:
     """Reorder subtasks by providing new order of IDs."""
     ensure_schema()
     with get_connection() as conn:

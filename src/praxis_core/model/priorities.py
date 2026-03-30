@@ -30,12 +30,18 @@ class Priority:
     priority_type: PriorityType
     status: PriorityStatus = PriorityStatus.ACTIVE
 
+    entity_id: str | None = None  # ULID of owning entity
     agent_context: str | None = None
     notes: str | None = None
 
     # Importance ranking (only meaningful on root priorities)
     # Lower rank = higher importance (rank 1 is most important)
     rank: int | None = None
+
+    # Task assignment settings (for shared priorities)
+    # These are mutually exclusive; both False = unassigned (manual claim)
+    auto_assign_owner: bool = True    # Assign new tasks to priority owner
+    auto_assign_creator: bool = False  # Assign new tasks to task creator
 
     # Metadata
     created_at: datetime | None = None

@@ -20,7 +20,8 @@ from praxis_core.model.priorities import (
 PRIORITIES_SCHEMA = """
 CREATE TABLE IF NOT EXISTS priorities (
     id TEXT PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    entity_id TEXT REFERENCES entities(id),
+    user_id INTEGER REFERENCES users(id),  -- deprecated, use entity_id
     priority_type TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
@@ -30,6 +31,10 @@ CREATE TABLE IF NOT EXISTS priorities (
     notes TEXT,
     rank INTEGER,
 
+    -- Task assignment settings
+    auto_assign_owner INTEGER NOT NULL DEFAULT 1,
+    auto_assign_creator INTEGER NOT NULL DEFAULT 0,
+
     -- Value (direction/principle, never completes)
     success_looks_like TEXT,
     obsolete_when TEXT,
@@ -38,14 +43,6 @@ CREATE TABLE IF NOT EXISTS priorities (
     success_criteria TEXT,
     due_date TEXT,
     progress TEXT,
-
-    -- Legacy columns (kept for data migration)
-    consequence_of_neglect TEXT,
-    measurement_method TEXT,
-    measurement_rubric TEXT,
-    measurement_scale TEXT,
-    current_level TEXT,
-    target_level TEXT,
 
     -- Practice
     rhythm_frequency TEXT,
@@ -68,9 +65,34 @@ CREATE TABLE IF NOT EXISTS priority_edges (
 
 CREATE INDEX IF NOT EXISTS idx_priorities_type ON priorities(priority_type);
 CREATE INDEX IF NOT EXISTS idx_priorities_status ON priorities(status);
-CREATE INDEX IF NOT EXISTS idx_priorities_user ON priorities(user_id);
+CREATE INDEX IF NOT EXISTS idx_priorities_entity ON priorities(entity_id);
+CREATE INDEX IF NOT EXISTS idx_priorities_user ON priorities(user_id);  -- deprecated
 CREATE INDEX IF NOT EXISTS idx_priority_edges_child ON priority_edges(child_id);
 CREATE INDEX IF NOT EXISTS idx_priority_edges_parent ON priority_edges(parent_id);
+
+-- Entity-based sharing (replaces priority_shares)
+CREATE TABLE IF NOT EXISTS entity_shares (
+    priority_id TEXT NOT NULL REFERENCES priorities(id) ON DELETE CASCADE,
+    shared_with_entity_id TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    permission TEXT NOT NULL DEFAULT 'contributor',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (priority_id, shared_with_entity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entity_shares_entity ON entity_shares(shared_with_entity_id);
+CREATE INDEX IF NOT EXISTS idx_entity_shares_priority ON entity_shares(priority_id);
+
+-- Legacy table (deprecated, kept for migration)
+CREATE TABLE IF NOT EXISTS priority_shares (
+    priority_id TEXT NOT NULL REFERENCES priorities(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission TEXT NOT NULL DEFAULT 'contributor',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (priority_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_priority_shares_user ON priority_shares(user_id);
+CREATE INDEX IF NOT EXISTS idx_priority_shares_priority ON priority_shares(priority_id);
 """
 
 
@@ -80,43 +102,27 @@ CREATE INDEX IF NOT EXISTS idx_priority_edges_parent ON priority_edges(parent_id
 
 def priority_from_row(row: sqlite3.Row) -> Priority:
     """Convert a database row to a Priority subclass."""
-    # Handle both old column name (generator_type) and new (priority_type)
-    type_value = row["priority_type"] if "priority_type" in row.keys() else row["generator_type"]
-
-    # Map old type names to new ones (for migration)
-    type_mapping = {
-        "goal": "value",           # old goal -> new value
-        "accomplishment": "goal",  # old accomplishment -> new goal
-        "obligation": "practice",  # obligation -> practice (best fit)
-        "capacity": "practice",    # capacity -> practice (best fit)
-    }
-    type_value = type_mapping.get(type_value, type_value)
-    priority_type = PriorityType(type_value)
-
+    priority_type = PriorityType(row["priority_type"])
+    status = PriorityStatus(row["status"])
     created_at = _parse_datetime(row["created_at"])
     updated_at = _parse_datetime(row["updated_at"])
 
-    # Map old status names if needed
-    status_value = row["status"]
-    status_mapping = {
-        "achieved": "completed",
-        "lapsed": "abandoned",
-    }
-    status_value = status_mapping.get(status_value, status_value)
-
-    # Handle potentially invalid statuses gracefully
-    try:
-        status = PriorityStatus(status_value)
-    except ValueError:
-        status = PriorityStatus.ACTIVE
+    # Handle fields that may not exist in older schemas
+    keys = row.keys()
+    entity_id = row["entity_id"] if "entity_id" in keys else None
+    auto_assign_owner = bool(row["auto_assign_owner"]) if "auto_assign_owner" in keys else True
+    auto_assign_creator = bool(row["auto_assign_creator"]) if "auto_assign_creator" in keys else False
 
     common_kwargs = {
         "id": row["id"],
         "name": row["name"],
         "status": status,
+        "entity_id": entity_id,
         "agent_context": row["agent_context"],
-        "notes": row["notes"] if "notes" in row.keys() else None,
-        "rank": row["rank"] if "rank" in row.keys() else None,
+        "notes": row["notes"],
+        "rank": row["rank"],
+        "auto_assign_owner": auto_assign_owner,
+        "auto_assign_creator": auto_assign_creator,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -161,16 +167,11 @@ def priority_to_row_values(priority: Priority) -> tuple:
     """
     Convert a Priority (any subclass) to a tuple of values for SQL insert/update.
     Returns values in column order matching the INSERT statement.
+    Includes entity_id in the tuple.
     """
     # Type-specific fields default to None
     success_looks_like = None
     obsolete_when = None
-    consequence_of_neglect = None  # Legacy, kept for schema compatibility
-    measurement_method = None      # Legacy
-    measurement_rubric = None      # Legacy
-    measurement_scale = None       # Legacy
-    current_level = None           # Legacy
-    target_level = None            # Legacy
     success_criteria = None
     due_date = None
     progress = None
@@ -196,20 +197,17 @@ def priority_to_row_values(priority: Priority) -> tuple:
     now = datetime.now().isoformat()
     return (
         priority.id,
+        priority.entity_id,
         priority.priority_type.value,
         priority.name,
         priority.status.value,
         priority.agent_context,
         priority.notes,
         priority.rank,
+        int(priority.auto_assign_owner),
+        int(priority.auto_assign_creator),
         success_looks_like,
         obsolete_when,
-        consequence_of_neglect,
-        measurement_method,
-        measurement_rubric,
-        measurement_scale,
-        current_level,
-        target_level,
         success_criteria,
         due_date,
         progress,
@@ -230,12 +228,12 @@ class PriorityGraph:
     In-memory graph of priorities. Loaded from SQLite, provides
     traversal operations, syncs changes back to storage.
 
-    Each graph is scoped to a specific user (user_id).
+    Each graph is scoped to a specific entity (entity_id).
     """
 
-    def __init__(self, connection_factory, user_id: int | None = None):
+    def __init__(self, connection_factory, entity_id: str | None = None):
         self.connection_factory = connection_factory
-        self.user_id = user_id  # None means load all (for migration/admin)
+        self.entity_id = entity_id  # None means load all (for admin)
 
         self.nodes: dict[str, Priority] = {}
 
@@ -247,60 +245,26 @@ class PriorityGraph:
     def load(self) -> None:
         """Load priorities and edges from SQLite into memory.
 
-        If user_id is set, only loads priorities for that user.
-        If user_id is None, loads all priorities (for migration/admin).
+        If entity_id is set, only loads priorities for that entity.
+        If entity_id is None, loads all priorities (for admin).
         """
         with self.connection_factory() as conn:
-            # Check if we need to migrate from old schema
-            tables = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-            table_names = [t["name"] for t in tables]
-
-            if "generators" in table_names and "priorities" not in table_names:
-                # Migrate from old schema: rename tables
-                conn.execute("ALTER TABLE generators RENAME TO priorities")
-                conn.execute("ALTER TABLE generator_edges RENAME TO priority_edges")
-
-            # Check if priorities table has old column name (generator_type)
-            if "priorities" in table_names or "generators" in table_names:
-                columns = conn.execute("PRAGMA table_info(priorities)").fetchall()
-                column_names = [c[1] for c in columns]
-                if "generator_type" in column_names and "priority_type" not in column_names:
-                    # Rename the column (SQLite 3.25+)
-                    conn.execute("ALTER TABLE priorities RENAME COLUMN generator_type TO priority_type")
-
-                # Migrate notes_path to notes
-                if "notes_path" in column_names and "notes" not in column_names:
-                    conn.execute("ALTER TABLE priorities RENAME COLUMN notes_path TO notes")
-
-                # Add rank column if missing
-                if "rank" not in column_names:
-                    conn.execute("ALTER TABLE priorities ADD COLUMN rank INTEGER")
-
-                # Add user_id column if missing
-                if "user_id" not in column_names:
-                    conn.execute("ALTER TABLE priorities ADD COLUMN user_id INTEGER REFERENCES users(id)")
-
-            # Ensure schema exists (creates if not present)
+            # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Migrate priority types: goal->value, accomplishment->goal, obligation/capacity->practice
-            conn.execute("UPDATE priorities SET priority_type = 'value' WHERE priority_type = 'goal'")
-            conn.execute("UPDATE priorities SET priority_type = 'goal' WHERE priority_type = 'accomplishment'")
-            conn.execute("UPDATE priorities SET priority_type = 'practice' WHERE priority_type = 'obligation'")
-            conn.execute("UPDATE priorities SET priority_type = 'practice' WHERE priority_type = 'capacity'")
+            # Migrations disabled - database is up-to-date
+            # If you need to add columns, do it manually via sqlite3 CLI
 
-            # Migrate status values
-            conn.execute("UPDATE priorities SET status = 'completed' WHERE status = 'achieved'")
-            conn.execute("UPDATE priorities SET status = 'abandoned' WHERE status = 'lapsed'")
-
-            # Load priorities (filtered by user_id if set)
-            if self.user_id is not None:
-                rows = conn.execute(
-                    "SELECT * FROM priorities WHERE user_id = ?",
-                    (self.user_id,)
-                ).fetchall()
+            # Load priorities (filtered by entity_id if set)
+            if self.entity_id is not None:
+                # Load owned priorities AND shared priorities
+                rows = conn.execute("""
+                    SELECT * FROM priorities WHERE entity_id = ?
+                    UNION
+                    SELECT p.* FROM priorities p
+                    JOIN entity_shares es ON p.id = es.priority_id
+                    WHERE es.shared_with_entity_id = ?
+                """, (self.entity_id, self.entity_id)).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM priorities").fetchall()
 
@@ -334,37 +298,30 @@ class PriorityGraph:
     def save_priority(self, priority: Priority) -> None:
         """Persist a single priority to SQLite (insert or update)."""
         values = priority_to_row_values(priority)
-        # Add user_id at the end of values tuple
-        values = values + (self.user_id,)
 
         with self.connection_factory() as conn:
             conn.execute("""
                 INSERT INTO priorities (
-                    id, priority_type, name, status,
+                    id, entity_id, priority_type, name, status,
                     agent_context, notes, rank,
+                    auto_assign_owner, auto_assign_creator,
                     success_looks_like, obsolete_when,
-                    consequence_of_neglect,
-                    measurement_method, measurement_rubric, measurement_scale,
-                    current_level, target_level,
                     success_criteria, due_date, progress,
                     rhythm_frequency, rhythm_constraints, generation_prompt,
-                    created_at, updated_at, user_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
+                    entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
                     name = excluded.name,
                     status = excluded.status,
                     agent_context = excluded.agent_context,
                     notes = excluded.notes,
                     rank = excluded.rank,
+                    auto_assign_owner = excluded.auto_assign_owner,
+                    auto_assign_creator = excluded.auto_assign_creator,
                     success_looks_like = excluded.success_looks_like,
                     obsolete_when = excluded.obsolete_when,
-                    consequence_of_neglect = excluded.consequence_of_neglect,
-                    measurement_method = excluded.measurement_method,
-                    measurement_rubric = excluded.measurement_rubric,
-                    measurement_scale = excluded.measurement_scale,
-                    current_level = excluded.current_level,
-                    target_level = excluded.target_level,
                     success_criteria = excluded.success_criteria,
                     due_date = excluded.due_date,
                     progress = excluded.progress,
@@ -561,3 +518,127 @@ class PriorityGraph:
     def practices(self) -> list[Practice]:
         """Get all Practice priorities."""
         return [p for p in self.nodes.values() if isinstance(p, Practice)]
+
+    # -------------------------------------------------------------------------
+    # Sharing
+    # -------------------------------------------------------------------------
+
+    def share(self, priority_id: str, target_entity_id: str, permission: str = "contributor") -> None:
+        """
+        Share a priority with another entity.
+
+        Args:
+            priority_id: The priority to share
+            target_entity_id: The entity to share with (personal or organization)
+            permission: One of 'viewer', 'contributor', 'editor'
+        """
+        if permission not in ("viewer", "contributor", "editor"):
+            raise ValueError(f"Invalid permission: {permission}")
+
+        with self.connection_factory() as conn:
+            conn.execute("""
+                INSERT INTO entity_shares (priority_id, shared_with_entity_id, permission)
+                VALUES (?, ?, ?)
+                ON CONFLICT(priority_id, shared_with_entity_id) DO UPDATE SET
+                    permission = excluded.permission
+            """, (priority_id, target_entity_id, permission))
+
+    def share_with_user(self, priority_id: str, user_id: int, permission: str = "contributor") -> None:
+        """
+        Share a priority with a user (via their personal entity).
+
+        Args:
+            priority_id: The priority to share
+            user_id: The user to share with
+            permission: One of 'viewer', 'contributor', 'editor'
+        """
+        # Look up user's personal entity
+        with self.connection_factory() as conn:
+            row = conn.execute(
+                "SELECT entity_id FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
+            if not row or not row["entity_id"]:
+                raise ValueError(f"User {user_id} has no personal entity")
+            target_entity_id = row["entity_id"]
+
+        self.share(priority_id, target_entity_id, permission)
+
+    def unshare(self, priority_id: str, target_entity_id: str) -> bool:
+        """
+        Remove sharing for a priority with an entity.
+        Returns True if a share was removed.
+        """
+        with self.connection_factory() as conn:
+            cursor = conn.execute("""
+                DELETE FROM entity_shares
+                WHERE priority_id = ? AND shared_with_entity_id = ?
+            """, (priority_id, target_entity_id))
+            return cursor.rowcount > 0
+
+    def unshare_user(self, priority_id: str, user_id: int) -> bool:
+        """
+        Remove sharing for a priority with a user (via their personal entity).
+        Returns True if a share was removed.
+        """
+        with self.connection_factory() as conn:
+            row = conn.execute(
+                "SELECT entity_id FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
+            if not row or not row["entity_id"]:
+                return False
+            target_entity_id = row["entity_id"]
+
+        return self.unshare(priority_id, target_entity_id)
+
+    def get_shares(self, priority_id: str) -> list[dict]:
+        """
+        Get all entities a priority is shared with.
+        Returns list of {entity_id, entity_name, permission, created_at, user_id, username}.
+        For personal entities, includes the user info.
+        """
+        with self.connection_factory() as conn:
+            rows = conn.execute("""
+                SELECT es.shared_with_entity_id, es.permission, es.created_at,
+                       e.name as entity_name, e.type as entity_type,
+                       u.id as user_id, u.username
+                FROM entity_shares es
+                JOIN entities e ON es.shared_with_entity_id = e.id
+                LEFT JOIN users u ON e.id = u.entity_id
+                WHERE es.priority_id = ?
+            """, (priority_id,)).fetchall()
+            return [
+                {
+                    "entity_id": row["shared_with_entity_id"],
+                    "entity_name": row["entity_name"],
+                    "entity_type": row["entity_type"],
+                    "user_id": row["user_id"],
+                    "username": row["username"],
+                    "permission": row["permission"],
+                    "created_at": row["created_at"],
+                }
+                for row in rows
+            ]
+
+    def get_permission(self, priority_id: str, entity_id: str) -> str | None:
+        """
+        Get an entity's permission level for a priority.
+        Returns 'owner', 'viewer', 'contributor', 'editor', or None.
+        """
+        priority = self.get(priority_id)
+        if priority is None:
+            return None
+
+        # Check if owner (entity owns the priority)
+        if priority.entity_id == entity_id:
+            return "owner"
+
+        # Check entity_shares
+        with self.connection_factory() as conn:
+            share_row = conn.execute("""
+                SELECT permission FROM entity_shares
+                WHERE priority_id = ? AND shared_with_entity_id = ?
+            """, (priority_id, entity_id)).fetchone()
+            if share_row:
+                return share_row["permission"]
+
+        return None

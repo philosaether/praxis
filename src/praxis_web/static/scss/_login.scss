@@ -89,3 +89,19 @@
     background: $accent-dim;
   }
 }
+
+.login-footer {
+  margin-top: $spacing-xl;
+  text-align: center;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+
+  a {
+    color: $accent;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

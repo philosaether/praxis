@@ -20,16 +20,42 @@ from praxis_core.api.auth import get_current_user_optional
 router = APIRouter()
 
 
-def _get_graph(user_id: int | None = None):
+def _get_graph(entity_id: str | None = None):
     """Import here to avoid circular import."""
     from praxis_core.api.app import get_graph
-    return get_graph(user_id=user_id)
+    return get_graph(entity_id=entity_id)
 
 
-def _serialize_priority(p, render_markdown: bool = False):
+def _serialize_priority(
+    p,
+    render_markdown: bool = False,
+    current_entity_id: str | None = None,
+    shares: list[dict] | None = None,
+):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_priority
-    return serialize_priority(p, render_markdown=render_markdown)
+    return serialize_priority(
+        p,
+        render_markdown=render_markdown,
+        current_entity_id=current_entity_id,
+        shares=shares,
+    )
+
+
+def _serialize_task(t, render_markdown: bool = False):
+    """Import here to avoid circular import."""
+    from praxis_core.api.app import serialize_task
+    return serialize_task(t, render_markdown=render_markdown)
+
+
+def _get_priority_tasks(priority_id: str):
+    """Get all tasks associated with a priority (regardless of owner).
+
+    When viewing a shared priority, users see all tasks linked to it.
+    Access control is at the priority level, not the task level.
+    """
+    from praxis_core.persistence import list_tasks
+    return list_tasks(priority_id=priority_id, include_done=True)
 
 
 def _generate_priority_id(name: str, graph) -> str:
@@ -50,18 +76,18 @@ def _generate_priority_id(name: str, graph) -> str:
     return slug
 
 
-def _create_priority_by_type(priority_type: str, id: str, name: str):
+def _create_priority_by_type(priority_type: str, id: str, name: str, entity_id: str | None = None):
     """Create a priority instance of the appropriate subclass."""
     now = datetime.now()
     if priority_type == "value":
-        return Value(id=id, name=name, created_at=now, updated_at=now)
+        return Value(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     elif priority_type == "goal":
-        return Goal(id=id, name=name, created_at=now, updated_at=now)
+        return Goal(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     elif priority_type == "practice":
-        return Practice(id=id, name=name, created_at=now, updated_at=now)
+        return Practice(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     else:
         # Default to Goal
-        return Goal(id=id, name=name, created_at=now, updated_at=now)
+        return Goal(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
 
 
 @router.post("")
@@ -70,8 +96,8 @@ async def create_priority_endpoint(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Create a new priority with default values (legacy endpoint)."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
 
     # Create name based on type
     type_label = new_priority_type.title()
@@ -80,8 +106,8 @@ async def create_priority_endpoint(
     # Generate unique ID
     priority_id = _generate_priority_id(name, graph)
 
-    # Create the priority
-    priority = _create_priority_by_type(new_priority_type, priority_id, name)
+    # Create the priority with entity_id
+    priority = _create_priority_by_type(new_priority_type, priority_id, name, entity_id)
 
     # Add to graph
     graph.add(priority)
@@ -96,6 +122,9 @@ async def create_priority_full(
     status: Annotated[str, Form()] = "active",
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
+    # Task assignment settings
+    auto_assign_owner: Annotated[str | None, Form()] = "on",
+    auto_assign_creator: Annotated[str | None, Form()] = None,
     # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
@@ -113,15 +142,19 @@ async def create_priority_full(
     if not name.strip():
         return JSONResponse({"error": "Name is required"}, status_code=400)
 
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
 
     priority_id = _generate_priority_id(name.strip(), graph)
-    priority = _create_priority_by_type(priority_type, priority_id, name.strip())
+    priority = _create_priority_by_type(priority_type, priority_id, name.strip(), entity_id)
 
     # Set common fields
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
+
+    # Set task assignment settings (checkboxes: "on" if checked, None if not)
+    priority.auto_assign_owner = auto_assign_owner == "on"
+    priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Set type-specific fields
     if isinstance(priority, Value):
@@ -170,8 +203,8 @@ async def list_priorities(
     user: User | None = Depends(get_current_user_optional),
 ):
     """List priorities with optional filters."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
 
     if type:
         try:
@@ -188,7 +221,7 @@ async def list_priorities(
     priorities = sorted(priorities, key=lambda p: (p.priority_type.value, p.name))
 
     return {
-        "priorities": [_serialize_priority(p) for p in priorities],
+        "priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in priorities],
         "priority_types": [t.value for t in PriorityType],
         "priority_statuses": [s.value for s in PriorityStatus],
     }
@@ -204,8 +237,8 @@ async def priority_tree(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Get tree structure for priorities."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     roots = sorted(graph.roots(), key=_sort_key)
 
     # Build children map for the entire tree
@@ -213,12 +246,12 @@ async def priority_tree(
     for parent_id, child_ids in graph.children.items():
         children = [graph.get(cid) for cid in child_ids if graph.get(cid)]
         children_map[parent_id] = [
-            _serialize_priority(c)
+            _serialize_priority(c, current_entity_id=entity_id)
             for c in sorted(children, key=_sort_key)
         ]
 
     return {
-        "roots": [_serialize_priority(r) for r in roots],
+        "roots": [_serialize_priority(r, current_entity_id=entity_id) for r in roots],
         "children_map": children_map,
     }
 
@@ -229,8 +262,8 @@ async def get_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Get a single priority with its context."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -239,10 +272,22 @@ async def get_priority(
     parent_ids = graph.parents.get(priority_id, set())
     child_ids = graph.children.get(priority_id, set())
 
+    # Get shares for ownership display
+    shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
+
+    # Get associated tasks (all users' tasks for shared priorities)
+    tasks = _get_priority_tasks(priority_id)
+
     return {
-        "priority": _serialize_priority(priority, render_markdown=True),
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
+        "priority": _serialize_priority(
+            priority,
+            render_markdown=True,
+            current_entity_id=entity_id,
+            shares=shares,
+        ),
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
+        "tasks": [_serialize_task(t) for t in tasks],
     }
 
 
@@ -252,8 +297,8 @@ async def get_priority_for_edit(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Get priority data for edit form."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -262,10 +307,13 @@ async def get_priority_for_edit(
     parent_ids = graph.parents.get(priority_id, set())
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
+    # Get shares for ownership display
+    shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
+
     return {
-        "priority": _serialize_priority(priority),
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "priority": _serialize_priority(priority, current_entity_id=entity_id, shares=shares),
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_types": [t.value for t in PriorityType],
         "priority_statuses": [s.value for s in PriorityStatus],
         "edit_mode": True,
@@ -295,8 +343,8 @@ async def update_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update a priority and return updated data."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -354,8 +402,8 @@ async def change_priority_type(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Change a priority's type, preserving common fields."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     old_priority = graph.get(priority_id)
 
     if not old_priority:
@@ -367,7 +415,7 @@ async def change_priority_type(
 
     # Create new priority of new type, preserving common fields
     now = datetime.now()
-    new_priority = _create_priority_by_type(new_priority_type, priority_id, old_priority.name)
+    new_priority = _create_priority_by_type(new_priority_type, priority_id, old_priority.name, entity_id)
 
     # Copy common fields
     new_priority.status = old_priority.status
@@ -391,6 +439,9 @@ async def update_priority_properties(
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
+    # Task assignment settings
+    auto_assign_owner: Annotated[str | None, Form()] = None,
+    auto_assign_creator: Annotated[str | None, Form()] = None,
     # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
@@ -407,8 +458,8 @@ async def update_priority_properties(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update priority properties (everything except notes)."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -424,6 +475,10 @@ async def update_priority_properties(
     priority.agent_context = agent_context.strip() if agent_context else None
     # Note: priority.notes is NOT updated here
     priority.updated_at = datetime.now()
+
+    # Update task assignment settings (checkboxes: "on" if checked, None if not)
+    priority.auto_assign_owner = auto_assign_owner == "on"
+    priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Update type-specific fields
     if isinstance(priority, Value):
@@ -465,15 +520,16 @@ async def update_priority_properties(
     child_ids = graph.children.get(priority_id, set())
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
-    priority_data = _serialize_priority(priority, render_markdown=True)
+    priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id)
     priority_data["notes_raw"] = priority.notes or ""
 
     return {
         "priority": priority_data,
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
-        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
+        "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_statuses": [s.value for s in PriorityStatus],
+        "priority_types": [t.value for t in PriorityType],
     }
 
 
@@ -484,8 +540,8 @@ async def update_priority_notes(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update priority notes independently."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -521,8 +577,8 @@ async def delete_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Delete a priority and all its edges."""
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
 
     if not graph.get(priority_id):
         return JSONResponse({"error": "Priority not found"}, status_code=404)
@@ -550,8 +606,8 @@ async def delete_priority_with_options(
     """
     from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
 
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -623,8 +679,8 @@ async def move_priority(
 
     Handles drag-and-drop operations from the tree view.
     """
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
 
     if not priority:
@@ -666,3 +722,115 @@ async def move_priority(
                     graph.save_priority(sibling)
 
     return {"success": True, "priority_id": priority_id}
+
+
+# -----------------------------------------------------------------------------
+# Sharing Endpoints
+# -----------------------------------------------------------------------------
+
+class ShareRequest(BaseModel):
+    user_id: int
+    permission: str = "contributor"  # viewer, contributor, editor
+
+
+@router.post("/{priority_id}/share")
+async def share_priority(
+    priority_id: str,
+    request_data: ShareRequest,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """
+    Share a priority with another user.
+
+    Only the owner can share a priority.
+    permission: viewer (see only), contributor (add tasks), editor (full edit)
+    """
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    entity_id = user.entity_id
+    graph = _get_graph(entity_id)
+    priority = graph.get(priority_id)
+
+    if not priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    # Check ownership (entity-based)
+    permission = graph.get_permission(priority_id, entity_id)
+    if permission != "owner":
+        return JSONResponse({"error": "Only the owner can share this priority"}, status_code=403)
+
+    # Validate permission level
+    if request_data.permission not in ("viewer", "contributor", "editor"):
+        return JSONResponse({"error": "Invalid permission level"}, status_code=400)
+
+    # Can't share with yourself
+    if request_data.user_id == user.id:
+        return JSONResponse({"error": "Cannot share with yourself"}, status_code=400)
+
+    # Share via user's personal entity
+    graph.share_with_user(priority_id, request_data.user_id, request_data.permission)
+
+    return {
+        "success": True,
+        "priority_id": priority_id,
+        "shared_with": request_data.user_id,
+        "permission": request_data.permission,
+    }
+
+
+@router.delete("/{priority_id}/share/{target_user_id}")
+async def unshare_priority(
+    priority_id: str,
+    target_user_id: int,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Remove sharing for a priority with a user."""
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    entity_id = user.entity_id
+    graph = _get_graph(entity_id)
+
+    # Check ownership (entity-based)
+    permission = graph.get_permission(priority_id, entity_id)
+    if permission != "owner":
+        return JSONResponse({"error": "Only the owner can unshare this priority"}, status_code=403)
+
+    # Unshare via user's personal entity
+    removed = graph.unshare_user(priority_id, target_user_id)
+
+    return {
+        "success": removed,
+        "priority_id": priority_id,
+        "removed_user_id": target_user_id,
+    }
+
+
+@router.get("/{priority_id}/shares")
+async def get_priority_shares(
+    priority_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Get list of users a priority is shared with."""
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    entity_id = user.entity_id
+    graph = _get_graph(entity_id)
+    priority = graph.get(priority_id)
+
+    if not priority:
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    # Only owner can view shares (entity-based)
+    permission = graph.get_permission(priority_id, entity_id)
+    if permission != "owner":
+        return JSONResponse({"error": "Only the owner can view shares"}, status_code=403)
+
+    shares = graph.get_shares(priority_id)
+
+    return {
+        "priority_id": priority_id,
+        "shares": shares,
+    }

@@ -116,6 +116,77 @@ async def logout(request: Request):
     redirect.delete_cookie(key=SESSION_COOKIE_NAME)
     return redirect
 
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request, error: str | None = None):
+    """Display signup page."""
+    # If already logged in, redirect to home
+    if request.cookies.get(SESSION_COOKIE_NAME):
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse(
+        request,
+        "signup.html",
+        {"error": error}
+    )
+
+
+@app.post("/signup")
+async def signup_submit(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    password_confirm: Annotated[str, Form()],
+):
+    """Handle signup form submission."""
+    # Validate passwords match
+    if password != password_confirm:
+        return templates.TemplateResponse(
+            request,
+            "signup.html",
+            {"error": "Passwords do not match"},
+            status_code=400
+        )
+
+    async with httpx.AsyncClient(base_url=API_URL, timeout=30.0) as client:
+        response = await client.post(
+            "/api/auth/register",
+            json={"username": username, "password": password}
+        )
+
+        if response.status_code != 200:
+            error_data = response.json()
+            error_msg = error_data.get("detail", "Registration failed")
+            return templates.TemplateResponse(
+                request,
+                "signup.html",
+                {"error": error_msg},
+                status_code=400
+            )
+
+        # Registration successful - log them in automatically
+        login_response = await client.post(
+            "/api/auth/login",
+            json={"username": username, "password": password}
+        )
+
+        if login_response.status_code == 200:
+            data = login_response.json()
+            session_id = data["session_id"]
+
+            redirect = RedirectResponse(url="/", status_code=302)
+            redirect.set_cookie(
+                key=SESSION_COOKIE_NAME,
+                value=session_id,
+                httponly=True,
+                samesite="lax",
+                max_age=7 * 24 * 60 * 60,
+            )
+            return redirect
+
+        # Fallback: redirect to login page
+        return RedirectResponse(url="/login", status_code=302)
+
+
 # -----------------------------------------------------------------------------
 # Routes: Pages
 # -----------------------------------------------------------------------------
@@ -439,6 +510,22 @@ async def priority_detail(request: Request, priority_id: str):
     )
 
 
+@app.get("/priorities/{priority_id}/tasks-panel", response_class=HTMLResponse)
+async def priority_tasks_panel(request: Request, priority_id: str):
+    """HTMX partial: just the tasks panel for a priority."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/priorities/{priority_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_tasks_panel.html",
+        {"priority": data["priority"], "tasks": data.get("tasks", [])}
+    )
+
+
 @app.post("/priorities/{priority_id}/change-type", response_class=HTMLResponse)
 async def priority_change_type(request: Request, priority_id: str):
     """Change priority type and return updated properties form."""
@@ -658,7 +745,7 @@ async def quick_add_task(request: Request):
     return html_response
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
-async def task_detail(request: Request, task_id: int):
+async def task_detail(request: Request, task_id: str):
     """HTMX partial: detail view for a single task."""
     async with api_client(request) as client:
         response = await client.get(f"/api/tasks/{task_id}")
@@ -688,7 +775,7 @@ async def task_detail(request: Request, task_id: int):
 
 
 @app.post("/tasks/{task_id}/properties", response_class=HTMLResponse)
-async def task_save_properties(request: Request, task_id: int):
+async def task_save_properties(request: Request, task_id: str):
     """Save task properties and return updated properties section + OOB row update."""
     form_data = await request.form()
 
@@ -728,7 +815,7 @@ async def task_save_properties(request: Request, task_id: int):
 
 
 @app.post("/tasks/{task_id}/notes", response_class=HTMLResponse)
-async def task_save_notes(request: Request, task_id: int):
+async def task_save_notes(request: Request, task_id: str):
     """Save task notes and return updated notes section."""
     form_data = await request.form()
 
@@ -752,7 +839,7 @@ async def task_save_notes(request: Request, task_id: int):
 
 
 @app.post("/tasks/{task_id}/toggle", response_class=HTMLResponse)
-async def task_toggle_done(request: Request, task_id: int):
+async def task_toggle_done(request: Request, task_id: str):
     """Toggle task between done and queued."""
     async with api_client(request) as client:
         response = await client.post(f"/api/tasks/{task_id}/toggle")
@@ -768,7 +855,7 @@ async def task_toggle_done(request: Request, task_id: int):
 
 
 @app.delete("/tasks/{task_id}", response_class=HTMLResponse)
-async def delete_task(request: Request, task_id: int):
+async def delete_task(request: Request, task_id: str):
     """Delete a task and return empty content."""
     async with api_client(request) as client:
         response = await client.delete(f"/api/tasks/{task_id}")
@@ -789,3 +876,55 @@ async def delete_priority(request: Request, priority_id: str):
 
     # Return empty response - HTMX will remove the node
     return HTMLResponse(content="")
+
+
+# -----------------------------------------------------------------------------
+# Routes: Sharing
+# -----------------------------------------------------------------------------
+
+@app.get("/users", response_class=HTMLResponse)
+async def get_users_for_share(request: Request):
+    """Get list of users for share dropdown (as partial HTML)."""
+    async with api_client(request) as client:
+        response = await client.get("/api/auth/users")
+        if response.status_code != 200:
+            return HTMLResponse(content="[]")
+        users = response.json()
+    return Response(content=json.dumps(users), media_type="application/json")
+
+
+@app.post("/priorities/{priority_id}/share")
+async def share_priority(request: Request, priority_id: str):
+    """Share a priority with another user."""
+    data = await request.json()
+    user_id = data.get("user_id")
+    permission = data.get("permission", "contributor")
+
+    if not user_id:
+        return Response(
+            content=json.dumps({"success": False, "error": "User ID required"}),
+            media_type="application/json",
+            status_code=400
+        )
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/priorities/{priority_id}/share",
+            json={"user_id": user_id, "permission": permission}
+        )
+
+        if response.status_code != 200:
+            error_data = response.json() if response.content else {}
+            return Response(
+                content=json.dumps({
+                    "success": False,
+                    "error": error_data.get("detail", "Failed to share")
+                }),
+                media_type="application/json",
+                status_code=response.status_code
+            )
+
+        return Response(
+            content=json.dumps({"success": True}),
+            media_type="application/json"
+        )

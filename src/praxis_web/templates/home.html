@@ -126,6 +126,9 @@
 {% include "partials/quick_add_modal.html" %}
 {% include "partials/quick_add_priority_modal.html" %}
 
+<!-- Share Priority Modal -->
+{% include "partials/share_priority_modal.html" %}
+
 <!-- Confirmation Modal -->
 {% include "partials/confirm_modal.html" %}
 
@@ -187,8 +190,24 @@
     };
 
     // Task Quick Add Modal
-    window.openQuickAdd = function() {
-        document.getElementById('quick-add-backdrop').classList.add('open');
+    let currentQuickAddPriorityId = null;
+
+    window.openQuickAdd = function(priorityId) {
+        const backdrop = document.getElementById('quick-add-backdrop');
+        backdrop.classList.add('open');
+        currentQuickAddPriorityId = priorityId || null;
+
+        // Pre-select priority if provided
+        if (priorityId) {
+            const select = document.getElementById('qa-priority');
+            if (select) {
+                select.value = priorityId;
+                // Open the details to show the priority is set
+                const details = backdrop.querySelector('.more-options');
+                if (details) details.open = true;
+            }
+        }
+
         setTimeout(() => {
             document.querySelector('#quick-add-backdrop .quick-add-input').focus();
         }, 100);
@@ -199,11 +218,27 @@
         // Reset form
         const form = document.querySelector('#quick-add-backdrop form');
         if (form) form.reset();
+        currentQuickAddPriorityId = null;
     };
 
     window.handleQuickAddResponse = function(event) {
         if (event.detail.successful) {
+            // Get the priority ID from the form (in case user changed it)
+            const select = document.getElementById('qa-priority');
+            const priorityId = select ? select.value : currentQuickAddPriorityId;
+
             closeQuickAdd();
+
+            // Refresh task panel if viewing a priority with tasks
+            if (priorityId) {
+                const taskPanel = document.getElementById('priority-tasks-panel');
+                if (taskPanel) {
+                    htmx.ajax('GET', '/priorities/' + priorityId + '/tasks-panel', {
+                        target: '#priority-tasks-panel',
+                        swap: 'outerHTML'
+                    });
+                }
+            }
         }
     };
 
@@ -621,5 +656,85 @@
             }
         });
     };
+
+    // -------------------------------------------------------------------------
+    // Share Priority Modal
+    // -------------------------------------------------------------------------
+
+    window.sharePriorityId = null;
+
+    window.openShareModal = function(priorityId, priorityName) {
+        sharePriorityId = priorityId;
+        document.getElementById('share-priority-name').textContent = priorityName;
+        document.getElementById('share-permission').value = 'contributor';
+        document.getElementById('share-submit-btn').disabled = true;
+
+        // Load users for the dropdown
+        const userSelect = document.getElementById('share-user');
+        userSelect.innerHTML = '<option value="">Loading...</option>';
+        userSelect.disabled = true;
+
+        fetch('/users')
+            .then(response => response.json())
+            .then(users => {
+                userSelect.innerHTML = '<option value="">Select a user...</option>';
+                users.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.id;
+                    option.textContent = u.username;
+                    userSelect.appendChild(option);
+                });
+                userSelect.disabled = false;
+            })
+            .catch(err => {
+                console.error('Failed to load users:', err);
+                userSelect.innerHTML = '<option value="">Failed to load users</option>';
+            });
+
+        document.getElementById('share-priority-backdrop').classList.add('open');
+    };
+
+    window.closeShareModal = function() {
+        document.getElementById('share-priority-backdrop').classList.remove('open');
+        sharePriorityId = null;
+    };
+
+    window.updateShareButton = function() {
+        const userId = document.getElementById('share-user').value;
+        document.getElementById('share-submit-btn').disabled = !userId;
+    };
+
+    window.submitShare = function() {
+        const userId = document.getElementById('share-user').value;
+        const permission = document.getElementById('share-permission').value;
+
+        if (!userId || !sharePriorityId) return;
+
+        fetch('/priorities/' + sharePriorityId + '/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: parseInt(userId), permission: permission })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeShareModal();
+                // Could show a success message here
+            } else {
+                alert(data.error || 'Failed to share priority');
+            }
+        })
+        .catch(err => {
+            console.error('Failed to share priority:', err);
+            alert('Failed to share priority');
+        });
+    };
+
+    // Close share modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeShareModal();
+        }
+    });
 </script>
 {% endblock %}

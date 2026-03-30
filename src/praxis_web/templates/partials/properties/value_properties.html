@@ -1,7 +1,9 @@
-{# Value properties form - always editable #}
+{# Value properties form - editable by owner, read-only for others #}
 {# Expects: priority, priority_statuses, all_priorities, parents, priority_types #}
 
-<div class="properties-section priority-properties value-properties">
+{% set readonly = not priority.is_owner %}
+
+<div class="properties-section priority-properties value-properties {% if readonly %}readonly-form{% endif %}">
     <form hx-post="/priorities/{{ priority.id }}/properties"
           hx-target="#properties-section"
           hx-swap="outerHTML">
@@ -12,10 +14,10 @@
             <select id="priority_type"
                     name="new_priority_type"
                     class="property-input type-select"
+                    {% if readonly %}disabled{% endif %}
                     hx-post="/priorities/{{ priority.id }}/change-type"
                     hx-target="#properties-section"
-                    hx-swap="outerHTML"
-                    hx-confirm="Changing type will clear type-specific fields. Continue?">
+                    hx-swap="outerHTML">
                 {% for t in priority_types %}
                 <option value="{{ t }}" {% if t == 'value' %}selected{% endif %}>
                     {{ t|title }}
@@ -33,13 +35,14 @@
                    value="{{ priority.name }}"
                    required
                    autocomplete="off"
+                   {% if readonly %}disabled{% endif %}
                    class="property-input title-input">
         </div>
 
         <!-- Status -->
         <div class="property-row">
             <label for="status">Status</label>
-            <select id="status" name="status" class="property-input">
+            <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
                 {% for s in priority_statuses %}
                 <option value="{{ s }}" {% if priority.status == s %}selected{% endif %}>
                     {{ s }}
@@ -51,7 +54,7 @@
         <!-- Parent -->
         <div class="property-row">
             <label for="parent_id">Parent</label>
-            <select id="parent_id" name="parent_id" class="property-input">
+            <select id="parent_id" name="parent_id" class="property-input" {% if readonly %}disabled{% endif %}>
                 <option value="">None</option>
                 {% for p in all_priorities %}
                 {% if p.id != priority.id %}
@@ -70,8 +73,11 @@
                       name="agent_context"
                       rows="3"
                       class="property-input"
+                      {% if readonly %}disabled{% endif %}
                       placeholder="Context for AI agent...">{{ priority.agent_context or '' }}</textarea>
         </div>
+
+        {% include "partials/properties/_task_assignment.html" %}
 
         <!-- Value-specific: Success Looks Like -->
         <div class="property-row">
@@ -80,6 +86,7 @@
                       name="success_looks_like"
                       rows="3"
                       class="property-input"
+                      {% if readonly %}disabled{% endif %}
                       placeholder="What does success look like?">{{ priority.success_looks_like or '' }}</textarea>
         </div>
 
@@ -90,25 +97,55 @@
                       name="obsolete_when"
                       rows="2"
                       class="property-input"
+                      {% if readonly %}disabled{% endif %}
                       placeholder="When does this goal become irrelevant?">{{ priority.obsolete_when or '' }}</textarea>
         </div>
 
-        <!-- Save Button -->
+        <!-- Actions (owner only) -->
+        {% if not readonly %}
         <div class="property-actions">
-            <button type="submit" class="btn btn-primary">Save</button>
-            <span class="save-status" id="save-status"></span>
-            <button type="button"
-                    class="btn btn-danger"
-                    hx-delete="/priorities/{{ priority.id }}"
-                    hx-swap="none"
-                    hx-confirm="Delete '{{ priority.name }}'? This cannot be undone."
-                    hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'}); }">
-                Delete
-            </button>
+            <div class="actions-left">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <span class="save-status" id="save-status"></span>
+                <button type="button"
+                        class="btn btn-danger"
+                        hx-delete="/priorities/{{ priority.id }}"
+                        hx-swap="none"
+                        hx-confirm="Delete '{{ priority.name }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'}); }">
+                    Delete
+                </button>
+            </div>
+            <div class="actions-right">
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="openShareModal('{{ priority.id }}', '{{ priority.name }}')">
+                    Share
+                </button>
+            </div>
         </div>
+        {% endif %}
 
         <div id="property-errors" class="property-errors"></div>
     </form>
+
+    <!-- Sharing Status -->
+    {% if priority.is_shared_with_me %}
+    <div class="share-status shared-with-me">
+        <span class="share-icon">&#x1F517;</span>
+        <span>Shared with you</span>
+    </div>
+    {% elif priority.shares and priority.shares|length > 0 %}
+    <div class="share-status shared-by-me">
+        <span class="share-icon">&#x1F91D;</span>
+        <span>Shared with {{ priority.shares|length }} user(s):</span>
+        <ul class="share-list">
+            {% for share in priority.shares %}
+            <li>{{ share.username or share.entity_name }} ({{ share.permission }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 
     <!-- Metadata -->
     <div class="property-meta">

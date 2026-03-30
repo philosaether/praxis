@@ -26,6 +26,12 @@ from praxis_core.model.users import (
     UserRole,
     SessionType,
 )
+from praxis_core.model.entities import (
+    Entity,
+    EntityType,
+    EntityRole,
+    EntityMember,
+)
 
 __all__ = [
     # Priorities
@@ -50,4 +56,9 @@ __all__ = [
     "Session",
     "UserRole",
     "SessionType",
+    # Entities
+    "Entity",
+    "EntityType",
+    "EntityRole",
+    "EntityMember",
 ]

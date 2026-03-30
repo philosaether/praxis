@@ -1,0 +1,40 @@
+{# Share priority modal #}
+{# Users loaded dynamically via JS #}
+
+<div class="modal-backdrop" id="share-priority-backdrop" onclick="if(event.target === this) closeShareModal()">
+    <div class="modal share-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>Share Priority</h2>
+            <button type="button" class="modal-close" onclick="closeShareModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="share-priority-name" id="share-priority-name"></p>
+
+            <div class="property-row">
+                <label for="share-user">Share with</label>
+                <select id="share-user" class="property-input" onchange="updateShareButton()">
+                    <option value="">Select a user...</option>
+                </select>
+            </div>
+
+            <div class="property-row">
+                <label for="share-permission">Permission</label>
+                <select id="share-permission" class="property-input">
+                    <option value="contributor">Contributor (can add tasks)</option>
+                    <option value="viewer">Viewer (read only)</option>
+                    <option value="editor">Editor (full access)</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeShareModal()">Cancel</button>
+            <button type="button"
+                    class="btn btn-primary"
+                    id="share-submit-btn"
+                    onclick="submitShare()"
+                    disabled>
+                Share
+            </button>
+        </div>
+    </div>
+</div>

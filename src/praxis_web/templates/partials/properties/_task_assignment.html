@@ -1,0 +1,28 @@
+{# Task assignment settings - include in priority property forms #}
+{# Expects: priority #}
+{# Only shown to owner #}
+
+{% if priority.is_owner %}
+<!-- Task Assignment Settings -->
+<div class="property-row assignment-settings">
+    <label>Task Assignment</label>
+    <div class="checkbox-group">
+        <label class="checkbox-label">
+            <input type="checkbox"
+                   name="auto_assign_owner"
+                   id="auto_assign_owner"
+                   {% if priority.auto_assign_owner %}checked{% endif %}
+                   onchange="if(this.checked) document.getElementById('auto_assign_creator').checked = false;">
+            <span>Assign new tasks to me</span>
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox"
+                   name="auto_assign_creator"
+                   id="auto_assign_creator"
+                   {% if priority.auto_assign_creator %}checked{% endif %}
+                   onchange="if(this.checked) document.getElementById('auto_assign_owner').checked = false;">
+            <span>Assign new tasks to creator</span>
+        </label>
+    </div>
+</div>
+{% endif %}

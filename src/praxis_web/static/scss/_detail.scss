@@ -102,6 +102,55 @@
   }
 }
 
+// Checkbox group for assignment settings
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  color: $text-secondary;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: $accent;
+  }
+
+  &:hover {
+    color: $text-primary;
+  }
+}
+
+.assignment-settings {
+  padding: $spacing-md 0;
+  border-top: 1px solid $border;
+  border-bottom: 1px solid $border;
+  margin: $spacing-sm 0;
+}
+
+// Read-only form styling
+.readonly-form {
+  .property-input:disabled {
+    background: $bg-secondary;
+    color: $text-secondary;
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
+
+  select:disabled {
+    appearance: none;
+    background-image: none;
+  }
+}
+
 textarea.property-input {
   min-height: 60px;
   resize: vertical;
@@ -115,10 +164,23 @@ textarea.property-input {
 .property-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-md;
   margin-top: $spacing-lg;
   padding-top: $spacing-lg;
   border-top: 1px solid $border;
+}
+
+.actions-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.actions-right {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
 }
 
 .save-status {
@@ -142,6 +204,48 @@ textarea.property-input {
   .meta-item {
     font-size: $font-size-xs;
     color: $text-muted;
+  }
+}
+
+// Share status display
+.share-status {
+  margin-top: $spacing-lg;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+
+  .share-icon {
+    font-size: 1.2em;
+  }
+
+  &.shared-with-me {
+    background: rgba($info, 0.1);
+    border: 1px solid rgba($info, 0.3);
+    color: $info;
+  }
+
+  &.shared-by-me {
+    background: rgba($success, 0.1);
+    border: 1px solid rgba($success, 0.3);
+    color: $text-primary;
+
+    .share-icon {
+      color: $success;
+    }
+  }
+
+  .share-list {
+    margin: $spacing-xs 0 0 0;
+    padding-left: $spacing-lg;
+    font-size: $font-size-xs;
+    color: $text-secondary;
+
+    li {
+      margin-bottom: $spacing-xs;
+    }
   }
 }
 
@@ -265,6 +369,121 @@ textarea.property-input {
     font-size: $font-size-xs;
     color: $text-muted;
     margin-left: $spacing-xs;
+  }
+}
+
+// =============================================================================
+// Associated Tasks Section
+// =============================================================================
+
+.associated-tasks-section {
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  margin-top: $spacing-xl;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+    }
+
+    h3 {
+      font-size: $font-size-md;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $text-secondary;
+      margin: 0;
+    }
+
+    .task-count {
+      background: $bg-tertiary;
+      color: $text-muted;
+      padding: 0.1rem 0.4rem;
+      border-radius: $radius-sm;
+      font-size: $font-size-xs;
+    }
+  }
+
+  .empty-hint {
+    color: $text-muted;
+    font-size: $font-size-sm;
+    font-style: italic;
+    margin: 0;
+  }
+}
+
+.task-list-compact {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid $border;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  a {
+    color: $text-primary;
+    text-decoration: none;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      color: $accent;
+    }
+  }
+
+  &.done {
+    opacity: 0.6;
+
+    a {
+      text-decoration: line-through;
+      color: $text-muted;
+    }
+  }
+
+  .task-status {
+    font-size: $font-size-xs;
+    padding: 0.1rem 0.4rem;
+    border-radius: $radius-sm;
+    margin-left: $spacing-sm;
+    flex-shrink: 0;
+
+    &.queued {
+      background: rgba($accent, 0.15);
+      color: $accent;
+    }
+
+    &.active {
+      background: rgba($warning, 0.15);
+      color: $warning;
+    }
+
+    &.done {
+      background: rgba($success, 0.15);
+      color: $success;
+    }
+
+    &.dropped {
+      background: rgba($text-muted, 0.15);
+      color: $text-muted;
+    }
   }
 }
 

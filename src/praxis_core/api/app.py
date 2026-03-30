@@ -32,33 +32,33 @@ app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
 
 
 # ---------------------------------------------------------------------
-# Per-User Graph Cache
+# Per-Entity Graph Cache
 # ---------------------------------------------------------------------
 
-_graphs: dict[int | None, PriorityGraph] = {}
+_graphs: dict[str | None, PriorityGraph] = {}
 
 
-def get_graph(user_id: int | None = None) -> PriorityGraph:
-    """Get a PriorityGraph instance for the given user.
+def get_graph(entity_id: str | None = None) -> PriorityGraph:
+    """Get a PriorityGraph instance for the given entity.
 
     Args:
-        user_id: User ID, or None for global graph (backward compatibility)
+        entity_id: Entity ID (ULID), or None for global graph (admin)
 
     Returns:
-        PriorityGraph scoped to the user (or global if user_id is None)
+        PriorityGraph scoped to the entity (or global if entity_id is None)
     """
-    if user_id not in _graphs:
-        _graphs[user_id] = PriorityGraph(get_connection, user_id=user_id)
-        _graphs[user_id].load()
-    return _graphs[user_id]
+    if entity_id not in _graphs:
+        _graphs[entity_id] = PriorityGraph(get_connection, entity_id=entity_id)
+        _graphs[entity_id].load()
+    return _graphs[entity_id]
 
 
-def clear_graph_cache(user_id: int | None = None) -> None:
-    """Clear cached graph for a user, or all if user_id is None."""
-    if user_id is None:
+def clear_graph_cache(entity_id: str | None = None) -> None:
+    """Clear cached graph for an entity, or all if entity_id is None."""
+    if entity_id is None:
         _graphs.clear()
-    elif user_id in _graphs:
-        del _graphs[user_id]
+    elif entity_id in _graphs:
+        del _graphs[entity_id]
 
 
 # ---------------------------------------------------------------------
@@ -84,8 +84,20 @@ def render_md(text: str) -> str:
     return markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
 
 
-def serialize_priority(p, render_markdown: bool = False) -> dict:
-    """Convert a Priority to JSON-serializable dict."""
+def serialize_priority(
+    p,
+    render_markdown: bool = False,
+    current_entity_id: str | None = None,
+    shares: list[dict] | None = None,
+) -> dict:
+    """Convert a Priority to JSON-serializable dict.
+
+    Args:
+        p: Priority object
+        render_markdown: Whether to render notes as markdown
+        current_entity_id: Current user's entity_id for ownership check
+        shares: List of share dicts from graph.get_shares() for share indicators
+    """
     notes = p.notes
     if render_markdown and notes:
         notes = render_md(notes)
@@ -95,12 +107,28 @@ def serialize_priority(p, render_markdown: bool = False) -> dict:
         "name": p.name,
         "priority_type": p.priority_type.value,
         "status": p.status.value,
+        "entity_id": p.entity_id,
         "agent_context": p.agent_context,
         "notes": notes,
         "rank": p.rank,
+        "auto_assign_owner": p.auto_assign_owner,
+        "auto_assign_creator": p.auto_assign_creator,
         "created_at": fmt_datetime(p.created_at),
         "updated_at": fmt_datetime(p.updated_at),
     }
+
+    # Add ownership/sharing info if entity context provided
+    if current_entity_id:
+        is_owner = p.entity_id == current_entity_id
+        data["is_owner"] = is_owner
+        data["is_shared_with_me"] = not is_owner
+
+        if shares is not None:
+            data["share_count"] = len(shares)
+            data["shares"] = shares
+        else:
+            data["share_count"] = 0
+            data["shares"] = []
 
     # Add type-specific fields
     if isinstance(p, Value):

@@ -27,9 +27,25 @@
     border-left: 3px solid $accent;
   }
 
+  &.shared-with-me {
+    background: rgba($info, 0.05);
+    border-left: 2px solid $info;
+
+    &:hover {
+      background: rgba($info, 0.1);
+    }
+
+    &.selected {
+      border-left: 3px solid $info;
+    }
+  }
+
   .name {
     font-weight: 500;
     margin-bottom: $spacing-xs;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
   }
 
   .meta {
@@ -37,6 +53,24 @@
     color: $text-secondary;
     display: flex;
     gap: $spacing-md;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Share Indicators
+// -----------------------------------------------------------------------------
+
+.share-indicator {
+  font-size: 0.85em;
+  opacity: 0.7;
+  cursor: help;
+
+  &.shared-with-me {
+    color: $info;
+  }
+
+  &.shared-by-me {
+    color: $success;
   }
 }
 

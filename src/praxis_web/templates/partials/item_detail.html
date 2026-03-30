@@ -51,6 +51,38 @@
             </ul>
         </div>
         {% endif %}
+
+        <!-- Associated Tasks -->
+        <div id="priority-tasks-panel" class="associated-tasks-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <h3>Tasks</h3>
+                    <span class="task-count">{{ tasks|length if tasks else 0 }}</span>
+                </div>
+                <button type="button"
+                        class="btn btn-sm btn-secondary"
+                        onclick="openQuickAdd('{{ priority.id }}')">
+                    + New Task
+                </button>
+            </div>
+            {% if tasks %}
+            <ul class="task-list-compact">
+                {% for task in tasks %}
+                <li class="task-item-compact {% if task.status == 'done' %}done{% endif %}">
+                    <a href="#"
+                       hx-get="/tasks/{{ task.id }}"
+                       hx-target="#detail-pane"
+                       hx-swap="innerHTML">
+                        {{ task.name }}
+                    </a>
+                    <span class="task-status {{ task.status }}">{{ task.status }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-hint">No tasks linked to this priority</p>
+            {% endif %}
+        </div>
     {% endif %}
 
     <!-- Notes Section -->
