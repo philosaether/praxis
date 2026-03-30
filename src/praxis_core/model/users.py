@@ -23,6 +23,7 @@ class User:
     id: int
     username: str
     password_hash: str
+    entity_id: str | None = None  # ULID of personal entity
     email: str | None = None
     role: UserRole = UserRole.USER
     is_active: bool = True

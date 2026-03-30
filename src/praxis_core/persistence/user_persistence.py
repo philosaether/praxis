@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from ulid import ULID
 
 from praxis_core.model.users import User, Session, UserRole, SessionType
 from praxis_core.persistence.database import get_connection
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     email TEXT,
     password_hash TEXT NOT NULL,
+    entity_id TEXT REFERENCES entities(id),
     role TEXT NOT NULL DEFAULT 'user',
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,6 +42,30 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+"""
+
+ENTITIES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS entities (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    parent_entity_id TEXT REFERENCES entities(id),
+    config TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS entity_members (
+    entity_id TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'member',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (entity_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(type);
+CREATE INDEX IF NOT EXISTS idx_entities_parent ON entities(parent_entity_id);
+CREATE INDEX IF NOT EXISTS idx_entity_members_user ON entity_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_entity_members_entity ON entity_members(entity_id);
 """
 
 
@@ -72,11 +98,13 @@ _schema_ensured = False
 
 
 def ensure_schema() -> None:
-    """Ensure the users and sessions tables exist."""
+    """Ensure the entities, users, and sessions tables exist."""
     global _schema_ensured
     if _schema_ensured:
         return
     with get_connection() as conn:
+        # Entities must be created before users (foreign key dependency)
+        conn.executescript(ENTITIES_SCHEMA)
         conn.executescript(USERS_SCHEMA)
     _schema_ensured = True
 
@@ -91,24 +119,48 @@ def create_user(
     email: str | None = None,
     role: UserRole = UserRole.USER,
 ) -> User:
-    """Create a new user with hashed password."""
+    """Create a new user with hashed password and personal entity."""
     ensure_schema()
     now = datetime.now()
+    now_str = now.isoformat()
     password_hash = hash_password(password)
+    entity_id = str(ULID())
 
     with get_connection() as conn:
+        # Create personal entity
+        conn.execute(
+            """
+            INSERT INTO entities (id, type, name, config, created_at)
+            VALUES (?, 'personal', ?, '{}', ?)
+            """,
+            (entity_id, username, now_str),
+        )
+
+        # Create user linked to entity
         cursor = conn.execute(
             """
-            INSERT INTO users (username, email, password_hash, role, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (username, email, password_hash, entity_id, role, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (username, email, password_hash, role.value, now.isoformat()),
+            (username, email, password_hash, entity_id, role.value, now_str),
         )
+        user_id = cursor.lastrowid
+
+        # Add user as owner of their personal entity
+        conn.execute(
+            """
+            INSERT INTO entity_members (entity_id, user_id, role, created_at)
+            VALUES (?, ?, 'owner', ?)
+            """,
+            (entity_id, user_id, now_str),
+        )
+
         return User(
-            id=cursor.lastrowid,
+            id=user_id,
             username=username,
             email=email,
             password_hash=password_hash,
+            entity_id=entity_id,
             role=role,
             is_active=True,
             created_at=now,
@@ -220,11 +272,15 @@ def _row_to_user(row) -> User:
     if row["last_login"]:
         last_login = datetime.fromisoformat(row["last_login"])
 
+    # Handle entity_id (may not exist in older schemas)
+    entity_id = row["entity_id"] if "entity_id" in row.keys() else None
+
     return User(
         id=row["id"],
         username=row["username"],
         email=row["email"],
         password_hash=row["password_hash"],
+        entity_id=entity_id,
         role=UserRole(row["role"]),
         is_active=bool(row["is_active"]),
         created_at=created_at,
