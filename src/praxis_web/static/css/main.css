@@ -20,7 +20,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #1a1a2e;
   color: #eee;
   line-height: 1.5;
@@ -790,7 +790,7 @@ textarea.property-input {
   border: 1px solid #333;
   border-radius: 4px;
   font-size: 0.9rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   resize: vertical;
 }
