@@ -1,11 +1,13 @@
 // =============================================================================
 // Floating Action Button
 // =============================================================================
+@use 'sass:color';
 @use 'variables' as *;
 
-// Goal purple color
-$goal-purple: #6a1b9a;
-$goal-purple-hover: #5c1786;
+// Priority mode colors (warm purple, not cold)
+$goal-purple: #5c3d7a;
+$goal-purple-hover: #4a3163;
+$goal-purple-light: #7a5699;
 
 .fab {
   position: fixed;
@@ -14,30 +16,33 @@ $goal-purple-hover: #5c1786;
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: $accent;
+  // Gold gradient per design guide
+  background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
   color: white;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  // Tinted shadow (not black)
+  box-shadow: $shadow-lg;
   z-index: 100;
-  transition: all $transition-fast;
+  transition: all $transition-base;
 
   &:hover {
-    background: $accent-dim;
+    background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
     transform: scale(1.05);
+    box-shadow: 0 16px 40px rgba(77, 70, 53, 0.15);
   }
 
   &:active {
     transform: scale(0.95);
   }
 
-  // Priority mode variant (purple for goals)
+  // Priority mode variant (muted purple for goals)
   &.fab-priority {
-    background: $goal-purple;
+    background: linear-gradient(135deg, $goal-purple 0%, $goal-purple-light 100%);
 
     &:hover {
-      background: $goal-purple-hover;
+      background: linear-gradient(135deg, $goal-purple-hover 0%, $goal-purple 100%);
     }
   }
 }

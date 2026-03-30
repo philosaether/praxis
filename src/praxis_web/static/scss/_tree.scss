@@ -17,10 +17,11 @@
 .tree-header {
   margin-bottom: $spacing-lg;
   padding-bottom: $spacing-md;
-  border-bottom: 1px solid $border;
+  // Soft boundary via spacing
 
   h2 {
     margin: 0;
+    font-family: $font-family-display;
     font-size: $font-size-lg;
     font-weight: 600;
   }
@@ -177,7 +178,8 @@
   opacity: 1;
   background: $bg-secondary;
   border-radius: $radius-md;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  // Tinted shadow per design guide
+  box-shadow: $shadow-md;
 }
 
 .tree-hint {
@@ -265,17 +267,19 @@
 
 .tree-context-menu {
   position: fixed;
-  background: $bg-secondary;
-  border: 1px solid $border;
-  border-radius: $radius-md;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  // Glassmorphism effect
+  background: rgba($bg-elevated, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-lg;
   min-width: 160px;
   z-index: 300;
   padding: $spacing-xs 0;
   opacity: 0;
   visibility: hidden;
   transform: scale(0.95);
-  transition: opacity $transition-fast, transform $transition-fast, visibility $transition-fast;
+  transition: opacity $transition-base, transform $transition-base, visibility $transition-base;
 
   &.open {
     opacity: 1;
@@ -294,11 +298,13 @@
   border: none;
   color: $text-primary;
   font-size: $font-size-sm;
+  font-family: $font-family-body;
   cursor: pointer;
   text-align: left;
+  transition: background $transition-base;
 
   &:hover {
-    background: $bg-tertiary;
+    background: $accent-glow;
   }
 
   &.destructive {
@@ -318,6 +324,6 @@
 
 .tree-context-menu-divider {
   height: 1px;
-  background: $border;
-  margin: $spacing-xs 0;
+  background: $border-subtle;
+  margin: $spacing-xs $spacing-sm;
 }

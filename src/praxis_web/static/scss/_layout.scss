@@ -12,7 +12,8 @@
   width: $left-pane-width;
   min-width: $left-pane-min;
   max-width: $left-pane-max;
-  border-right: 1px solid $border;
+  // Soft boundary via background shift (no hard border per design guide)
+  box-shadow: 1px 0 0 $border-subtle;
   display: flex;
   flex-direction: column;
   background: $bg-secondary;
@@ -31,17 +32,19 @@
 
 .header {
   padding: $spacing-lg;
-  border-bottom: 1px solid $border;
+  // Soft boundary via background shift
   background: $bg-tertiary;
   display: flex;
   justify-content: space-between;
   align-items: center;
 
   h1 {
+    font-family: $font-family-display;
     font-size: $font-size-lg;
     font-weight: 600;
     color: $accent;
     margin: 0;
+    letter-spacing: 0.02em;
   }
 }
 
@@ -85,7 +88,7 @@
 
 .filters {
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1px solid $border;
+  // Soft boundary via background shift
   display: flex;
   gap: $spacing-md;
   align-items: center;
@@ -95,10 +98,17 @@
   input[type="checkbox"] {
     background: $bg-tertiary;
     color: $text-primary;
-    border: 1px solid $border;
+    border: 1px solid $border-subtle;
     padding: 0.4rem $spacing-sm;
     border-radius: $radius-md;
     font-size: $font-size-sm;
+    font-family: $font-family-body;
+    transition: border-color $transition-base;
+
+    &:focus {
+      outline: none;
+      border-color: $accent;
+    }
   }
 
   label {
@@ -107,6 +117,7 @@
     gap: 0.4rem;
     font-size: $font-size-sm;
     color: $text-secondary;
+    font-family: $font-family-body;
   }
 }
 
@@ -122,7 +133,7 @@
 
 .add-new-bar {
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1px solid $border;
+  // Background shift creates soft boundary
   background: $bg-tertiary;
 
   #add-task-bar,

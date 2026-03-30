@@ -14,14 +14,18 @@
   --bg-primary: #{$bg-primary};
   --bg-secondary: #{$bg-secondary};
   --bg-tertiary: #{$bg-tertiary};
+  --bg-elevated: #{$bg-elevated};
   --text-primary: #{$text-primary};
   --text-secondary: #{$text-secondary};
   --text-muted: #{$text-muted};
   --accent: #{$accent};
+  --accent-bright: #{$accent-bright};
   --accent-dim: #{$accent-dim};
+  --accent-glow: #{$accent-glow};
   --border: #{$border};
   --success: #{$success};
   --warning: #{$warning};
+  --error: #{$error};
 }
 
 body {
