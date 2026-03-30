@@ -20,7 +20,8 @@ from praxis_core.model.priorities import (
 PRIORITIES_SCHEMA = """
 CREATE TABLE IF NOT EXISTS priorities (
     id TEXT PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    entity_id TEXT REFERENCES entities(id),
+    user_id INTEGER REFERENCES users(id),  -- deprecated, use entity_id
     priority_type TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
@@ -60,11 +61,24 @@ CREATE TABLE IF NOT EXISTS priority_edges (
 
 CREATE INDEX IF NOT EXISTS idx_priorities_type ON priorities(priority_type);
 CREATE INDEX IF NOT EXISTS idx_priorities_status ON priorities(status);
-CREATE INDEX IF NOT EXISTS idx_priorities_user ON priorities(user_id);
+CREATE INDEX IF NOT EXISTS idx_priorities_entity ON priorities(entity_id);
+CREATE INDEX IF NOT EXISTS idx_priorities_user ON priorities(user_id);  -- deprecated
 CREATE INDEX IF NOT EXISTS idx_priority_edges_child ON priority_edges(child_id);
 CREATE INDEX IF NOT EXISTS idx_priority_edges_parent ON priority_edges(parent_id);
 
--- Priority sharing
+-- Entity-based sharing (replaces priority_shares)
+CREATE TABLE IF NOT EXISTS entity_shares (
+    priority_id TEXT NOT NULL REFERENCES priorities(id) ON DELETE CASCADE,
+    shared_with_entity_id TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    permission TEXT NOT NULL DEFAULT 'contributor',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (priority_id, shared_with_entity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entity_shares_entity ON entity_shares(shared_with_entity_id);
+CREATE INDEX IF NOT EXISTS idx_entity_shares_priority ON entity_shares(priority_id);
+
+-- Legacy table (deprecated, kept for migration)
 CREATE TABLE IF NOT EXISTS priority_shares (
     priority_id TEXT NOT NULL REFERENCES priorities(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -89,10 +103,14 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     created_at = _parse_datetime(row["created_at"])
     updated_at = _parse_datetime(row["updated_at"])
 
+    # Handle entity_id (may not exist in older schemas)
+    entity_id = row["entity_id"] if "entity_id" in row.keys() else None
+
     common_kwargs = {
         "id": row["id"],
         "name": row["name"],
         "status": status,
+        "entity_id": entity_id,
         "agent_context": row["agent_context"],
         "notes": row["notes"],
         "rank": row["rank"],
@@ -140,6 +158,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
     """
     Convert a Priority (any subclass) to a tuple of values for SQL insert/update.
     Returns values in column order matching the INSERT statement.
+    Includes entity_id in the tuple.
     """
     # Type-specific fields default to None
     success_looks_like = None
@@ -169,6 +188,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
     now = datetime.now().isoformat()
     return (
         priority.id,
+        priority.entity_id,
         priority.priority_type.value,
         priority.name,
         priority.status.value,
@@ -197,12 +217,12 @@ class PriorityGraph:
     In-memory graph of priorities. Loaded from SQLite, provides
     traversal operations, syncs changes back to storage.
 
-    Each graph is scoped to a specific user (user_id).
+    Each graph is scoped to a specific entity (entity_id).
     """
 
-    def __init__(self, connection_factory, user_id: int | None = None):
+    def __init__(self, connection_factory, entity_id: str | None = None):
         self.connection_factory = connection_factory
-        self.user_id = user_id  # None means load all (for admin)
+        self.entity_id = entity_id  # None means load all (for admin)
 
         self.nodes: dict[str, Priority] = {}
 
@@ -214,24 +234,23 @@ class PriorityGraph:
     def load(self) -> None:
         """Load priorities and edges from SQLite into memory.
 
-        If user_id is set, only loads priorities for that user.
-        If user_id is None, loads all priorities (for admin).
+        If entity_id is set, only loads priorities for that entity.
+        If entity_id is None, loads all priorities (for admin).
         """
         with self.connection_factory() as conn:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Load priorities (filtered by user_id if set)
-            if self.user_id is not None:
+            # Load priorities (filtered by entity_id if set)
+            if self.entity_id is not None:
                 # Load owned priorities AND shared priorities
                 rows = conn.execute("""
-                    SELECT p.* FROM priorities p
-                    WHERE p.user_id = ?
+                    SELECT * FROM priorities WHERE entity_id = ?
                     UNION
                     SELECT p.* FROM priorities p
-                    JOIN priority_shares ps ON p.id = ps.priority_id
-                    WHERE ps.user_id = ?
-                """, (self.user_id, self.user_id)).fetchall()
+                    JOIN entity_shares es ON p.id = es.priority_id
+                    WHERE es.shared_with_entity_id = ?
+                """, (self.entity_id, self.entity_id)).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM priorities").fetchall()
 
@@ -265,20 +284,19 @@ class PriorityGraph:
     def save_priority(self, priority: Priority) -> None:
         """Persist a single priority to SQLite (insert or update)."""
         values = priority_to_row_values(priority)
-        # Add user_id at the end of values tuple
-        values = values + (self.user_id,)
 
         with self.connection_factory() as conn:
             conn.execute("""
                 INSERT INTO priorities (
-                    id, priority_type, name, status,
+                    id, entity_id, priority_type, name, status,
                     agent_context, notes, rank,
                     success_looks_like, obsolete_when,
                     success_criteria, due_date, progress,
                     rhythm_frequency, rhythm_constraints, generation_prompt,
-                    created_at, updated_at, user_id
+                    created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
+                    entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
                     name = excluded.name,
                     status = excluded.status,
@@ -488,13 +506,13 @@ class PriorityGraph:
     # Sharing
     # -------------------------------------------------------------------------
 
-    def share(self, priority_id: str, user_id: int, permission: str = "contributor") -> None:
+    def share(self, priority_id: str, target_entity_id: str, permission: str = "contributor") -> None:
         """
-        Share a priority with another user.
+        Share a priority with another entity.
 
         Args:
             priority_id: The priority to share
-            user_id: The user to share with
+            target_entity_id: The entity to share with (personal or organization)
             permission: One of 'viewer', 'contributor', 'editor'
         """
         if permission not in ("viewer", "contributor", "editor"):
@@ -502,38 +520,80 @@ class PriorityGraph:
 
         with self.connection_factory() as conn:
             conn.execute("""
-                INSERT INTO priority_shares (priority_id, user_id, permission)
+                INSERT INTO entity_shares (priority_id, shared_with_entity_id, permission)
                 VALUES (?, ?, ?)
-                ON CONFLICT(priority_id, user_id) DO UPDATE SET
+                ON CONFLICT(priority_id, shared_with_entity_id) DO UPDATE SET
                     permission = excluded.permission
-            """, (priority_id, user_id, permission))
+            """, (priority_id, target_entity_id, permission))
 
-    def unshare(self, priority_id: str, user_id: int) -> bool:
+    def share_with_user(self, priority_id: str, user_id: int, permission: str = "contributor") -> None:
         """
-        Remove sharing for a priority with a user.
+        Share a priority with a user (via their personal entity).
+
+        Args:
+            priority_id: The priority to share
+            user_id: The user to share with
+            permission: One of 'viewer', 'contributor', 'editor'
+        """
+        # Look up user's personal entity
+        with self.connection_factory() as conn:
+            row = conn.execute(
+                "SELECT entity_id FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
+            if not row or not row["entity_id"]:
+                raise ValueError(f"User {user_id} has no personal entity")
+            target_entity_id = row["entity_id"]
+
+        self.share(priority_id, target_entity_id, permission)
+
+    def unshare(self, priority_id: str, target_entity_id: str) -> bool:
+        """
+        Remove sharing for a priority with an entity.
         Returns True if a share was removed.
         """
         with self.connection_factory() as conn:
             cursor = conn.execute("""
-                DELETE FROM priority_shares
-                WHERE priority_id = ? AND user_id = ?
-            """, (priority_id, user_id))
+                DELETE FROM entity_shares
+                WHERE priority_id = ? AND shared_with_entity_id = ?
+            """, (priority_id, target_entity_id))
             return cursor.rowcount > 0
+
+    def unshare_user(self, priority_id: str, user_id: int) -> bool:
+        """
+        Remove sharing for a priority with a user (via their personal entity).
+        Returns True if a share was removed.
+        """
+        with self.connection_factory() as conn:
+            row = conn.execute(
+                "SELECT entity_id FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
+            if not row or not row["entity_id"]:
+                return False
+            target_entity_id = row["entity_id"]
+
+        return self.unshare(priority_id, target_entity_id)
 
     def get_shares(self, priority_id: str) -> list[dict]:
         """
-        Get all users a priority is shared with.
-        Returns list of {user_id, permission, created_at}.
+        Get all entities a priority is shared with.
+        Returns list of {entity_id, entity_name, permission, created_at, user_id, username}.
+        For personal entities, includes the user info.
         """
         with self.connection_factory() as conn:
             rows = conn.execute("""
-                SELECT ps.user_id, ps.permission, ps.created_at, u.username
-                FROM priority_shares ps
-                JOIN users u ON ps.user_id = u.id
-                WHERE ps.priority_id = ?
+                SELECT es.shared_with_entity_id, es.permission, es.created_at,
+                       e.name as entity_name, e.type as entity_type,
+                       u.id as user_id, u.username
+                FROM entity_shares es
+                JOIN entities e ON es.shared_with_entity_id = e.id
+                LEFT JOIN users u ON e.id = u.entity_id
+                WHERE es.priority_id = ?
             """, (priority_id,)).fetchall()
             return [
                 {
+                    "entity_id": row["shared_with_entity_id"],
+                    "entity_name": row["entity_name"],
+                    "entity_type": row["entity_type"],
                     "user_id": row["user_id"],
                     "username": row["username"],
                     "permission": row["permission"],
@@ -542,29 +602,25 @@ class PriorityGraph:
                 for row in rows
             ]
 
-    def get_permission(self, priority_id: str, user_id: int) -> str | None:
+    def get_permission(self, priority_id: str, entity_id: str) -> str | None:
         """
-        Get a user's permission level for a priority.
+        Get an entity's permission level for a priority.
         Returns 'owner', 'viewer', 'contributor', 'editor', or None.
         """
         priority = self.get(priority_id)
         if priority is None:
             return None
 
-        # Check if owner
-        with self.connection_factory() as conn:
-            row = conn.execute(
-                "SELECT user_id FROM priorities WHERE id = ?",
-                (priority_id,)
-            ).fetchone()
-            if row and row["user_id"] == user_id:
-                return "owner"
+        # Check if owner (entity owns the priority)
+        if priority.entity_id == entity_id:
+            return "owner"
 
-            # Check shares
+        # Check entity_shares
+        with self.connection_factory() as conn:
             share_row = conn.execute("""
-                SELECT permission FROM priority_shares
-                WHERE priority_id = ? AND user_id = ?
-            """, (priority_id, user_id)).fetchone()
+                SELECT permission FROM entity_shares
+                WHERE priority_id = ? AND shared_with_entity_id = ?
+            """, (priority_id, entity_id)).fetchone()
             if share_row:
                 return share_row["permission"]
 

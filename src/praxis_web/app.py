@@ -729,7 +729,7 @@ async def quick_add_task(request: Request):
     return html_response
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
-async def task_detail(request: Request, task_id: int):
+async def task_detail(request: Request, task_id: str):
     """HTMX partial: detail view for a single task."""
     async with api_client(request) as client:
         response = await client.get(f"/api/tasks/{task_id}")
@@ -759,7 +759,7 @@ async def task_detail(request: Request, task_id: int):
 
 
 @app.post("/tasks/{task_id}/properties", response_class=HTMLResponse)
-async def task_save_properties(request: Request, task_id: int):
+async def task_save_properties(request: Request, task_id: str):
     """Save task properties and return updated properties section + OOB row update."""
     form_data = await request.form()
 
@@ -799,7 +799,7 @@ async def task_save_properties(request: Request, task_id: int):
 
 
 @app.post("/tasks/{task_id}/notes", response_class=HTMLResponse)
-async def task_save_notes(request: Request, task_id: int):
+async def task_save_notes(request: Request, task_id: str):
     """Save task notes and return updated notes section."""
     form_data = await request.form()
 
@@ -823,7 +823,7 @@ async def task_save_notes(request: Request, task_id: int):
 
 
 @app.post("/tasks/{task_id}/toggle", response_class=HTMLResponse)
-async def task_toggle_done(request: Request, task_id: int):
+async def task_toggle_done(request: Request, task_id: str):
     """Toggle task between done and queued."""
     async with api_client(request) as client:
         response = await client.post(f"/api/tasks/{task_id}/toggle")
@@ -839,7 +839,7 @@ async def task_toggle_done(request: Request, task_id: int):
 
 
 @app.delete("/tasks/{task_id}", response_class=HTMLResponse)
-async def delete_task(request: Request, task_id: int):
+async def delete_task(request: Request, task_id: str):
     """Delete a task and return empty content."""
     async with api_client(request) as client:
         response = await client.delete(f"/api/tasks/{task_id}")

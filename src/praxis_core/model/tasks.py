@@ -21,8 +21,8 @@ class TaskStatus(StrEnum):
 @dataclass
 class Subtask:
     """A phase of completion within a task."""
-    id: int
-    task_id: int
+    id: str  # ULID
+    task_id: str  # ULID reference
     title: str
     completed: bool = False
     sort_order: int = 0
@@ -31,15 +31,22 @@ class Subtask:
 
 @dataclass
 class Task:
-    # Stored fields
-    id: int
+    # Identity
+    id: str  # ULID
     name: str
     status: TaskStatus
+
+    # Ownership and assignment
+    entity_id: str | None = None  # ULID of owning entity
+    assigned_to: int | None = None  # user_id of assignee (for collaboration)
+    created_by: int | None = None  # user_id of creator
+
+    # Content
     notes: str | None = None
     due_date: datetime | None = None
     created_at: datetime | None = None
 
-    # Priority link (replaces workstream)
+    # Priority link
     priority_id: str | None = None
 
     # Inferred/joined fields

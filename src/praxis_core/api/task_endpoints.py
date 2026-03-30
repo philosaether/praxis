@@ -22,10 +22,10 @@ from praxis_core.api.auth import get_current_user, get_current_user_optional
 router = APIRouter()
 
 
-def _get_graph(user_id: int | None = None):
+def _get_graph(entity_id: str | None = None):
     """Import here to avoid circular import."""
     from praxis_core.api.app import get_graph
-    return get_graph(user_id=user_id)
+    return get_graph(entity_id=entity_id)
 
 
 def _serialize_priority(p):
@@ -52,7 +52,8 @@ async def create_task_endpoint(
     if not name.strip():
         return JSONResponse({"error": "Name is required"}, status_code=400)
 
-    user_id = user.id if user else None
+    entity_id = user.entity_id if user else None
+    created_by = user.id if user else None
 
     # Parse due_date if provided
     parsed_due_date = None
@@ -67,7 +68,8 @@ async def create_task_endpoint(
         notes=notes.strip() if notes else None,
         due_date=parsed_due_date,
         priority_id=priority_id.strip() if priority_id else None,
-        user_id=user_id,
+        entity_id=entity_id,
+        created_by=created_by,
     )
     return {"task": _serialize_task(task)}
 
@@ -87,9 +89,9 @@ async def list_tasks_endpoint(
         except ValueError:
             pass
 
-    user_id = user.id if user else None
-    tasks = list_tasks(priority_id=priority, status=task_status, user_id=user_id, inbox_only=inbox)
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    tasks = list_tasks(priority_id=priority, status=task_status, entity_id=entity_id, inbox_only=inbox)
+    graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     # Rank tasks by importance + urgency
@@ -112,7 +114,7 @@ async def list_tasks_endpoint(
 
 @router.get("/{task_id}")
 async def get_task_endpoint(
-    task_id: int,
+    task_id: str,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Get a single task."""
@@ -120,8 +122,8 @@ async def get_task_endpoint(
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
 
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
@@ -133,7 +135,7 @@ async def get_task_endpoint(
 
 @router.get("/{task_id}/edit")
 async def get_task_for_edit(
-    task_id: int,
+    task_id: str,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Get task data for edit form (raw, no markdown rendering)."""
@@ -141,8 +143,8 @@ async def get_task_for_edit(
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
 
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
@@ -155,7 +157,7 @@ async def get_task_for_edit(
 
 @router.post("/{task_id}")
 async def update_task_endpoint(
-    task_id: int,
+    task_id: str,
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
@@ -190,7 +192,7 @@ async def update_task_endpoint(
 
 
 @router.post("/{task_id}/toggle")
-async def toggle_task(task_id: int):
+async def toggle_task(task_id: str):
     """Toggle task between done and queued."""
     task = get_task(task_id)
     if not task:
@@ -205,7 +207,7 @@ async def toggle_task(task_id: int):
 
 @router.post("/{task_id}/properties")
 async def update_task_properties(
-    task_id: int,
+    task_id: str,
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
@@ -240,8 +242,8 @@ async def update_task_properties(
 
     # Return updated task with both raw and rendered notes
     task = get_task(task_id)
-    user_id = user.id if user else None
-    graph = _get_graph(user_id)
+    entity_id = user.entity_id if user else None
+    graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     task_data = _serialize_task(task, render_markdown=True)
@@ -256,7 +258,7 @@ async def update_task_properties(
 
 @router.post("/{task_id}/notes")
 async def update_task_notes(
-    task_id: int,
+    task_id: str,
     notes: Annotated[str | None, Form()] = None,
 ):
     """Update task notes independently."""
@@ -287,7 +289,7 @@ async def update_task_notes(
 
 
 @router.delete("/{task_id}")
-async def delete_task_endpoint(task_id: int):
+async def delete_task_endpoint(task_id: str):
     """Delete a task."""
     task = get_task(task_id)
     if not task:

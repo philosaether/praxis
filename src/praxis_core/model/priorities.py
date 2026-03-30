@@ -30,6 +30,7 @@ class Priority:
     priority_type: PriorityType
     status: PriorityStatus = PriorityStatus.ACTIVE
 
+    entity_id: str | None = None  # ULID of owning entity
     agent_context: str | None = None
     notes: str | None = None
 

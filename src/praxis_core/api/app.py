@@ -32,33 +32,33 @@ app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
 
 
 # ---------------------------------------------------------------------
-# Per-User Graph Cache
+# Per-Entity Graph Cache
 # ---------------------------------------------------------------------
 
-_graphs: dict[int | None, PriorityGraph] = {}
+_graphs: dict[str | None, PriorityGraph] = {}
 
 
-def get_graph(user_id: int | None = None) -> PriorityGraph:
-    """Get a PriorityGraph instance for the given user.
+def get_graph(entity_id: str | None = None) -> PriorityGraph:
+    """Get a PriorityGraph instance for the given entity.
 
     Args:
-        user_id: User ID, or None for global graph (backward compatibility)
+        entity_id: Entity ID (ULID), or None for global graph (admin)
 
     Returns:
-        PriorityGraph scoped to the user (or global if user_id is None)
+        PriorityGraph scoped to the entity (or global if entity_id is None)
     """
-    if user_id not in _graphs:
-        _graphs[user_id] = PriorityGraph(get_connection, user_id=user_id)
-        _graphs[user_id].load()
-    return _graphs[user_id]
+    if entity_id not in _graphs:
+        _graphs[entity_id] = PriorityGraph(get_connection, entity_id=entity_id)
+        _graphs[entity_id].load()
+    return _graphs[entity_id]
 
 
-def clear_graph_cache(user_id: int | None = None) -> None:
-    """Clear cached graph for a user, or all if user_id is None."""
-    if user_id is None:
+def clear_graph_cache(entity_id: str | None = None) -> None:
+    """Clear cached graph for an entity, or all if entity_id is None."""
+    if entity_id is None:
         _graphs.clear()
-    elif user_id in _graphs:
-        del _graphs[user_id]
+    elif entity_id in _graphs:
+        del _graphs[entity_id]
 
 
 # ---------------------------------------------------------------------
