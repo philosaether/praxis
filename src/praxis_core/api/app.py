@@ -84,8 +84,20 @@ def render_md(text: str) -> str:
     return markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
 
 
-def serialize_priority(p, render_markdown: bool = False) -> dict:
-    """Convert a Priority to JSON-serializable dict."""
+def serialize_priority(
+    p,
+    render_markdown: bool = False,
+    current_entity_id: str | None = None,
+    shares: list[dict] | None = None,
+) -> dict:
+    """Convert a Priority to JSON-serializable dict.
+
+    Args:
+        p: Priority object
+        render_markdown: Whether to render notes as markdown
+        current_entity_id: Current user's entity_id for ownership check
+        shares: List of share dicts from graph.get_shares() for share indicators
+    """
     notes = p.notes
     if render_markdown and notes:
         notes = render_md(notes)
@@ -95,12 +107,26 @@ def serialize_priority(p, render_markdown: bool = False) -> dict:
         "name": p.name,
         "priority_type": p.priority_type.value,
         "status": p.status.value,
+        "entity_id": p.entity_id,
         "agent_context": p.agent_context,
         "notes": notes,
         "rank": p.rank,
         "created_at": fmt_datetime(p.created_at),
         "updated_at": fmt_datetime(p.updated_at),
     }
+
+    # Add ownership/sharing info if entity context provided
+    if current_entity_id:
+        is_owner = p.entity_id == current_entity_id
+        data["is_owner"] = is_owner
+        data["is_shared_with_me"] = not is_owner
+
+        if shares is not None:
+            data["share_count"] = len(shares)
+            data["shares"] = shares
+        else:
+            data["share_count"] = 0
+            data["shares"] = []
 
     # Add type-specific fields
     if isinstance(p, Value):

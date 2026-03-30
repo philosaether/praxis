@@ -26,10 +26,20 @@ def _get_graph(entity_id: str | None = None):
     return get_graph(entity_id=entity_id)
 
 
-def _serialize_priority(p, render_markdown: bool = False):
+def _serialize_priority(
+    p,
+    render_markdown: bool = False,
+    current_entity_id: str | None = None,
+    shares: list[dict] | None = None,
+):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_priority
-    return serialize_priority(p, render_markdown=render_markdown)
+    return serialize_priority(
+        p,
+        render_markdown=render_markdown,
+        current_entity_id=current_entity_id,
+        shares=shares,
+    )
 
 
 def _generate_priority_id(name: str, graph) -> str:
@@ -188,7 +198,7 @@ async def list_priorities(
     priorities = sorted(priorities, key=lambda p: (p.priority_type.value, p.name))
 
     return {
-        "priorities": [_serialize_priority(p) for p in priorities],
+        "priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in priorities],
         "priority_types": [t.value for t in PriorityType],
         "priority_statuses": [s.value for s in PriorityStatus],
     }
@@ -213,12 +223,12 @@ async def priority_tree(
     for parent_id, child_ids in graph.children.items():
         children = [graph.get(cid) for cid in child_ids if graph.get(cid)]
         children_map[parent_id] = [
-            _serialize_priority(c)
+            _serialize_priority(c, current_entity_id=entity_id)
             for c in sorted(children, key=_sort_key)
         ]
 
     return {
-        "roots": [_serialize_priority(r) for r in roots],
+        "roots": [_serialize_priority(r, current_entity_id=entity_id) for r in roots],
         "children_map": children_map,
     }
 
@@ -239,10 +249,18 @@ async def get_priority(
     parent_ids = graph.parents.get(priority_id, set())
     child_ids = graph.children.get(priority_id, set())
 
+    # Get shares for ownership display
+    shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
+
     return {
-        "priority": _serialize_priority(priority, render_markdown=True),
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
+        "priority": _serialize_priority(
+            priority,
+            render_markdown=True,
+            current_entity_id=entity_id,
+            shares=shares,
+        ),
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
     }
 
 
@@ -262,10 +280,13 @@ async def get_priority_for_edit(
     parent_ids = graph.parents.get(priority_id, set())
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
+    # Get shares for ownership display
+    shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
+
     return {
-        "priority": _serialize_priority(priority),
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "priority": _serialize_priority(priority, current_entity_id=entity_id, shares=shares),
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_types": [t.value for t in PriorityType],
         "priority_statuses": [s.value for s in PriorityStatus],
         "edit_mode": True,

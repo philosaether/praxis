@@ -130,6 +130,24 @@
         <div id="property-errors" class="property-errors"></div>
     </form>
 
+    <!-- Sharing Status -->
+    {% if priority.is_shared_with_me %}
+    <div class="share-status shared-with-me">
+        <span class="share-icon">&#x1F517;</span>
+        <span>Shared with you</span>
+    </div>
+    {% elif priority.shares and priority.shares|length > 0 %}
+    <div class="share-status shared-by-me">
+        <span class="share-icon">&#x1F91D;</span>
+        <span>Shared with {{ priority.shares|length }} user(s):</span>
+        <ul class="share-list">
+            {% for share in priority.shares %}
+            <li>{{ share.username or share.entity_name }} ({{ share.permission }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- Metadata -->
     <div class="property-meta">
         <span class="meta-item">{{ priority.id }}</span>
