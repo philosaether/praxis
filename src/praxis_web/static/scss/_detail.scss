@@ -324,6 +324,115 @@ textarea.property-input {
 }
 
 // =============================================================================
+// Associated Tasks Section
+// =============================================================================
+
+.associated-tasks-section {
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  margin-top: $spacing-xl;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+
+    h3 {
+      font-size: $font-size-md;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $text-secondary;
+      margin: 0;
+    }
+
+    .task-count {
+      background: $bg-tertiary;
+      color: $text-muted;
+      padding: 0.1rem 0.4rem;
+      border-radius: $radius-sm;
+      font-size: $font-size-xs;
+    }
+  }
+
+  .empty-hint {
+    color: $text-muted;
+    font-size: $font-size-sm;
+    font-style: italic;
+    margin: 0;
+  }
+}
+
+.task-list-compact {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid $border;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  a {
+    color: $text-primary;
+    text-decoration: none;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      color: $accent;
+    }
+  }
+
+  &.done {
+    opacity: 0.6;
+
+    a {
+      text-decoration: line-through;
+      color: $text-muted;
+    }
+  }
+
+  .task-status {
+    font-size: $font-size-xs;
+    padding: 0.1rem 0.4rem;
+    border-radius: $radius-sm;
+    margin-left: $spacing-sm;
+    flex-shrink: 0;
+
+    &.queued {
+      background: rgba($accent, 0.15);
+      color: $accent;
+    }
+
+    &.active {
+      background: rgba($warning, 0.15);
+      color: $warning;
+    }
+
+    &.done {
+      background: rgba($success, 0.15);
+      color: $success;
+    }
+
+    &.dropped {
+      background: rgba($text-muted, 0.15);
+      color: $text-muted;
+    }
+  }
+}
+
+// =============================================================================
 // Markdown content styling
 // =============================================================================
 

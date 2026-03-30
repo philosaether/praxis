@@ -42,6 +42,18 @@ def _serialize_priority(
     )
 
 
+def _serialize_task(t, render_markdown: bool = False):
+    """Import here to avoid circular import."""
+    from praxis_core.api.app import serialize_task
+    return serialize_task(t, render_markdown=render_markdown)
+
+
+def _get_priority_tasks(priority_id: str, entity_id: str | None = None):
+    """Get tasks associated with a priority."""
+    from praxis_core.persistence import list_tasks
+    return list_tasks(priority_id=priority_id, entity_id=entity_id, include_done=True)
+
+
 def _generate_priority_id(name: str, graph) -> str:
     """Generate a unique slug-style ID for a priority."""
     import re
@@ -252,6 +264,9 @@ async def get_priority(
     # Get shares for ownership display
     shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
 
+    # Get associated tasks
+    tasks = _get_priority_tasks(priority_id, entity_id)
+
     return {
         "priority": _serialize_priority(
             priority,
@@ -261,6 +276,7 @@ async def get_priority(
         ),
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
+        "tasks": [_serialize_task(t) for t in tasks],
     }
 
 
