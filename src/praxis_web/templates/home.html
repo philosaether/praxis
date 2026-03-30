@@ -35,7 +35,15 @@
     <!-- Left Pane -->
     <div class="left-pane">
         <div class="header">
-            <h1>Praxis</h1>
+            <div class="brand">
+                <svg class="brand-logo" viewBox="0 0 100 100" fill="currentColor">
+                    <!-- Serif Xi - Trapezoidal bars with corner fangs -->
+                    <path d="M 10,10 L 90,10 L 72,28 L 72,20 L 28,20 L 28,28 Z"/>
+                    <rect x="34.3" y="35" width="31.4" height="10"/>
+                    <path d="M 28,52 L 28,60 L 72,60 L 72,52 L 90,70 L 10,70 Z"/>
+                </svg>
+                <h1>Praxis</h1>
+            </div>
             {% if user %}
             <div class="user-info">
                 <span class="username">{{ user.username }}</span>

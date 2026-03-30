@@ -12,44 +12,51 @@
 .btn {
   padding: $spacing-sm $spacing-lg;
   border: none;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   font-size: $font-size-base;
+  font-family: $font-family-body;
+  font-weight: 500;
   cursor: pointer;
-  transition: background $transition-fast;
+  transition: all $transition-base;
 }
 
 .btn-primary {
-  background: $accent;
+  // Gold gradient per design guide (mimics light on foil)
+  background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
   color: white;
+  box-shadow: $shadow-sm;
 
   &:hover {
-    background: $accent-dim;
+    background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
+    box-shadow: $shadow-md;
   }
 }
 
 .btn-secondary {
-  background: $bg-tertiary;
-  color: $text-primary;
+  background: transparent;
+  color: $accent;
+  border: 1px solid $border-subtle;
 
   &:hover {
-    background: color.adjust($bg-tertiary, $lightness: 5%);
+    background: $accent-glow;
+    border-color: $accent;
   }
 }
 
 .btn-danger {
   background: transparent;
   color: $text-muted;
-  border: 1px solid $border;
+  border: 1px solid $border-subtle;
 
   &:hover {
-    background: rgba(#dc3545, 0.15);
-    color: #dc3545;
-    border-color: #dc3545;
+    background: rgba($error, 0.1);
+    color: $error;
+    border-color: $error;
   }
 }
 
 .btn-sm {
-  padding: $spacing-xs $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
   font-size: $font-size-sm;
 }
 
@@ -78,17 +85,18 @@
 
 .type-badge {
   display: inline-block;
-  padding: 0.1rem 0.4rem;
-  border-radius: $radius-sm;
+  padding: 0.15rem 0.5rem;
+  border-radius: $radius-md;
   font-size: $font-size-xs;
   text-transform: uppercase;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
+  font-family: $font-family-body;
 
   @each $type, $colors in $type-colors {
     &.#{$type} {
-      background: list.nth($colors, 1);
-      color: list.nth($colors, 2);
+      background: list.nth($colors, 2);
+      color: list.nth($colors, 1);
     }
   }
 }
@@ -131,32 +139,49 @@
 
   label {
     display: block;
-    font-size: $font-size-md;
+    font-size: $font-size-sm;
     color: $text-secondary;
-    margin-bottom: 0.3rem;
+    margin-bottom: $spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: $font-family-body;
   }
 
   input,
   textarea,
   select {
     width: 100%;
-    padding: $spacing-sm;
-    background: $bg-secondary;
+    padding: $spacing-sm $spacing-md;
+    background: $bg-tertiary;
     color: $text-primary;
-    border: 1px solid $border;
-    border-radius: $radius-md;
+    border: none;
+    border-bottom: 1px solid $border;
+    border-radius: $radius-sm $radius-sm 0 0;
     font-size: $font-size-base;
-    font-family: inherit;
+    font-family: $font-family-body;
+    transition: border-color $transition-base, box-shadow $transition-base;
 
     &:focus {
       outline: none;
-      border-color: $accent;
+      border-bottom-color: $accent;
+      box-shadow: 0 2px 0 $accent-glow;
+    }
+
+    &::placeholder {
+      color: $text-muted;
     }
   }
 
   textarea {
     min-height: 80px;
     resize: vertical;
+    border-radius: $radius-sm;
+    border: 1px solid $border-subtle;
+
+    &:focus {
+      border-color: $accent;
+      box-shadow: 0 0 0 2px $accent-glow;
+    }
   }
 }
 

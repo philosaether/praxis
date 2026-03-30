@@ -46,7 +46,7 @@ $mode-icons: (
   border-radius: $radius-md;
   cursor: pointer;
   color: $text-muted;
-  transition: all $transition-fast;
+  transition: all $transition-base;
 
   &:hover {
     background: $bg-secondary;
@@ -54,8 +54,8 @@ $mode-icons: (
   }
 
   &.active {
-    color: $text-primary;
-    background: $bg-secondary;
+    color: $accent;
+    background: $accent-glow;
 
     // Left accent bar (VS Code style)
     &::before {
@@ -66,7 +66,8 @@ $mode-icons: (
       transform: translateY(-50%);
       width: 3px;
       height: 24px;
-      background: $accent;
+      // Gold gradient per design guide
+      background: linear-gradient(180deg, $accent 0%, $accent-bright 100%);
       border-radius: 0 $radius-sm $radius-sm 0;
     }
   }

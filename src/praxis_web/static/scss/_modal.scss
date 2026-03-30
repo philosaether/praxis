@@ -9,14 +9,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  // Soft, warm overlay (not harsh black)
+  background: rgba(77, 70, 53, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
   opacity: 0;
   visibility: hidden;
-  transition: opacity $transition-fast, visibility $transition-fast;
+  transition: opacity $transition-base, visibility $transition-base;
 
   &.open {
     opacity: 1;
@@ -25,15 +27,18 @@
 }
 
 .modal {
-  background: $bg-secondary;
-  border: 1px solid $border;
-  border-radius: $radius-md;
+  // Glassmorphism effect per design guide
+  background: rgba($bg-elevated, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
   width: 90%;
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
   transform: scale(0.95);
-  transition: transform $transition-fast;
+  transition: transform $transition-base;
+  box-shadow: $shadow-lg;
 
   .open & {
     transform: scale(1);
@@ -45,10 +50,11 @@
   justify-content: space-between;
   align-items: center;
   padding: $spacing-lg;
-  border-bottom: 1px solid $border;
+  // Soft boundary via background shift
 
   h2 {
     margin: 0;
+    font-family: $font-family-display;
     font-size: $font-size-lg;
     font-weight: 600;
     color: $text-primary;
@@ -63,6 +69,7 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  transition: color $transition-base;
 
   &:hover {
     color: $text-primary;
@@ -78,22 +85,27 @@
   justify-content: flex-end;
   gap: $spacing-md;
   padding: $spacing-lg;
-  border-top: 1px solid $border;
+  // Soft boundary via background shift
+  background: rgba($bg-tertiary, 0.3);
 }
 
 // Quick add specific styles
 .quick-add-input {
   width: 100%;
   padding: $spacing-md;
-  background: $bg-primary;
-  border: 1px solid $border;
-  border-radius: $radius-sm;
+  background: $bg-tertiary;
+  border: none;
+  border-bottom: 2px solid $border;
+  border-radius: $radius-sm $radius-sm 0 0;
   color: $text-primary;
-  font-size: $font-size-base;
+  font-size: $font-size-lg;
+  font-family: $font-family-body;
+  transition: border-color $transition-base, box-shadow $transition-base;
 
   &:focus {
     outline: none;
-    border-color: $accent;
+    border-bottom-color: $accent;
+    box-shadow: 0 2px 0 $accent-glow;
   }
 
   &::placeholder {
@@ -108,9 +120,11 @@
     cursor: pointer;
     color: $text-secondary;
     font-size: $font-size-sm;
+    font-family: $font-family-body;
+    transition: color $transition-base;
 
     &:hover {
-      color: $text-primary;
+      color: $accent;
     }
   }
 
@@ -122,6 +136,8 @@
       margin-bottom: $spacing-xs;
       color: $text-secondary;
       font-size: $font-size-sm;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     input,
@@ -129,21 +145,30 @@
     textarea {
       width: 100%;
       padding: $spacing-sm;
-      background: $bg-primary;
-      border: 1px solid $border;
-      border-radius: $radius-sm;
+      background: $bg-tertiary;
+      border: none;
+      border-bottom: 1px solid $border;
+      border-radius: $radius-sm $radius-sm 0 0;
       color: $text-primary;
       font-size: $font-size-sm;
+      font-family: $font-family-body;
+      transition: border-color $transition-base;
 
       &:focus {
         outline: none;
-        border-color: $accent;
+        border-bottom-color: $accent;
       }
     }
 
     textarea {
       resize: vertical;
       min-height: 60px;
+      border-radius: $radius-sm;
+      border: 1px solid $border-subtle;
+
+      &:focus {
+        border-color: $accent;
+      }
     }
   }
 }
@@ -164,17 +189,18 @@
   gap: $spacing-sm;
   padding: $spacing-sm;
   margin-bottom: $spacing-xs;
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   cursor: pointer;
-  transition: background $transition-fast;
+  transition: background $transition-base;
 
   &:hover {
-    background: $bg-tertiary;
+    background: $accent-glow;
   }
 
   input[type="radio"] {
     margin-top: 0.2rem;
     flex-shrink: 0;
+    accent-color: $accent;
   }
 
   span {
@@ -183,31 +209,33 @@
   }
 }
 
-// Danger button
-.btn-danger {
-  background: $error;
-  color: white;
-  border: none;
+// Danger button (override from components)
+.modal .btn-danger {
+  background: transparent;
+  color: $error;
+  border: 1px solid $border-subtle;
   padding: $spacing-sm $spacing-md;
-  border-radius: $radius-sm;
+  border-radius: $radius-lg;
   cursor: pointer;
   font-size: $font-size-sm;
-  transition: background $transition-fast;
+  transition: all $transition-base;
 
   &:hover {
-    background: #a52222;  // Darker shade of $error (#c62828)
+    background: rgba($error, 0.1);
+    border-color: $error;
   }
 }
 
 // Share modal specific styles
 .share-modal {
   .share-priority-name {
+    font-family: $font-family-display;
     font-size: $font-size-lg;
     font-weight: 500;
     color: $text-primary;
     margin: 0 0 $spacing-lg 0;
     padding-bottom: $spacing-md;
-    border-bottom: 1px solid $border;
+    // Soft boundary via spacing
   }
 
   .property-row {
@@ -219,21 +247,24 @@
       color: $text-secondary;
       font-size: $font-size-sm;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.08em;
     }
 
     .property-input {
       width: 100%;
       padding: $spacing-sm $spacing-md;
       background: $bg-tertiary;
-      border: 1px solid $border;
-      border-radius: $radius-sm;
+      border: none;
+      border-bottom: 1px solid $border;
+      border-radius: $radius-sm $radius-sm 0 0;
       color: $text-primary;
       font-size: $font-size-base;
+      font-family: $font-family-body;
+      transition: border-color $transition-base;
 
       &:focus {
         outline: none;
-        border-color: $accent;
+        border-bottom-color: $accent;
       }
 
       &:disabled {

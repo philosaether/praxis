@@ -14,33 +14,37 @@
 
 .priority-row {
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1px solid $border;
+  // Soft dividers via spacing, not hard lines
+  margin-bottom: 1px;
+  background: $bg-secondary;
   cursor: pointer;
-  transition: background $transition-fast;
+  transition: all $transition-base;
 
   &:hover {
     background: $bg-tertiary;
   }
 
   &.selected {
-    background: $bg-tertiary;
+    background: $accent-glow;
     border-left: 3px solid $accent;
   }
 
   &.shared-with-me {
-    background: rgba($info, 0.05);
-    border-left: 2px solid $info;
+    background: rgba($info, 0.03);
+    border-left: 2px solid rgba($info, 0.5);
 
     &:hover {
-      background: rgba($info, 0.1);
+      background: rgba($info, 0.08);
     }
 
     &.selected {
+      background: rgba($info, 0.1);
       border-left: 3px solid $info;
     }
   }
 
   .name {
+    font-family: $font-family-display;
     font-weight: 500;
     margin-bottom: $spacing-xs;
     display: flex;
@@ -82,15 +86,17 @@
   display: flex;
   align-items: center;
   padding: $spacing-sm $spacing-lg;
-  border-bottom: 1px solid $border;
-  transition: background $transition-fast;
+  // Soft dividers via spacing
+  margin-bottom: 1px;
+  background: $bg-secondary;
+  transition: all $transition-base;
 
   &:hover {
     background: $bg-tertiary;
   }
 
   &.selected {
-    background: $bg-tertiary;
+    background: $accent-glow;
     border-left: 3px solid $accent;
   }
 
@@ -118,6 +124,7 @@
   }
 
   .task-title {
+    font-family: $font-family-body;
     font-weight: 500;
     margin-bottom: $spacing-xs;
   }
@@ -132,10 +139,10 @@
   .score-badge {
     background: $bg-tertiary;
     color: $text-muted;
-    padding: 0 $spacing-xs;
-    border-radius: $radius-sm;
+    padding: 0.1rem $spacing-sm;
+    border-radius: $radius-md;
     font-family: monospace;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     cursor: help;
   }
 }
@@ -147,27 +154,27 @@
 .quick-done {
   width: 28px;
   height: 28px;
-  border: 1px solid $border;
-  border-radius: $radius-md;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
   background: transparent;
   color: $text-muted;
   cursor: pointer;
   font-size: $font-size-base;
-  transition: all $transition-fast;
+  transition: all $transition-base;
   flex-shrink: 0;
   margin-left: $spacing-sm;
 
   &:hover {
-    background: $success;
+    background: rgba($success, 0.15);
     border-color: $success;
-    color: white;
+    color: $success;
   }
 
   &.checked {
-    background: $success;
+    background: rgba($success, 0.15);
     border-color: $success;
-    color: white;
-    opacity: 0.6;
+    color: $success;
+    opacity: 0.7;
 
     &:hover {
       opacity: 1;

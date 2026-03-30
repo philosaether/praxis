@@ -16,16 +16,18 @@
   width: 100%;
   max-width: 360px;
   background: $bg-secondary;
-  border: 1px solid $border;
-  border-radius: $radius-md;
-  padding: $spacing-2xl;
+  border-radius: $radius-lg;
+  padding: $spacing-3xl;
+  box-shadow: $shadow-lg;
 
   h1 {
     margin: 0 0 $spacing-xs;
-    font-size: 2rem;
+    font-family: $font-family-display;
+    font-size: 2.25rem;
     font-weight: 600;
     color: $accent;
     text-align: center;
+    letter-spacing: 0.02em;
   }
 }
 
@@ -33,15 +35,16 @@
   margin: 0 0 $spacing-xl;
   color: $text-secondary;
   text-align: center;
+  font-family: $font-family-body;
 }
 
 .login-error {
-  background: rgba($error, 0.15);
-  border: 1px solid $error;
+  background: rgba($error, 0.1);
+  border-left: 3px solid $error;
   border-radius: $radius-sm;
   padding: $spacing-md;
   margin-bottom: $spacing-lg;
-  color: #ff8a80;
+  color: $error;
   font-size: $font-size-sm;
 }
 
@@ -54,20 +57,26 @@
       margin-bottom: $spacing-xs;
       color: $text-secondary;
       font-size: $font-size-sm;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
     input {
       width: 100%;
       padding: $spacing-md;
-      background: $bg-primary;
-      border: 1px solid $border;
-      border-radius: $radius-sm;
+      background: $bg-tertiary;
+      border: none;
+      border-bottom: 1px solid $border;
+      border-radius: $radius-sm $radius-sm 0 0;
       color: $text-primary;
       font-size: $font-size-base;
+      font-family: $font-family-body;
+      transition: border-color $transition-base, box-shadow $transition-base;
 
       &:focus {
         outline: none;
-        border-color: $accent;
+        border-bottom-color: $accent;
+        box-shadow: 0 2px 0 $accent-glow;
       }
     }
   }
@@ -76,17 +85,21 @@
 .login-button {
   width: 100%;
   padding: $spacing-md $spacing-lg;
-  background: $accent;
+  // Gold gradient per design guide
+  background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
   border: none;
-  border-radius: $radius-sm;
+  border-radius: $radius-lg;
   color: white;
   font-size: $font-size-base;
   font-weight: 500;
+  font-family: $font-family-body;
   cursor: pointer;
-  transition: background $transition-fast;
+  transition: all $transition-base;
+  box-shadow: $shadow-sm;
 
   &:hover {
-    background: $accent-dim;
+    background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
+    box-shadow: $shadow-md;
   }
 }
 
@@ -99,9 +112,10 @@
   a {
     color: $accent;
     text-decoration: none;
+    transition: color $transition-base;
 
     &:hover {
-      text-decoration: underline;
+      color: $accent-bright;
     }
   }
 }
