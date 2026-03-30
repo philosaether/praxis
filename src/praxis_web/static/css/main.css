@@ -73,6 +73,18 @@ a:hover {
   margin: 0;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-logo {
+  width: 24px;
+  height: 24px;
+  color: #e94560;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -125,37 +137,6 @@ a:hover {
   align-items: center;
 }
 
-.view-toggle {
-  display: flex;
-  flex-shrink: 0;
-  border: 1px solid #333;
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-  z-index: 10;
-}
-
-.view-btn {
-  padding: 0.3rem 0.6rem;
-  background: #0f3460;
-  color: #eee;
-  border: none;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all 0.15s;
-}
-.view-btn:hover {
-  background: #1a1a2e;
-}
-.view-btn.active {
-  background: #e94560;
-  color: white;
-}
-.view-btn + .view-btn {
-  border-left: 1px solid #333;
-}
-
 .add-new-bar {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #333;
@@ -166,6 +147,72 @@ a:hover {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.mode-nav {
+  display: flex;
+  flex-direction: column;
+  width: 48px;
+  background: #0f3460;
+  border-right: 1px solid #333;
+  padding: 0.5rem 0;
+  gap: 0.25rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.mode-nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.15s;
+}
+.mode-nav-btn:hover {
+  background: #16213e;
+  color: #aaa;
+}
+.mode-nav-btn.active {
+  color: #eee;
+  background: #16213e;
+}
+.mode-nav-btn.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #e94560;
+  border-radius: 0 3px 3px 0;
+}
+
+.mode-nav-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.mode-nav-icon--inbox::before {
+  content: "✉";
+}
+.mode-nav-icon--tasks::before {
+  content: "☰";
+}
+.mode-nav-icon--priorities::before {
+  content: "★";
+}
+
+.mode-nav-label {
+  display: none;
+  font-size: 0.7rem;
+  margin-top: 2px;
 }
 
 .btn {
@@ -1575,3 +1622,5 @@ textarea.property-input {
 .htmx-request.htmx-indicator {
   display: inline;
 }
+
+/*# sourceMappingURL=main.css.map */

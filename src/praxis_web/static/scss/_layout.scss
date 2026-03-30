@@ -45,6 +45,18 @@
   }
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.brand-logo {
+  width: 24px;
+  height: 24px;
+  color: $accent;
+}
+
 .user-info {
   display: flex;
   align-items: center;
