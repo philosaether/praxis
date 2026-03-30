@@ -48,10 +48,14 @@ def _serialize_task(t, render_markdown: bool = False):
     return serialize_task(t, render_markdown=render_markdown)
 
 
-def _get_priority_tasks(priority_id: str, entity_id: str | None = None):
-    """Get tasks associated with a priority."""
+def _get_priority_tasks(priority_id: str):
+    """Get all tasks associated with a priority (regardless of owner).
+
+    When viewing a shared priority, users see all tasks linked to it.
+    Access control is at the priority level, not the task level.
+    """
     from praxis_core.persistence import list_tasks
-    return list_tasks(priority_id=priority_id, entity_id=entity_id, include_done=True)
+    return list_tasks(priority_id=priority_id, include_done=True)
 
 
 def _generate_priority_id(name: str, graph) -> str:
@@ -118,6 +122,9 @@ async def create_priority_full(
     status: Annotated[str, Form()] = "active",
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
+    # Task assignment settings
+    auto_assign_owner: Annotated[str | None, Form()] = "on",
+    auto_assign_creator: Annotated[str | None, Form()] = None,
     # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
@@ -144,6 +151,10 @@ async def create_priority_full(
     # Set common fields
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
+
+    # Set task assignment settings (checkboxes: "on" if checked, None if not)
+    priority.auto_assign_owner = auto_assign_owner == "on"
+    priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Set type-specific fields
     if isinstance(priority, Value):
@@ -264,8 +275,8 @@ async def get_priority(
     # Get shares for ownership display
     shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
 
-    # Get associated tasks
-    tasks = _get_priority_tasks(priority_id, entity_id)
+    # Get associated tasks (all users' tasks for shared priorities)
+    tasks = _get_priority_tasks(priority_id)
 
     return {
         "priority": _serialize_priority(
@@ -428,6 +439,9 @@ async def update_priority_properties(
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
+    # Task assignment settings
+    auto_assign_owner: Annotated[str | None, Form()] = None,
+    auto_assign_creator: Annotated[str | None, Form()] = None,
     # Value fields
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
@@ -461,6 +475,10 @@ async def update_priority_properties(
     priority.agent_context = agent_context.strip() if agent_context else None
     # Note: priority.notes is NOT updated here
     priority.updated_at = datetime.now()
+
+    # Update task assignment settings (checkboxes: "on" if checked, None if not)
+    priority.auto_assign_owner = auto_assign_owner == "on"
+    priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Update type-specific fields
     if isinstance(priority, Value):
@@ -502,15 +520,16 @@ async def update_priority_properties(
     child_ids = graph.children.get(priority_id, set())
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
-    priority_data = _serialize_priority(priority, render_markdown=True)
+    priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id)
     priority_data["notes_raw"] = priority.notes or ""
 
     return {
         "priority": priority_data,
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
-        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
+        "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_statuses": [s.value for s in PriorityStatus],
+        "priority_types": [t.value for t in PriorityType],
     }
 
 

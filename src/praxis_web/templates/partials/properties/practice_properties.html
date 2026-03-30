@@ -1,7 +1,9 @@
-{# Practice properties form - always editable #}
+{# Practice properties form - editable by owner, read-only for others #}
 {# Expects: priority, priority_statuses, all_priorities, parents, priority_types #}
 
-<div class="properties-section priority-properties practice-properties">
+{% set readonly = not priority.is_owner %}
+
+<div class="properties-section priority-properties practice-properties {% if readonly %}readonly-form{% endif %}">
     <form hx-post="/priorities/{{ priority.id }}/properties"
           hx-target="#properties-section"
           hx-swap="outerHTML">
@@ -12,6 +14,7 @@
             <select id="priority_type"
                     name="new_priority_type"
                     class="property-input type-select"
+                    {% if readonly %}disabled{% endif %}
                     hx-post="/priorities/{{ priority.id }}/change-type"
                     hx-target="#properties-section"
                     hx-swap="outerHTML"
@@ -33,13 +36,14 @@
                    value="{{ priority.name }}"
                    required
                    autocomplete="off"
+                   {% if readonly %}disabled{% endif %}
                    class="property-input title-input">
         </div>
 
         <!-- Status -->
         <div class="property-row">
             <label for="status">Status</label>
-            <select id="status" name="status" class="property-input">
+            <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
                 {% for s in priority_statuses %}
                 <option value="{{ s }}" {% if priority.status == s %}selected{% endif %}>
                     {{ s }}
@@ -51,7 +55,7 @@
         <!-- Parent -->
         <div class="property-row">
             <label for="parent_id">Parent</label>
-            <select id="parent_id" name="parent_id" class="property-input">
+            <select id="parent_id" name="parent_id" class="property-input" {% if readonly %}disabled{% endif %}>
                 <option value="">None</option>
                 {% for p in all_priorities %}
                 {% if p.id != priority.id %}
@@ -70,8 +74,11 @@
                       name="agent_context"
                       rows="3"
                       class="property-input"
+                      {% if readonly %}disabled{% endif %}
                       placeholder="Context for AI agent...">{{ priority.agent_context or '' }}</textarea>
         </div>
+
+        {% include "partials/properties/_task_assignment.html" %}
 
         <!-- Practice-specific: Rhythm Frequency -->
         <div class="property-row">
@@ -81,6 +88,7 @@
                    name="rhythm_frequency"
                    value="{{ priority.rhythm_frequency or '' }}"
                    class="property-input"
+                   {% if readonly %}disabled{% endif %}
                    placeholder="e.g., daily, weekly, 2x daily">
         </div>
 
@@ -91,6 +99,7 @@
                       name="rhythm_constraints"
                       rows="2"
                       class="property-input"
+                      {% if readonly %}disabled{% endif %}
                       placeholder="e.g., morning only, not after 9pm">{{ priority.rhythm_constraints or '' }}</textarea>
         </div>
 
@@ -101,10 +110,12 @@
                       name="generation_prompt"
                       rows="3"
                       class="property-input"
+                      {% if readonly %}disabled{% endif %}
                       placeholder="How should AI generate specific tasks?">{{ priority.generation_prompt or '' }}</textarea>
         </div>
 
-        <!-- Actions -->
+        <!-- Actions (owner only) -->
+        {% if not readonly %}
         <div class="property-actions">
             <div class="actions-left">
                 <button type="submit" class="btn btn-primary">Save</button>
@@ -126,6 +137,7 @@
                 </button>
             </div>
         </div>
+        {% endif %}
 
         <div id="property-errors" class="property-errors"></div>
     </form>

@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS priorities (
     notes TEXT,
     rank INTEGER,
 
+    -- Task assignment settings
+    auto_assign_owner INTEGER NOT NULL DEFAULT 1,
+    auto_assign_creator INTEGER NOT NULL DEFAULT 0,
+
     -- Value (direction/principle, never completes)
     success_looks_like TEXT,
     obsolete_when TEXT,
@@ -103,8 +107,11 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     created_at = _parse_datetime(row["created_at"])
     updated_at = _parse_datetime(row["updated_at"])
 
-    # Handle entity_id (may not exist in older schemas)
-    entity_id = row["entity_id"] if "entity_id" in row.keys() else None
+    # Handle fields that may not exist in older schemas
+    keys = row.keys()
+    entity_id = row["entity_id"] if "entity_id" in keys else None
+    auto_assign_owner = bool(row["auto_assign_owner"]) if "auto_assign_owner" in keys else True
+    auto_assign_creator = bool(row["auto_assign_creator"]) if "auto_assign_creator" in keys else False
 
     common_kwargs = {
         "id": row["id"],
@@ -114,6 +121,8 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "agent_context": row["agent_context"],
         "notes": row["notes"],
         "rank": row["rank"],
+        "auto_assign_owner": auto_assign_owner,
+        "auto_assign_creator": auto_assign_creator,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -195,6 +204,8 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.agent_context,
         priority.notes,
         priority.rank,
+        int(priority.auto_assign_owner),
+        int(priority.auto_assign_creator),
         success_looks_like,
         obsolete_when,
         success_criteria,
@@ -240,6 +251,14 @@ class PriorityGraph:
         with self.connection_factory() as conn:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
+
+            # Migrate: add assignment columns if missing
+            columns = {row["name"] for row in conn.execute(
+                "PRAGMA table_info(priorities)"
+            ).fetchall()}
+            if "auto_assign_owner" not in columns:
+                conn.execute("ALTER TABLE priorities ADD COLUMN auto_assign_owner INTEGER NOT NULL DEFAULT 1")
+                conn.execute("ALTER TABLE priorities ADD COLUMN auto_assign_creator INTEGER NOT NULL DEFAULT 0")
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:
@@ -290,11 +309,12 @@ class PriorityGraph:
                 INSERT INTO priorities (
                     id, entity_id, priority_type, name, status,
                     agent_context, notes, rank,
+                    auto_assign_owner, auto_assign_creator,
                     success_looks_like, obsolete_when,
                     success_criteria, due_date, progress,
                     rhythm_frequency, rhythm_constraints, generation_prompt,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -303,6 +323,8 @@ class PriorityGraph:
                     agent_context = excluded.agent_context,
                     notes = excluded.notes,
                     rank = excluded.rank,
+                    auto_assign_owner = excluded.auto_assign_owner,
+                    auto_assign_creator = excluded.auto_assign_creator,
                     success_looks_like = excluded.success_looks_like,
                     obsolete_when = excluded.obsolete_when,
                     success_criteria = excluded.success_criteria,

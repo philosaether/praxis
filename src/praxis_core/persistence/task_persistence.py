@@ -245,8 +245,14 @@ def list_tasks(
     entity_id: str | None = None,
     user_id: int | None = None,  # deprecated, use entity_id
     inbox_only: bool = False,
+    assigned_to: int | None = None,  # Filter by assigned user
 ) -> list[Task]:
-    """List tasks with optional filters. Done tasks sorted to bottom."""
+    """List tasks with optional filters. Done tasks sorted to bottom.
+
+    For the main queue, pass both entity_id and assigned_to (user_id) to get:
+    - Tasks assigned to the user (from any entity)
+    - OR unassigned tasks owned by the user's entity
+    """
     ensure_schema()
     with get_connection() as conn:
         query = """
@@ -257,9 +263,17 @@ def list_tasks(
         """
         params = []
 
-        if entity_id is not None:
+        # If both entity_id and assigned_to provided, use combined filter for queue
+        if entity_id is not None and assigned_to is not None:
+            # Show tasks assigned to me OR my unassigned tasks
+            query += " AND (t.assigned_to = ? OR (t.entity_id = ? AND t.assigned_to IS NULL))"
+            params.extend([assigned_to, entity_id])
+        elif entity_id is not None:
             query += " AND t.entity_id = ?"
             params.append(entity_id)
+        elif assigned_to is not None:
+            query += " AND t.assigned_to = ?"
+            params.append(assigned_to)
         elif user_id is not None:
             # Fallback to deprecated user_id filter
             query += " AND t.user_id = ?"

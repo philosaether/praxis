@@ -111,6 +111,8 @@ def serialize_priority(
         "agent_context": p.agent_context,
         "notes": notes,
         "rank": p.rank,
+        "auto_assign_owner": p.auto_assign_owner,
+        "auto_assign_creator": p.auto_assign_creator,
         "created_at": fmt_datetime(p.created_at),
         "updated_at": fmt_datetime(p.updated_at),
     }
