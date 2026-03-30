@@ -510,6 +510,22 @@ async def priority_detail(request: Request, priority_id: str):
     )
 
 
+@app.get("/priorities/{priority_id}/tasks-panel", response_class=HTMLResponse)
+async def priority_tasks_panel(request: Request, priority_id: str):
+    """HTMX partial: just the tasks panel for a priority."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/priorities/{priority_id}")
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_tasks_panel.html",
+        {"priority": data["priority"], "tasks": data.get("tasks", [])}
+    )
+
+
 @app.post("/priorities/{priority_id}/change-type", response_class=HTMLResponse)
 async def priority_change_type(request: Request, priority_id: str):
     """Change priority type and return updated properties form."""

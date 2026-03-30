@@ -186,9 +186,12 @@
     };
 
     // Task Quick Add Modal
+    let currentQuickAddPriorityId = null;
+
     window.openQuickAdd = function(priorityId) {
         const backdrop = document.getElementById('quick-add-backdrop');
         backdrop.classList.add('open');
+        currentQuickAddPriorityId = priorityId || null;
 
         // Pre-select priority if provided
         if (priorityId) {
@@ -211,11 +214,27 @@
         // Reset form
         const form = document.querySelector('#quick-add-backdrop form');
         if (form) form.reset();
+        currentQuickAddPriorityId = null;
     };
 
     window.handleQuickAddResponse = function(event) {
         if (event.detail.successful) {
+            // Get the priority ID from the form (in case user changed it)
+            const select = document.getElementById('qa-priority');
+            const priorityId = select ? select.value : currentQuickAddPriorityId;
+
             closeQuickAdd();
+
+            // Refresh task panel if viewing a priority with tasks
+            if (priorityId) {
+                const taskPanel = document.getElementById('priority-tasks-panel');
+                if (taskPanel) {
+                    htmx.ajax('GET', '/priorities/' + priorityId + '/tasks-panel', {
+                        target: '#priority-tasks-panel',
+                        swap: 'outerHTML'
+                    });
+                }
+            }
         }
     };
 
