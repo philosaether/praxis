@@ -14,11 +14,10 @@
         {% endif %}
     </div>
     <div class="meta">
-        <span class="type-badge {{ p.priority_type }}">{{ p.priority_type[:3] }}</span>
+        <span class="type-badge {{ p.priority_type }}">{{ p.priority_type|upper }}</span>
         <span class="status-indicator {% if p.status == 'active' %}active{% endif %}">
             {{ p.status }}
         </span>
-        <span>{{ p.id }}</span>
     </div>
 </div>
 {% else %}

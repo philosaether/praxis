@@ -59,21 +59,9 @@ def _get_priority_tasks(priority_id: str):
 
 
 def _generate_priority_id(name: str, graph) -> str:
-    """Generate a unique slug-style ID for a priority."""
-    import re
-    # Create base slug from name
-    base_slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
-    if not base_slug:
-        base_slug = "priority"
-
-    # Ensure uniqueness
-    slug = base_slug
-    counter = 1
-    while slug in graph.nodes:
-        slug = f"{base_slug}-{counter}"
-        counter += 1
-
-    return slug
+    """Generate a unique ULID for a priority."""
+    from ulid import ULID
+    return str(ULID())
 
 
 def _create_priority_by_type(priority_type: str, id: str, name: str, entity_id: str | None = None):

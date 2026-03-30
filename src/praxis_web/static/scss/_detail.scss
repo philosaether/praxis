@@ -301,7 +301,7 @@ textarea.property-input {
   overflow: hidden;
 
   .toggle-btn {
-    padding: $spacing-xs $spacing-md;
+    padding: $spacing-sm $spacing-lg;
     background: $bg-tertiary;
     color: $text-secondary;
     border: none;
@@ -447,9 +447,9 @@ textarea.property-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: $spacing-sm 0;
-  // Soft dividers via spacing
-  margin-bottom: 1px;
+  padding: $spacing-md 0;
+  // Generous spacing per design guide
+  margin-bottom: $spacing-xs;
 
   &:last-child {
     margin-bottom: 0;

@@ -55,9 +55,10 @@
 }
 
 .brand-logo {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 46px;
   color: $accent;
+  padding-top: 6px;
 }
 
 .user-info {
@@ -109,6 +110,12 @@
       outline: none;
       border-color: $accent;
     }
+  }
+
+  select {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   label {

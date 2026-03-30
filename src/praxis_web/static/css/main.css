@@ -85,9 +85,10 @@ a:hover {
 }
 
 .brand-logo {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 46px;
   color: #735c00;
+  padding-top: 6px;
 }
 
 .user-info {
@@ -133,6 +134,11 @@ a:hover {
 .filters input[type=checkbox]:focus {
   outline: none;
   border-color: #735c00;
+}
+.filters select {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .filters label {
   display: flex;
@@ -269,7 +275,7 @@ a:hover {
 }
 
 .btn-sm {
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem 1rem;
   font-size: 0.85rem;
 }
 
@@ -806,7 +812,7 @@ textarea.property-input {
   overflow: hidden;
 }
 .notes-toggle .toggle-btn {
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 1rem;
   background: #ebe8e2;
   color: #4a4a48;
   border: none;
@@ -928,8 +934,8 @@ textarea.property-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0;
-  margin-bottom: 1px;
+  padding: 0.75rem 0;
+  margin-bottom: 0.25rem;
 }
 .task-item-compact:last-child {
   margin-bottom: 0;

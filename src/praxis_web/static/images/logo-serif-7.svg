@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="currentColor">
+  <!-- Serif Xi - Trapezoidal bars with rectangular cutouts, leaving corner fangs -->
+
+  <!-- Top bar: trapezoid with notch cut from bottom, leaving fangs -->
+  <path d="M 10,10
+           L 90,10
+           L 72,28
+           L 72,20
+           L 28,20
+           L 28,28
+           Z"/>
+
+  <!-- Middle bar: scaled to match inner bar height, moved up 10 -->
+  <rect x="34.3" y="35" width="31.4" height="10"/>
+
+  <!-- Bottom bar: inverted trapezoid with notch, moved up 20 -->
+  <path d="M 28,52
+           L 28,60
+           L 72,60
+           L 72,52
+           L 90,70
+           L 10,70
+           Z"/>
+</svg>
