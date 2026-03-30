@@ -186,8 +186,21 @@
     };
 
     // Task Quick Add Modal
-    window.openQuickAdd = function() {
-        document.getElementById('quick-add-backdrop').classList.add('open');
+    window.openQuickAdd = function(priorityId) {
+        const backdrop = document.getElementById('quick-add-backdrop');
+        backdrop.classList.add('open');
+
+        // Pre-select priority if provided
+        if (priorityId) {
+            const select = document.getElementById('qa-priority');
+            if (select) {
+                select.value = priorityId;
+                // Open the details to show the priority is set
+                const details = backdrop.querySelector('.more-options');
+                if (details) details.open = true;
+            }
+        }
+
         setTimeout(() => {
             document.querySelector('#quick-add-backdrop .quick-add-input').focus();
         }, 100);

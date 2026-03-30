@@ -55,8 +55,15 @@
         <!-- Associated Tasks -->
         <div class="associated-tasks-section">
             <div class="section-header">
-                <h3>Tasks</h3>
-                <span class="task-count">{{ tasks|length if tasks else 0 }}</span>
+                <div class="section-title">
+                    <h3>Tasks</h3>
+                    <span class="task-count">{{ tasks|length if tasks else 0 }}</span>
+                </div>
+                <button type="button"
+                        class="btn btn-sm btn-secondary"
+                        onclick="openQuickAdd('{{ priority.id }}')">
+                    + New Task
+                </button>
             </div>
             {% if tasks %}
             <ul class="task-list-compact">

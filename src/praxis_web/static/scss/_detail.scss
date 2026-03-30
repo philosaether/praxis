@@ -385,8 +385,14 @@ textarea.property-input {
   .section-header {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    justify-content: space-between;
     margin-bottom: $spacing-md;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+    }
 
     h3 {
       font-size: $font-size-md;

@@ -788,8 +788,13 @@ textarea.property-input {
 .associated-tasks-section .section-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
   margin-bottom: 0.75rem;
+}
+.associated-tasks-section .section-header .section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .associated-tasks-section .section-header h3 {
   font-size: 0.85rem;
