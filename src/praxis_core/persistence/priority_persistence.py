@@ -252,13 +252,8 @@ class PriorityGraph:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Migrate: add assignment columns if missing
-            columns = {row["name"] for row in conn.execute(
-                "PRAGMA table_info(priorities)"
-            ).fetchall()}
-            if "auto_assign_owner" not in columns:
-                conn.execute("ALTER TABLE priorities ADD COLUMN auto_assign_owner INTEGER NOT NULL DEFAULT 1")
-                conn.execute("ALTER TABLE priorities ADD COLUMN auto_assign_creator INTEGER NOT NULL DEFAULT 0")
+            # Migrations disabled - database is up-to-date
+            # If you need to add columns, do it manually via sqlite3 CLI
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:

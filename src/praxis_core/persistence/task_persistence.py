@@ -49,7 +49,8 @@ CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 def ensure_schema() -> None:
     """Ensure the tasks schema exists."""
     with get_connection() as conn:
-        _maybe_migrate(conn)
+        # Migrations disabled - database is up-to-date
+        # _maybe_migrate(conn)
         conn.executescript(TASKS_SCHEMA)
 
 

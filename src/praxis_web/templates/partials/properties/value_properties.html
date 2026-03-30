@@ -17,8 +17,7 @@
                     {% if readonly %}disabled{% endif %}
                     hx-post="/priorities/{{ priority.id }}/change-type"
                     hx-target="#properties-section"
-                    hx-swap="outerHTML"
-                    hx-confirm="Changing type will clear type-specific fields. Continue?">
+                    hx-swap="outerHTML">
                 {% for t in priority_types %}
                 <option value="{{ t }}" {% if t == 'value' %}selected{% endif %}>
                     {{ t|title }}
