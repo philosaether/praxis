@@ -380,6 +380,7 @@ async def create_priority_submit(request: Request):
         }
     }
     html_response.headers["HX-Trigger"] = json.dumps(trigger_data)
+    html_response.headers["HX-Push-Url"] = f"/priorities/{priority['id']}"
     html_response.headers["X-New-Item-Id"] = priority["id"]
     return html_response
 
@@ -786,6 +787,7 @@ async def create_task_submit(request: Request):
         detail_data
     )
     html_response.headers["HX-Trigger"] = "taskCreated"
+    html_response.headers["HX-Push-Url"] = f"/tasks/{task['id']}"
     html_response.headers["X-New-Item-Id"] = str(task["id"])
     return html_response
 
