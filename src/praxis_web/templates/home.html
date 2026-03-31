@@ -18,6 +18,7 @@
                 id="tasks-nav-btn"
                 hx-get="/tasks/list"
                 hx-target="#item-list"
+                hx-include="[name='priority']"
                 onclick="setMode('tasks')"
                 title="Queue">
             <span class="mode-nav-icon mode-nav-icon--tasks"></span>
@@ -350,9 +351,14 @@
 
     // Listen for task creation to refresh the list
     document.body.addEventListener('taskCreated', function(event) {
-        // Refresh the task list based on current mode
-        const listUrl = window.currentMode === 'inbox' ? '/tasks/inbox' : '/tasks/list';
-        htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+        // Refresh the task list based on current mode, respecting filter
+        if (window.currentMode === 'inbox') {
+            htmx.ajax('GET', '/tasks/inbox', {target: '#item-list', swap: 'innerHTML'});
+        } else {
+            const priorityFilter = document.querySelector('[name="priority"]')?.value || '';
+            const listUrl = priorityFilter ? `/tasks/list?priority=${priorityFilter}` : '/tasks/list';
+            htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+        }
     });
 
     // Listen for priority creation to refresh the list and update tree
