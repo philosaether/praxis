@@ -17,6 +17,7 @@ venv/
 # Development
 .claude/
 *.md
+!README.md
 Makefile
 tests/
 *.egg-info/
