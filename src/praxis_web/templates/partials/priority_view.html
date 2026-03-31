@@ -56,10 +56,10 @@
         <!-- Type-specific fields (read-only) -->
         {# Values have no type-specific fields - just notes #}
         {% if priority.priority_type == 'goal' %}
-            {% if priority.success_criteria %}
+            {% if priority.complete_when %}
             <div class="property-row">
-                <label>Success Criteria</label>
-                <div class="property-display">{{ priority.success_criteria }}</div>
+                <label>Complete When</label>
+                <div class="property-display">{{ priority.complete_when }}</div>
             </div>
             {% endif %}
             {% if priority.progress %}
@@ -75,24 +75,7 @@
             </div>
             {% endif %}
         {% elif priority.priority_type == 'practice' %}
-            {% if priority.rhythm_frequency %}
-            <div class="property-row">
-                <label>Rhythm</label>
-                <div class="property-display">{{ priority.rhythm_frequency }}</div>
-            </div>
-            {% endif %}
-            {% if priority.rhythm_constraints %}
-            <div class="property-row">
-                <label>Constraints</label>
-                <div class="property-display">{{ priority.rhythm_constraints }}</div>
-            </div>
-            {% endif %}
-            {% if priority.generation_prompt %}
-            <div class="property-row">
-                <label>Generation Prompt</label>
-                <div class="property-display">{{ priority.generation_prompt }}</div>
-            </div>
-            {% endif %}
+            {# Practice-specific fields hidden until task generation is implemented #}
         {% endif %}
 
         <!-- Notes (rendered) -->

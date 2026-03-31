@@ -39,15 +39,13 @@
                    class="property-input title-input">
         </div>
 
-        <!-- Status -->
+        <!-- Status (goals have dormant/active/completed) -->
         <div class="property-row">
             <label for="status">Status</label>
             <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
-                {% for s in priority_statuses %}
-                <option value="{{ s }}" {% if priority.status == s %}selected{% endif %}>
-                    {{ s }}
-                </option>
-                {% endfor %}
+                <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>dormant</option>
+                <option value="active" {% if priority.status == 'active' %}selected{% endif %}>active</option>
+                <option value="completed" {% if priority.status == 'completed' %}selected{% endif %}>completed</option>
             </select>
         </div>
 
@@ -79,15 +77,15 @@
 
         {% include "partials/properties/_task_assignment.html" %}
 
-        <!-- Goal-specific: Success Criteria -->
+        <!-- Goal-specific: Complete When -->
         <div class="property-row">
-            <label for="success_criteria">Success Criteria</label>
-            <textarea id="success_criteria"
-                      name="success_criteria"
+            <label for="complete_when">Complete When</label>
+            <textarea id="complete_when"
+                      name="complete_when"
                       rows="3"
                       class="property-input"
                       {% if readonly %}disabled{% endif %}
-                      placeholder="How will you know when this is done?">{{ priority.success_criteria or '' }}</textarea>
+                      placeholder="What does done look like?">{{ priority.complete_when or '' }}</textarea>
         </div>
 
         <!-- Goal-specific: Progress -->

@@ -118,7 +118,7 @@ async def create_priority_full(
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
-    success_criteria: Annotated[str | None, Form()] = None,
+    complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     # Practice fields
@@ -151,7 +151,7 @@ async def create_priority_full(
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
     elif isinstance(priority, Goal):
-        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
             try:
@@ -321,7 +321,7 @@ async def update_priority(
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
-    success_criteria: Annotated[str | None, Form()] = None,
+    complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     # Practice fields
@@ -351,7 +351,7 @@ async def update_priority(
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
     elif isinstance(priority, Goal):
-        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
             try:
@@ -437,7 +437,7 @@ async def update_priority_properties(
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
-    success_criteria: Annotated[str | None, Form()] = None,
+    complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     # Practice fields
@@ -476,7 +476,7 @@ async def update_priority_properties(
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
     elif isinstance(priority, Goal):
-        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
             try:

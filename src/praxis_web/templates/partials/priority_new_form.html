@@ -39,15 +39,12 @@
                            class="property-input title-input">
                 </div>
 
-                <!-- Status -->
+                <!-- Status (new items default to active) -->
                 <div class="property-row">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="property-input">
-                        {% for s in priority_statuses %}
-                        <option value="{{ s }}" {% if s == 'active' %}selected{% endif %}>
-                            {{ s }}
-                        </option>
-                        {% endfor %}
+                        <option value="active" selected>active</option>
+                        <option value="dormant">dormant</option>
                     </select>
                 </div>
 
