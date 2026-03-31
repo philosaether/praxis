@@ -161,6 +161,7 @@ def serialize_task(t, render_markdown: bool = False) -> dict:
         "created_at": fmt_datetime(t.created_at),
         "priority_id": t.priority_id,
         "priority_name": t.priority_name,
+        "priority_type": t.priority_type,
         "subtasks": [
             {
                 "id": s.id,

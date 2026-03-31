@@ -3,22 +3,22 @@
 
 <div class="detail-view">
     <div class="properties-section task-properties">
-        <!-- Name (display) -->
-        <div class="property-row">
-            <label>Name</label>
-            <div class="property-display title-display">{{ task.name }}</div>
-        </div>
+        <!-- Title -->
+        <h2 class="detail-title">{{ task.name }}</h2>
 
-        <!-- Priority (display) -->
-        <div class="property-row">
-            <label>Priority</label>
-            <div class="property-display">
-                {% if task.priority_name %}
+        <!-- Priority pill -->
+        <div class="detail-priority">
+            {% if task.priority_id and task.priority_name %}
+                <a href="#"
+                   class="type-badge {{ task.priority_type }}"
+                   hx-get="/priorities/{{ task.priority_id }}"
+                   hx-target="#detail-pane"
+                   hx-swap="innerHTML">
                     {{ task.priority_name }}
-                {% else %}
-                    <span class="text-muted">Inbox (no priority)</span>
-                {% endif %}
-            </div>
+                </a>
+            {% else %}
+                <span class="type-badge inbox">Inbox</span>
+            {% endif %}
         </div>
 
         <!-- Due Date (display) -->
