@@ -249,7 +249,18 @@ async def toggle_task(task_id: str):
     update_task_status(task_id, new_status)
 
     task = get_task(task_id)
-    return {"task": _serialize_task(task)}
+    task_data = _serialize_task(task)
+
+    # Include score data for the row display
+    graph = _get_graph(task.entity_id)
+    scored_tasks = rank_tasks([task], graph)
+    if scored_tasks:
+        st = scored_tasks[0]
+        task_data["score"] = round(st.score, 2)
+        task_data["importance"] = round(st.importance, 1)
+        task_data["urgency"] = round(st.urgency, 1)
+
+    return {"task": task_data}
 
 
 @router.post("/{task_id}/properties")
