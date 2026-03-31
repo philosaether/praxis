@@ -682,7 +682,7 @@ async def new_task_form(request: Request):
 
 @app.post("/tasks/create", response_class=HTMLResponse)
 async def create_task_submit(request: Request):
-    """Create a new task and return the detail view."""
+    """Create a new task and return the view mode (read-only display)."""
     form_data = await request.form()
 
     async with api_client(request) as client:
@@ -697,21 +697,15 @@ async def create_task_submit(request: Request):
 
     task = data["task"]
 
-    # Return task detail view and trigger list refresh
+    # Return task view mode and trigger list refresh
     async with api_client(request) as client:
         detail_response = await client.get(f"/api/tasks/{task['id']}")
         detail_data = detail_response.json()
 
-        # Get raw notes for edit form
-        edit_response = await client.get(f"/api/tasks/{task['id']}/edit")
-        if edit_response.status_code == 200:
-            edit_data = edit_response.json()
-            detail_data["task"]["notes_raw"] = edit_data["task"].get("notes", "")
-
     # Include HX-Trigger to refresh the task list
     html_response = templates.TemplateResponse(
         request,
-        "partials/item_detail.html",
+        "partials/task_view.html",
         detail_data
     )
     html_response.headers["HX-Trigger"] = "taskCreated"
@@ -746,7 +740,7 @@ async def quick_add_task(request: Request):
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
 async def task_detail(request: Request, task_id: str):
-    """HTMX partial: detail view for a single task."""
+    """HTMX partial: view mode for a single task."""
     async with api_client(request) as client:
         response = await client.get(f"/api/tasks/{task_id}")
         if response.status_code == 404:
@@ -756,27 +750,35 @@ async def task_detail(request: Request, task_id: str):
             )
         data = response.json()
 
-    # Add notes_raw for the edit form
-    task = data["task"]
-    notes = task.get("notes") or ""
-    task["notes_raw"] = notes if not notes.startswith("<") else ""
-    # For proper raw notes, we need to fetch from edit endpoint
+    return templates.TemplateResponse(
+        request,
+        "partials/task_view.html",
+        data
+    )
+
+
+@app.get("/tasks/{task_id}/edit", response_class=HTMLResponse)
+async def task_edit(request: Request, task_id: str):
+    """HTMX partial: edit mode for a single task."""
     async with api_client(request) as client:
-        edit_response = await client.get(f"/api/tasks/{task_id}/edit")
-        if edit_response.status_code == 200:
-            edit_data = edit_response.json()
-            task["notes_raw"] = edit_data["task"].get("notes", "")
+        response = await client.get(f"/api/tasks/{task_id}/edit")
+        if response.status_code == 404:
+            return HTMLResponse(
+                content="<div class='error'>Task not found</div>",
+                status_code=404
+            )
+        data = response.json()
 
     return templates.TemplateResponse(
         request,
-        "partials/item_detail.html",
+        "partials/task_edit.html",
         data
     )
 
 
 @app.post("/tasks/{task_id}/properties", response_class=HTMLResponse)
 async def task_save_properties(request: Request, task_id: str):
-    """Save task properties and return updated properties section + OOB row update."""
+    """Save task properties and return view mode + OOB row update."""
     form_data = await request.form()
 
     async with api_client(request) as client:
@@ -797,10 +799,10 @@ async def task_save_properties(request: Request, task_id: str):
             )
         data = response.json()
 
-    # Render properties section
-    properties_html = templates.TemplateResponse(
+    # Render view mode (confirms save was successful)
+    view_html = templates.TemplateResponse(
         request,
-        "partials/properties/task_properties.html",
+        "partials/task_view.html",
         data
     ).body.decode()
 
@@ -811,7 +813,7 @@ async def task_save_properties(request: Request, task_id: str):
         {"task": data["task"], "oob": True}
     ).body.decode()
 
-    return HTMLResponse(content=properties_html + row_html)
+    return HTMLResponse(content=view_html + row_html)
 
 
 @app.post("/tasks/{task_id}/notes", response_class=HTMLResponse)

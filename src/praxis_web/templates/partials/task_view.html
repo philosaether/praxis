@@ -1,0 +1,71 @@
+{# Task view mode - read-only display #}
+{# Expects: task, priorities #}
+
+<div class="detail-view">
+    <div class="properties-section task-properties">
+        <!-- Name (display) -->
+        <div class="property-row">
+            <label>Name</label>
+            <div class="property-display title-display">{{ task.name }}</div>
+        </div>
+
+        <!-- Priority (display) -->
+        <div class="property-row">
+            <label>Priority</label>
+            <div class="property-display">
+                {% if task.priority_name %}
+                    {{ task.priority_name }}
+                {% else %}
+                    <span class="text-muted">Inbox (no priority)</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Due Date (display) -->
+        {% if task.due_date %}
+        <div class="property-row">
+            <label>Due Date</label>
+            <div class="property-display">{{ task.due_date }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Notes (display) -->
+        {% if task.notes %}
+        <div class="property-row">
+            <label>Notes</label>
+            <div class="property-display markdown-content">{{ task.notes|safe }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Edit Button -->
+        <div class="property-actions">
+            <div class="actions-left">
+                <button type="button"
+                        class="btn btn-primary"
+                        hx-get="/tasks/{{ task.id }}/edit"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
+                    Edit
+                </button>
+            </div>
+            <div class="actions-right">
+                <button type="button"
+                        class="btn btn-danger"
+                        hx-delete="/tasks/{{ task.id }}"
+                        hx-swap="none"
+                        hx-confirm="Delete '{{ task.name }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
+                    Delete
+                </button>
+            </div>
+        </div>
+
+        <!-- Metadata (read-only) -->
+        <div class="property-meta">
+            <span class="meta-item">#{{ task.id }}</span>
+            {% if task.created_at %}
+            <span class="meta-item">Created: {{ task.created_at }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
