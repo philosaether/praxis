@@ -155,13 +155,24 @@ def serialize_priority(
     return data
 
 
-def serialize_task(t, render_markdown: bool = False) -> dict:
-    """Convert a Task to JSON-serializable dict."""
+def serialize_task(
+    t,
+    render_markdown: bool = False,
+    current_user=None,
+    graph=None,
+) -> dict:
+    """Convert a Task to JSON-serializable dict.
+
+    If current_user and graph are provided, includes permission flags:
+    - can_edit: User can edit task properties
+    - can_toggle: User can toggle done/undone
+    - can_delete: User can delete the task
+    """
     notes = t.notes
     if render_markdown and notes:
         notes = render_md(notes)
 
-    return {
+    data = {
         "id": t.id,
         "name": t.name,
         "status": t.status.value,
@@ -171,6 +182,9 @@ def serialize_task(t, render_markdown: bool = False) -> dict:
         "priority_id": t.priority_id,
         "priority_name": t.priority_name,
         "priority_type": t.priority_type,
+        "entity_id": t.entity_id,
+        "assigned_to": t.assigned_to,
+        "created_by": t.created_by,
         "subtasks": [
             {
                 "id": s.id,
@@ -181,3 +195,25 @@ def serialize_task(t, render_markdown: bool = False) -> dict:
             for s in t.subtasks
         ],
     }
+
+    # Add permission flags if user context provided
+    if current_user is not None:
+        from praxis_core.api.task_endpoints import (
+            get_task_permission,
+            can_edit_task,
+            can_toggle_task,
+            can_delete_task,
+        )
+        permission = get_task_permission(t, current_user, graph)
+        data["can_edit"] = can_edit_task(permission)
+        data["can_toggle"] = can_toggle_task(permission)
+        data["can_delete"] = can_delete_task(permission)
+        data["permission"] = permission
+    else:
+        # Default to full permissions for backwards compatibility
+        data["can_edit"] = True
+        data["can_toggle"] = True
+        data["can_delete"] = True
+        data["permission"] = None
+
+    return data

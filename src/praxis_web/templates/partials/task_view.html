@@ -37,9 +37,10 @@
         </div>
         {% endif %}
 
-        <!-- Edit Button -->
+        <!-- Action Buttons (conditional based on permissions) -->
         <div class="property-actions">
             <div class="actions-left">
+                {% if task.can_edit %}
                 <button type="button"
                         class="btn btn-primary"
                         hx-get="/tasks/{{ task.id }}/edit"
@@ -47,8 +48,10 @@
                         hx-swap="innerHTML">
                     Edit
                 </button>
+                {% endif %}
             </div>
             <div class="actions-right">
+                {% if task.can_delete %}
                 <button type="button"
                         class="btn btn-danger"
                         hx-delete="/tasks/{{ task.id }}"
@@ -57,6 +60,7 @@
                         hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
                     Delete
                 </button>
+                {% endif %}
             </div>
         </div>
 
