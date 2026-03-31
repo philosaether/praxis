@@ -9,5 +9,7 @@ uvicorn praxis_core.api.app:app --host 0.0.0.0 --port 8000 &
 sleep 2
 
 # Start the Web server in the foreground
-echo "Starting Web server on :8080..."
-exec uvicorn praxis_web.app:app --host 0.0.0.0 --port 8080
+# Use PORT env var if set (Railway), otherwise default to 8080
+WEB_PORT=${PORT:-8080}
+echo "Starting Web server on :$WEB_PORT..."
+exec uvicorn praxis_web.app:app --host 0.0.0.0 --port $WEB_PORT
