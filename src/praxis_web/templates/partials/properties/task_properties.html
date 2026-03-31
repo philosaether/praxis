@@ -3,8 +3,8 @@
 
 <div class="properties-section task-properties">
     <form hx-post="/tasks/{{ task.id }}/properties"
-          hx-target="#properties-section"
-          hx-swap="outerHTML">
+          hx-target="#detail-pane"
+          hx-swap="innerHTML">
 
         <!-- Name -->
         <div class="property-row">
@@ -22,22 +22,10 @@
         <div class="property-row">
             <label for="priority_id">Priority</label>
             <select id="priority_id" name="priority_id" class="property-input">
-                <option value="">None</option>
+                <option value="">Inbox (no priority)</option>
                 {% for p in priorities %}
                 <option value="{{ p.id }}" {% if task.priority_id == p.id %}selected{% endif %}>
                     {{ p.name }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Status -->
-        <div class="property-row">
-            <label for="status">Status</label>
-            <select id="status" name="status" class="property-input">
-                {% for s in task_statuses %}
-                <option value="{{ s }}" {% if task.status == s %}selected{% endif %}>
-                    {{ s }}
                 </option>
                 {% endfor %}
             </select>
@@ -53,18 +41,31 @@
                    class="property-input">
         </div>
 
+        <!-- Notes -->
+        <div class="property-row">
+            <label for="notes">Notes</label>
+            <textarea id="notes"
+                      name="notes"
+                      rows="6"
+                      class="property-input"
+                      placeholder="Add notes... (supports Markdown)">{{ task.notes_raw or task.notes or '' }}</textarea>
+        </div>
+
         <!-- Save Button -->
         <div class="property-actions">
-            <button type="submit" class="btn btn-primary">Save</button>
-            <span class="save-status" id="save-status"></span>
-            <button type="button"
-                    class="btn btn-danger"
-                    hx-delete="/tasks/{{ task.id }}"
-                    hx-swap="none"
-                    hx-confirm="Delete '{{ task.name }}'? This cannot be undone."
-                    hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
-                Delete
-            </button>
+            <div class="actions-left">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+            <div class="actions-right">
+                <button type="button"
+                        class="btn btn-danger"
+                        hx-delete="/tasks/{{ task.id }}"
+                        hx-swap="none"
+                        hx-confirm="Delete '{{ task.name }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
+                    Delete
+                </button>
+            </div>
         </div>
 
         <!-- Validation errors will show here -->

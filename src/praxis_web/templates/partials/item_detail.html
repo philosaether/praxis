@@ -85,12 +85,8 @@
         </div>
     {% endif %}
 
-    <!-- Notes Section -->
-    {% if task %}
-        {% with item_type='task', item_id=task.id, notes=task.notes, notes_raw=task.notes_raw %}
-            {% include "partials/item_notes.html" %}
-        {% endwith %}
-    {% elif priority %}
+    <!-- Notes Section (priorities only - tasks have notes in properties form) -->
+    {% if priority %}
         {% with item_type='priority', item_id=priority.id, notes=priority.notes, notes_raw=priority.notes_raw %}
             {% include "partials/item_notes.html" %}
         {% endwith %}

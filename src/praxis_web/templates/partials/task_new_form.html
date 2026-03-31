@@ -1,5 +1,5 @@
 {# New task creation form #}
-{# Expects: priorities, task_statuses #}
+{# Expects: priorities #}
 
 <div class="detail-view">
     <div id="properties-section">
@@ -32,18 +32,6 @@
                     </select>
                 </div>
 
-                <!-- Status -->
-                <div class="property-row">
-                    <label for="status">Status</label>
-                    <select id="status" name="status" class="property-input">
-                        {% for s in task_statuses %}
-                        <option value="{{ s }}" {% if s == 'queued' %}selected{% endif %}>
-                            {{ s }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
                 <!-- Due Date -->
                 <div class="property-row">
                     <label for="due_date">Due Date</label>
@@ -53,37 +41,33 @@
                            class="property-input">
                 </div>
 
+                <!-- Notes -->
+                <div class="property-row">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes"
+                              name="notes"
+                              rows="6"
+                              class="property-input"
+                              placeholder="Add notes... (supports Markdown)"></textarea>
+                </div>
+
                 <!-- Save Button -->
                 <div class="property-actions">
-                    <button type="submit" class="btn btn-primary">Create Task</button>
-                    <button type="button"
-                            class="btn btn-secondary"
-                            onclick="document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
-                        Cancel
-                    </button>
+                    <div class="actions-left">
+                        <button type="submit" class="btn btn-primary">Create Task</button>
+                    </div>
+                    <div class="actions-right">
+                        <button type="button"
+                                class="btn btn-secondary"
+                                onclick="document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Validation errors -->
                 <div id="property-errors" class="property-errors"></div>
             </form>
-        </div>
-    </div>
-
-    <!-- Notes Section (for new task) -->
-    <div class="notes-section">
-        <div class="notes-header">
-            <h3>Notes</h3>
-        </div>
-        <div class="notes-content">
-            <form hx-post="/tasks/create"
-                  hx-target="#detail-pane"
-                  hx-swap="innerHTML"
-                  style="display: none;">
-                <!-- Notes will be editable after task is created -->
-            </form>
-            <div class="notes-display empty">
-                <p class="empty-notes">Save the task first to add notes.</p>
-            </div>
         </div>
     </div>
 </div>

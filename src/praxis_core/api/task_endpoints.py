@@ -256,12 +256,12 @@ async def toggle_task(task_id: str):
 async def update_task_properties(
     task_id: str,
     name: Annotated[str, Form()],
-    status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
-    """Update task properties (everything except notes)."""
+    """Update task properties and notes together."""
     task = get_task(task_id)
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
@@ -281,9 +281,9 @@ async def update_task_properties(
     update_task(
         task_id,
         name=name.strip(),
-        status=TaskStatus(status),
+        status=task.status,  # Preserve existing status
         priority_id=priority_id.strip() if priority_id else "",
-        notes=task.notes or "",  # Preserve existing notes
+        notes=notes.strip() if notes else "",
         due_date=parsed_due_date,
     )
 
