@@ -977,13 +977,13 @@ async def delete_priority(request: Request, priority_id: str):
 
 @app.get("/users", response_class=HTMLResponse)
 async def get_users_for_share(request: Request):
-    """Get list of users for share dropdown (as partial HTML)."""
+    """Get list of friends for share dropdown (only friends can be shared with)."""
     async with api_client(request) as client:
-        response = await client.get("/api/auth/users")
+        response = await client.get("/api/friends")
         if response.status_code != 200:
             return HTMLResponse(content="[]")
-        users = response.json()
-    return Response(content=json.dumps(users), media_type="application/json")
+        friends = response.json()
+    return Response(content=json.dumps(friends), media_type="application/json")
 
 
 @app.post("/priorities/{priority_id}/share")

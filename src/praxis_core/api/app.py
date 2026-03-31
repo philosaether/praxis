@@ -18,6 +18,8 @@ from praxis_core.persistence import get_connection, PriorityGraph
 from praxis_core.api.priority_endpoints import router as priority_router
 from praxis_core.api.task_endpoints import router as task_router
 from praxis_core.api.auth_endpoints import router as auth_router
+from praxis_core.api.invite_endpoints import router as invite_router
+from praxis_core.api.friends_endpoints import router as friends_router
 
 
 # ---------------------------------------------------------------------
@@ -29,6 +31,8 @@ app = FastAPI(title="Praxis Core API", description="Cue-based task management")
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(priority_router, prefix="/api/priorities", tags=["priorities"])
 app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
+app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
+app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 
 
 # ---------------------------------------------------------------------

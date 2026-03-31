@@ -695,26 +695,31 @@
         document.getElementById('share-permission').value = 'contributor';
         document.getElementById('share-submit-btn').disabled = true;
 
-        // Load users for the dropdown
+        // Load friends for the dropdown (only friends can be shared with)
         const userSelect = document.getElementById('share-user');
         userSelect.innerHTML = '<option value="">Loading...</option>';
         userSelect.disabled = true;
 
         fetch('/users')
             .then(response => response.json())
-            .then(users => {
-                userSelect.innerHTML = '<option value="">Select a user...</option>';
-                users.forEach(u => {
-                    const option = document.createElement('option');
-                    option.value = u.id;
-                    option.textContent = u.username;
-                    userSelect.appendChild(option);
-                });
-                userSelect.disabled = false;
+            .then(friends => {
+                if (friends.length === 0) {
+                    userSelect.innerHTML = '<option value="">No friends yet - invite someone first</option>';
+                    userSelect.disabled = true;
+                } else {
+                    userSelect.innerHTML = '<option value="">Select a friend...</option>';
+                    friends.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f.id;
+                        option.textContent = f.username;
+                        userSelect.appendChild(option);
+                    });
+                    userSelect.disabled = false;
+                }
             })
             .catch(err => {
-                console.error('Failed to load users:', err);
-                userSelect.innerHTML = '<option value="">Failed to load users</option>';
+                console.error('Failed to load friends:', err);
+                userSelect.innerHTML = '<option value="">Failed to load friends</option>';
             });
 
         document.getElementById('share-priority-backdrop').classList.add('open');
