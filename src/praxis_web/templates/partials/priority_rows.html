@@ -4,6 +4,7 @@
      hx-get="/priorities/{{ p.id }}"
      hx-target="#detail-pane"
      hx-swap="innerHTML"
+     hx-push-url="true"
      onclick="selectRow(this)">
     <div class="name">
         {{ p.name }}

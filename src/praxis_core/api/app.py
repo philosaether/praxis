@@ -80,8 +80,12 @@ def fmt_date(dt: datetime | None) -> str | None:
 
 
 def render_md(text: str) -> str:
-    """Render markdown text to HTML."""
-    return markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+    """Render markdown text to HTML.
+
+    Uses standard CommonMark behavior - blank lines separate paragraphs,
+    lists need blank line before them.
+    """
+    return markdown.markdown(text, extensions=["fenced_code", "tables"])
 
 
 def serialize_priority(
@@ -107,6 +111,7 @@ def serialize_priority(
         "name": p.name,
         "priority_type": p.priority_type.value,
         "status": p.status.value,
+        "substatus": p.substatus,
         "entity_id": p.entity_id,
         "agent_context": p.agent_context,
         "notes": notes,
@@ -135,7 +140,7 @@ def serialize_priority(
         data["success_looks_like"] = p.success_looks_like
         data["obsolete_when"] = p.obsolete_when
     elif isinstance(p, Goal):
-        data["success_criteria"] = p.success_criteria
+        data["complete_when"] = p.complete_when
         data["progress"] = p.progress
         data["due_date"] = fmt_date(p.due_date)
     elif isinstance(p, Practice):
@@ -161,6 +166,7 @@ def serialize_task(t, render_markdown: bool = False) -> dict:
         "created_at": fmt_datetime(t.created_at),
         "priority_id": t.priority_id,
         "priority_name": t.priority_name,
+        "priority_type": t.priority_type,
         "subtasks": [
             {
                 "id": s.id,

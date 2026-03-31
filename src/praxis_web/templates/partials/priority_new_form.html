@@ -39,15 +39,12 @@
                            class="property-input title-input">
                 </div>
 
-                <!-- Status -->
+                <!-- Status (new items default to active) -->
                 <div class="property-row">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="property-input">
-                        {% for s in priority_statuses %}
-                        <option value="{{ s }}" {% if s == 'active' %}selected{% endif %}>
-                            {{ s }}
-                        </option>
-                        {% endfor %}
+                        <option value="active" selected>active</option>
+                        <option value="dormant">dormant</option>
                     </select>
                 </div>
 
@@ -64,19 +61,19 @@
                     </select>
                 </div>
 
-                <!-- Agent Context -->
-                <div class="property-row">
-                    <label for="agent_context">Context</label>
-                    <textarea id="agent_context"
-                              name="agent_context"
-                              rows="3"
-                              class="property-input"
-                              placeholder="Context for AI agent..."></textarea>
-                </div>
-
                 <!-- Type-specific fields (dynamic) -->
                 <div id="type-specific-fields">
                     {% include "partials/type_fields/goal_fields.html" %}
+                </div>
+
+                <!-- Notes -->
+                <div class="property-row">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes"
+                              name="notes"
+                              rows="6"
+                              class="property-input"
+                              placeholder="Add notes... (supports Markdown)"></textarea>
                 </div>
 
                 <!-- Actions -->
@@ -92,18 +89,6 @@
                 <!-- Validation errors -->
                 <div id="property-errors" class="property-errors"></div>
             </form>
-        </div>
-    </div>
-
-    <!-- Notes Section (placeholder for new priority) -->
-    <div class="notes-section">
-        <div class="notes-header">
-            <h3>Notes</h3>
-        </div>
-        <div class="notes-content">
-            <div class="notes-display empty">
-                <p class="empty-notes">Save the priority first to add notes.</p>
-            </div>
         </div>
     </div>
 </div>

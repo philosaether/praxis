@@ -119,8 +119,8 @@ def priority_show(
             rprint(f"\n[bold]Obsolete when:[/bold]\n{p.obsolete_when}")
 
     elif isinstance(p, Goal):
-        if p.success_criteria:
-            rprint(f"\n[bold]Success criteria:[/bold]\n{p.success_criteria}")
+        if p.complete_when:
+            rprint(f"\n[bold]Complete when:[/bold]\n{p.complete_when}")
         if p.progress:
             rprint(f"[bold]Progress:[/bold] {p.progress}")
         if p.due_date:

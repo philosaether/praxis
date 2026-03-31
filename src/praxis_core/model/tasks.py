@@ -51,6 +51,7 @@ class Task:
 
     # Inferred/joined fields
     priority_name: str | None = None
+    priority_type: str | None = None
 
     # Subtasks (phases)
     subtasks: list[Subtask] = field(default_factory=list)

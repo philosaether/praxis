@@ -249,19 +249,30 @@ async def toggle_task(task_id: str):
     update_task_status(task_id, new_status)
 
     task = get_task(task_id)
-    return {"task": _serialize_task(task)}
+    task_data = _serialize_task(task)
+
+    # Include score data for the row display
+    graph = _get_graph(task.entity_id)
+    scored_tasks = rank_tasks([task], graph)
+    if scored_tasks:
+        st = scored_tasks[0]
+        task_data["score"] = round(st.score, 2)
+        task_data["importance"] = round(st.importance, 1)
+        task_data["urgency"] = round(st.urgency, 1)
+
+    return {"task": task_data}
 
 
 @router.post("/{task_id}/properties")
 async def update_task_properties(
     task_id: str,
     name: Annotated[str, Form()],
-    status: Annotated[str, Form()],
     priority_id: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
-    """Update task properties (everything except notes)."""
+    """Update task properties and notes together."""
     task = get_task(task_id)
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)
@@ -281,9 +292,9 @@ async def update_task_properties(
     update_task(
         task_id,
         name=name.strip(),
-        status=TaskStatus(status),
+        status=task.status,  # Preserve existing status
         priority_id=priority_id.strip() if priority_id else "",
-        notes=task.notes or "",  # Preserve existing notes
+        notes=notes.strip() if notes else "",
         due_date=parsed_due_date,
     )
 

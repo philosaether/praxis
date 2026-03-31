@@ -39,15 +39,12 @@
                    class="property-input title-input">
         </div>
 
-        <!-- Status -->
+        <!-- Status (values only have active/dormant) -->
         <div class="property-row">
             <label for="status">Status</label>
             <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
-                {% for s in priority_statuses %}
-                <option value="{{ s }}" {% if priority.status == s %}selected{% endif %}>
-                    {{ s }}
-                </option>
-                {% endfor %}
+                <option value="active" {% if priority.status == 'active' %}selected{% endif %}>active</option>
+                <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>dormant</option>
             </select>
         </div>
 
@@ -79,27 +76,7 @@
 
         {% include "partials/properties/_task_assignment.html" %}
 
-        <!-- Value-specific: Success Looks Like -->
-        <div class="property-row">
-            <label for="success_looks_like">Success Looks Like</label>
-            <textarea id="success_looks_like"
-                      name="success_looks_like"
-                      rows="3"
-                      class="property-input"
-                      {% if readonly %}disabled{% endif %}
-                      placeholder="What does success look like?">{{ priority.success_looks_like or '' }}</textarea>
-        </div>
-
-        <!-- Value-specific: Obsolete When -->
-        <div class="property-row">
-            <label for="obsolete_when">Obsolete When</label>
-            <textarea id="obsolete_when"
-                      name="obsolete_when"
-                      rows="2"
-                      class="property-input"
-                      {% if readonly %}disabled{% endif %}
-                      placeholder="When does this goal become irrelevant?">{{ priority.obsolete_when or '' }}</textarea>
-        </div>
+        {# Values are simplified - use notes for any additional context #}
 
         <!-- Actions (owner only) -->
         {% if not readonly %}

@@ -1,0 +1,193 @@
+{# Priority view mode - read-only display #}
+{# Expects: priority, priorities, children, tasks, from_task #}
+
+<div class="detail-view">
+    <!-- Back link -->
+    <div class="detail-nav">
+        {% if from_task %}
+        <a href="#"
+           hx-get="/tasks/{{ from_task }}"
+           hx-target="#detail-pane"
+           hx-swap="innerHTML"
+           class="back-link">
+            ← Back to Task
+        </a>
+        {% else %}
+        <a href="#"
+           hx-get="/priorities/tree-pane"
+           hx-target="#detail-pane"
+           hx-swap="innerHTML"
+           class="back-link">
+            ← Back to Tree
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="properties-section priority-properties {{ priority.priority_type }}-properties">
+        <!-- Title -->
+        <h2 class="detail-title">{{ priority.name }}</h2>
+
+        <!-- Type pill -->
+        <div class="detail-priority">
+            <span class="type-badge {{ priority.priority_type }}">{{ priority.priority_type|upper }}</span>
+            {% if priority.status and priority.status != 'active' %}
+            <span class="status-badge {{ priority.status }}">{{ priority.status }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Parent (if any) -->
+        {% if parents and parents|length > 0 %}
+        <div class="property-row">
+            <label>Parent</label>
+            <div class="property-display">
+                {% for p in parents %}
+                <a href="#"
+                   class="priority-link"
+                   hx-get="/priorities/{{ p.id }}"
+                   hx-target="#detail-pane"
+                   hx-swap="innerHTML">
+                    {{ p.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Type-specific fields (read-only) -->
+        {# Values have no type-specific fields - just notes #}
+        {% if priority.priority_type == 'goal' %}
+            {% if priority.complete_when %}
+            <div class="property-row">
+                <label>Complete When</label>
+                <div class="property-display">{{ priority.complete_when }}</div>
+            </div>
+            {% endif %}
+            {% if priority.progress %}
+            <div class="property-row">
+                <label>Progress</label>
+                <div class="property-display">{{ priority.progress }}</div>
+            </div>
+            {% endif %}
+            {% if priority.due_date %}
+            <div class="property-row">
+                <label>Due Date</label>
+                <div class="property-display">{{ priority.due_date }}</div>
+            </div>
+            {% endif %}
+        {% elif priority.priority_type == 'practice' %}
+            {# Practice-specific fields hidden until task generation is implemented #}
+        {% endif %}
+
+        <!-- Notes (rendered) -->
+        {% if priority.notes %}
+        <div class="property-row">
+            <label>Notes</label>
+            <div class="property-display markdown-content">{{ priority.notes|safe }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="property-actions">
+            <div class="actions-left">
+                {% if priority.is_owner %}
+                <button type="button"
+                        class="btn btn-primary"
+                        hx-get="/priorities/{{ priority.id }}/edit"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
+                    Edit
+                </button>
+                {% endif %}
+            </div>
+            <div class="actions-right">
+                {% if priority.is_owner %}
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="openShareModal('{{ priority.id }}', '{{ priority.name }}')">
+                    Share
+                </button>
+                <button type="button"
+                        class="btn btn-danger"
+                        onclick="showDeleteConfirmation('{{ priority.id }}', '{{ priority.name }}')">
+                    Delete
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sharing Status -->
+        {% if priority.is_shared_with_me %}
+        <div class="share-status shared-with-me">
+            <span class="share-icon">&#x1F517;</span>
+            <span>Shared with you</span>
+        </div>
+        {% elif priority.shares and priority.shares|length > 0 %}
+        <div class="share-status shared-by-me">
+            <span class="share-icon">&#x1F91D;</span>
+            <span>Shared with {{ priority.shares|length }} user(s)</span>
+        </div>
+        {% endif %}
+
+        <!-- Metadata -->
+        <div class="property-meta">
+            <span class="meta-item">{{ priority.id }}</span>
+            {% if priority.created_at %}
+            <span class="meta-item">Created: {{ priority.created_at }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Children -->
+    {% if children %}
+    <div class="related-section">
+        <h3>Children</h3>
+        <ul class="links-list">
+            {% for child in children %}
+            <li>
+                <span class="badge-wrapper">
+                    <span class="type-badge {{ child.priority_type }} small">{{ child.priority_type|upper }}</span>
+                </span>
+                <a href="#"
+                   hx-get="/priorities/{{ child.id }}"
+                   hx-target="#detail-pane"
+                   hx-swap="innerHTML">
+                    {{ child.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Associated Tasks -->
+    <div id="priority-tasks-panel" class="associated-tasks-section">
+        <div class="section-header">
+            <div class="section-title">
+                <h3>Tasks</h3>
+                <span class="task-count">{{ tasks|length if tasks else 0 }}</span>
+            </div>
+            <button type="button"
+                    class="btn btn-sm btn-secondary"
+                    onclick="openQuickAdd('{{ priority.id }}')">
+                + New Task
+            </button>
+        </div>
+        {% if tasks %}
+        <ul class="task-list-compact">
+            {% for task in tasks %}
+            <li class="task-item-compact {% if task.status == 'done' %}done{% endif %}">
+                <a href="#"
+                   hx-get="/tasks/{{ task.id }}"
+                   hx-target="#detail-pane"
+                   hx-swap="innerHTML">
+                    {{ task.name }}
+                </a>
+                <span class="task-status {{ task.status }}">{{ task.status }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-hint">No tasks linked to this priority</p>
+        {% endif %}
+    </div>
+</div>

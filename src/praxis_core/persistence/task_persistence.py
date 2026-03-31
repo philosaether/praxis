@@ -225,7 +225,7 @@ def get_task(task_id: str) -> Task | None:
     with get_connection() as conn:
         row = conn.execute(
             """
-            SELECT t.*, p.name as priority_name
+            SELECT t.*, p.name as priority_name, p.priority_type as priority_type
             FROM tasks t
             LEFT JOIN priorities p ON t.priority_id = p.id
             WHERE t.id = ?
@@ -257,7 +257,7 @@ def list_tasks(
     ensure_schema()
     with get_connection() as conn:
         query = """
-            SELECT t.*, p.name as priority_name
+            SELECT t.*, p.name as priority_name, p.priority_type as priority_type
             FROM tasks t
             LEFT JOIN priorities p ON t.priority_id = p.id
             WHERE 1=1
@@ -408,6 +408,7 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         created_at=created_at,
         priority_id=row["priority_id"] if "priority_id" in keys else None,
         priority_name=row["priority_name"] if "priority_name" in keys else None,
+        priority_type=row["priority_type"] if "priority_type" in keys else None,
     )
 
 

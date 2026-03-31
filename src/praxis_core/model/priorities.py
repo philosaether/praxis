@@ -12,15 +12,12 @@ class PriorityType(StrEnum):
 
 
 class PriorityStatus(StrEnum):
-    # Universal
+    # Universal (values, practices, goals)
     ACTIVE = "active"
-    DORMANT = "dormant"
-    ABANDONED = "abandoned"    # no longer relevant
+    DORMANT = "dormant"     # draft, backlog, abandoned, on-hold (see substatus)
 
     # Goal-specific
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
+    COMPLETED = "completed"  # goal achieved
 
 
 @dataclass
@@ -29,6 +26,7 @@ class Priority:
     name: str
     priority_type: PriorityType
     status: PriorityStatus = PriorityStatus.ACTIVE
+    substatus: str | None = None  # Extension field (e.g., draft, backlog, abandoned)
 
     entity_id: str | None = None  # ULID of owning entity
     agent_context: str | None = None
@@ -62,7 +60,7 @@ class Goal(Priority):
     """A concrete outcome to achieve. Done when done; has end state."""
 
     priority_type: PriorityType = PriorityType.GOAL
-    success_criteria: str | None = None
+    complete_when: str | None = None  # What "done" looks like
     due_date: datetime | None = None
     progress: str | None = None  # e.g., "3/10", "70%"
 

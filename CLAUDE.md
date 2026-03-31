@@ -40,6 +40,16 @@ See `~/Development/persona/goals.json` for full architecture decisions.
 - `foo-suggestions.py` - Claude's proposed implementation
 - `foo.py` - Phil's reviewed/typed version
 
+## Repo Structure
+
+**Two git repos in this directory:**
+- `praxis/` — Main codebase (github.com/philosaether/praxis)
+- `praxis/.claude/` — Working docs, gitignored from main repo (github.com/philosaether/praxis-architecture)
+
+When committing, remember to commit both:
+1. Code changes to praxis repo
+2. Documentation changes (PROJECT_STATUS.md, designs/, etc.) to praxis-architecture repo
+
 ## Conventions
 
 - Minimal dependencies, explicit over implicit

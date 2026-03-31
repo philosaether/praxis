@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS priorities (
     status TEXT NOT NULL DEFAULT 'active',
 
     -- Common
+    substatus TEXT,  -- Extension field (e.g., draft, backlog, abandoned)
     agent_context TEXT,
     notes TEXT,
     rank INTEGER,
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS priorities (
     obsolete_when TEXT,
 
     -- Goal (concrete outcome with end state)
-    success_criteria TEXT,
+    complete_when TEXT,
     due_date TEXT,
     progress TEXT,
 
@@ -110,6 +111,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     # Handle fields that may not exist in older schemas
     keys = row.keys()
     entity_id = row["entity_id"] if "entity_id" in keys else None
+    substatus = row["substatus"] if "substatus" in keys else None
     auto_assign_owner = bool(row["auto_assign_owner"]) if "auto_assign_owner" in keys else True
     auto_assign_creator = bool(row["auto_assign_creator"]) if "auto_assign_creator" in keys else False
 
@@ -117,6 +119,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "id": row["id"],
         "name": row["name"],
         "status": status,
+        "substatus": substatus,
         "entity_id": entity_id,
         "agent_context": row["agent_context"],
         "notes": row["notes"],
@@ -140,7 +143,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
             return Goal(
                 **common_kwargs,
                 priority_type=priority_type,
-                success_criteria=row["success_criteria"],
+                complete_when=row["complete_when"],
                 due_date=_parse_datetime(row["due_date"]),
                 progress=row["progress"],
             )
@@ -172,7 +175,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
     # Type-specific fields default to None
     success_looks_like = None
     obsolete_when = None
-    success_criteria = None
+    complete_when = None
     due_date = None
     progress = None
     rhythm_frequency = None
@@ -185,7 +188,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         obsolete_when = priority.obsolete_when
 
     elif isinstance(priority, Goal):
-        success_criteria = priority.success_criteria
+        complete_when = priority.complete_when
         due_date = priority.due_date.isoformat() if priority.due_date else None
         progress = priority.progress
 
@@ -201,6 +204,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.priority_type.value,
         priority.name,
         priority.status.value,
+        priority.substatus,
         priority.agent_context,
         priority.notes,
         priority.rank,
@@ -208,7 +212,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         int(priority.auto_assign_creator),
         success_looks_like,
         obsolete_when,
-        success_criteria,
+        complete_when,
         due_date,
         progress,
         rhythm_frequency,
@@ -302,19 +306,20 @@ class PriorityGraph:
         with self.connection_factory() as conn:
             conn.execute("""
                 INSERT INTO priorities (
-                    id, entity_id, priority_type, name, status,
+                    id, entity_id, priority_type, name, status, substatus,
                     agent_context, notes, rank,
                     auto_assign_owner, auto_assign_creator,
                     success_looks_like, obsolete_when,
-                    success_criteria, due_date, progress,
+                    complete_when, due_date, progress,
                     rhythm_frequency, rhythm_constraints, generation_prompt,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
                     name = excluded.name,
                     status = excluded.status,
+                    substatus = excluded.substatus,
                     agent_context = excluded.agent_context,
                     notes = excluded.notes,
                     rank = excluded.rank,
@@ -322,7 +327,7 @@ class PriorityGraph:
                     auto_assign_creator = excluded.auto_assign_creator,
                     success_looks_like = excluded.success_looks_like,
                     obsolete_when = excluded.obsolete_when,
-                    success_criteria = excluded.success_criteria,
+                    complete_when = excluded.complete_when,
                     due_date = excluded.due_date,
                     progress = excluded.progress,
                     rhythm_frequency = excluded.rhythm_frequency,

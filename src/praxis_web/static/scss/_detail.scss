@@ -22,6 +22,29 @@
   }
 }
 
+.detail-title {
+  font-family: $font-family-display;
+  font-size: $font-size-xl;
+  font-weight: 600;
+  margin: 0 0 $spacing-lg 0;
+  color: $text-primary;
+  line-height: $line-height-tight;
+}
+
+.detail-priority {
+  margin-bottom: $spacing-xl;
+
+  .type-badge {
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity $transition-fast;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+}
+
 .detail-header {
   margin-bottom: $spacing-xl;
 

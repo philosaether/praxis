@@ -110,6 +110,7 @@ async def create_priority_full(
     status: Annotated[str, Form()] = "active",
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = "on",
     auto_assign_creator: Annotated[str | None, Form()] = None,
@@ -117,7 +118,7 @@ async def create_priority_full(
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
-    success_criteria: Annotated[str | None, Form()] = None,
+    complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     # Practice fields
@@ -139,6 +140,7 @@ async def create_priority_full(
     # Set common fields
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
+    priority.notes = notes.strip() if notes else None
 
     # Set task assignment settings (checkboxes: "on" if checked, None if not)
     priority.auto_assign_owner = auto_assign_owner == "on"
@@ -149,7 +151,7 @@ async def create_priority_full(
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
     elif isinstance(priority, Goal):
-        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
             try:
@@ -176,10 +178,10 @@ async def create_priority_full(
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
-        "priority": _serialize_priority(priority, render_markdown=True),
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
-        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "priority": _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id),
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
+        "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_statuses": [s.value for s in PriorityStatus],
     }
 
@@ -298,8 +300,11 @@ async def get_priority_for_edit(
     # Get shares for ownership display
     shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
 
+    priority_data = _serialize_priority(priority, current_entity_id=entity_id, shares=shares)
+    priority_data["notes_raw"] = priority.notes or ""
+
     return {
-        "priority": _serialize_priority(priority, current_entity_id=entity_id, shares=shares),
+        "priority": priority_data,
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_types": [t.value for t in PriorityType],
@@ -319,7 +324,7 @@ async def update_priority(
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
-    success_criteria: Annotated[str | None, Form()] = None,
+    complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     # Practice fields
@@ -349,7 +354,7 @@ async def update_priority(
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
     elif isinstance(priority, Goal):
-        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
             try:
@@ -427,6 +432,7 @@ async def update_priority_properties(
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = None,
     auto_assign_creator: Annotated[str | None, Form()] = None,
@@ -434,7 +440,7 @@ async def update_priority_properties(
     success_looks_like: Annotated[str | None, Form()] = None,
     obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
-    success_criteria: Annotated[str | None, Form()] = None,
+    complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     # Practice fields
@@ -445,7 +451,7 @@ async def update_priority_properties(
     parent_id: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
-    """Update priority properties (everything except notes)."""
+    """Update priority properties including notes."""
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
@@ -457,11 +463,11 @@ async def update_priority_properties(
     if not name.strip():
         return JSONResponse({"error": "Name is required"}, status_code=400)
 
-    # Update common fields (preserve notes)
+    # Update common fields
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    # Note: priority.notes is NOT updated here
+    priority.notes = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
     # Update task assignment settings (checkboxes: "on" if checked, None if not)
@@ -473,7 +479,7 @@ async def update_priority_properties(
         priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
         priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
     elif isinstance(priority, Goal):
-        priority.success_criteria = success_criteria.strip() if success_criteria else None
+        priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
             try:

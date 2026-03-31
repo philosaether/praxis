@@ -39,15 +39,12 @@
                    class="property-input title-input">
         </div>
 
-        <!-- Status -->
+        <!-- Status (practices only have active/dormant) -->
         <div class="property-row">
             <label for="status">Status</label>
             <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
-                {% for s in priority_statuses %}
-                <option value="{{ s }}" {% if priority.status == s %}selected{% endif %}>
-                    {{ s }}
-                </option>
-                {% endfor %}
+                <option value="active" {% if priority.status == 'active' %}selected{% endif %}>active</option>
+                <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>dormant</option>
             </select>
         </div>
 
@@ -79,39 +76,8 @@
 
         {% include "partials/properties/_task_assignment.html" %}
 
-        <!-- Practice-specific: Rhythm Frequency -->
-        <div class="property-row">
-            <label for="rhythm_frequency">Rhythm</label>
-            <input type="text"
-                   id="rhythm_frequency"
-                   name="rhythm_frequency"
-                   value="{{ priority.rhythm_frequency or '' }}"
-                   class="property-input"
-                   {% if readonly %}disabled{% endif %}
-                   placeholder="e.g., daily, weekly, 2x daily">
-        </div>
-
-        <!-- Practice-specific: Rhythm Constraints -->
-        <div class="property-row">
-            <label for="rhythm_constraints">Constraints</label>
-            <textarea id="rhythm_constraints"
-                      name="rhythm_constraints"
-                      rows="2"
-                      class="property-input"
-                      {% if readonly %}disabled{% endif %}
-                      placeholder="e.g., morning only, not after 9pm">{{ priority.rhythm_constraints or '' }}</textarea>
-        </div>
-
-        <!-- Practice-specific: Generation Prompt -->
-        <div class="property-row">
-            <label for="generation_prompt">Generation Prompt</label>
-            <textarea id="generation_prompt"
-                      name="generation_prompt"
-                      rows="3"
-                      class="property-input"
-                      {% if readonly %}disabled{% endif %}
-                      placeholder="How should AI generate specific tasks?">{{ priority.generation_prompt or '' }}</textarea>
-        </div>
+        {# Practice-specific fields hidden until task generation is implemented #}
+        {# Will be replaced by Rhythm entity reference #}
 
         <!-- Actions (owner only) -->
         {% if not readonly %}
