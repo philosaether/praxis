@@ -119,3 +119,21 @@
     }
   }
 }
+
+// Invite page styles
+.invite-message {
+  text-align: center;
+  margin-bottom: $spacing-md;
+  color: $text-primary;
+
+  strong {
+    color: $accent;
+  }
+}
+
+.invite-note {
+  text-align: center;
+  margin-bottom: $spacing-xl;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}

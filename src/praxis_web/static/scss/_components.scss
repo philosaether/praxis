@@ -214,3 +214,64 @@
     }
   }
 }
+
+// -----------------------------------------------------------------------------
+// Friends List
+// -----------------------------------------------------------------------------
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+  transition: background $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.friend-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.friend-name {
+  font-size: $font-size-base;
+  color: $text-primary;
+  font-weight: 500;
+}
+
+.friend-email {
+  font-size: $font-size-sm;
+  color: $text-muted;
+}
+
+// -----------------------------------------------------------------------------
+// Invite Modal
+// -----------------------------------------------------------------------------
+
+.invite-modal {
+  max-width: 480px;
+}
+
+.invite-link-container {
+  display: flex;
+  gap: $spacing-sm;
+
+  input {
+    flex: 1;
+  }
+}
+
+.invite-instructions {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-top: $spacing-sm;
+}

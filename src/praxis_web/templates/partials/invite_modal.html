@@ -1,0 +1,42 @@
+{# Invite Friend Modal #}
+<div class="modal-backdrop" id="invite-modal-backdrop" onclick="if(event.target === this) closeInviteModal()">
+    <div class="modal invite-modal">
+        <div class="modal-header">
+            <h2>Invite a Friend</h2>
+            <button type="button" class="modal-close" onclick="closeInviteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Create a link to invite someone to connect with you on Praxis.</p>
+
+            <div id="invite-result" style="display: none;">
+                <div class="property-row">
+                    <label>Invite Link</label>
+                    <div class="invite-link-container">
+                        <input type="text"
+                               id="invite-link"
+                               class="property-input"
+                               readonly>
+                        <button type="button"
+                                class="btn btn-secondary btn-sm"
+                                onclick="copyInviteLink()">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+                <p class="invite-instructions">
+                    Send this link to your friend. When they sign up using this link,
+                    you'll automatically be connected as friends.
+                </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeInviteModal()">Close</button>
+            <button type="button"
+                    class="btn btn-primary"
+                    id="create-invite-btn"
+                    onclick="createInvite()">
+                Create Invite
+            </button>
+        </div>
+    </div>
+</div>

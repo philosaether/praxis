@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Development
+.claude/
+*.md
+Makefile
+tests/
+*.egg-info/
+
+# Local data
+*.db
+.praxis/

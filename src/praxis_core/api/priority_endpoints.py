@@ -765,6 +765,16 @@ async def share_priority(
     # Share via user's personal entity
     graph.share_with_user(priority_id, request_data.user_id, request_data.permission)
 
+    # Clear the target user's graph cache so they see the shared priority
+    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.persistence import get_connection
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT entity_id FROM users WHERE id = ?", (request_data.user_id,)
+        ).fetchone()
+        if row and row["entity_id"]:
+            clear_graph_cache(row["entity_id"])
+
     return {
         "success": True,
         "priority_id": priority_id,

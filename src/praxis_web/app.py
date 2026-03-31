@@ -123,7 +123,7 @@ async def logout(request: Request):
 
 
 @app.get("/signup", response_class=HTMLResponse)
-async def signup_page(request: Request, error: str | None = None):
+async def signup_page(request: Request, error: str | None = None, invite_token: str | None = None):
     """Display signup page."""
     # If already logged in, redirect to home
     if request.cookies.get(SESSION_COOKIE_NAME):
@@ -131,7 +131,7 @@ async def signup_page(request: Request, error: str | None = None):
     return templates.TemplateResponse(
         request,
         "signup.html",
-        {"error": error}
+        {"error": error, "invite_token": invite_token}
     )
 
 
@@ -141,6 +141,7 @@ async def signup_submit(
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
     password_confirm: Annotated[str, Form()],
+    invite_token: Annotated[str | None, Form()] = None,
 ):
     """Handle signup form submission."""
     # Validate passwords match
@@ -148,14 +149,17 @@ async def signup_submit(
         return templates.TemplateResponse(
             request,
             "signup.html",
-            {"error": "Passwords do not match"},
+            {"error": "Passwords do not match", "invite_token": invite_token},
             status_code=400
         )
 
     async with httpx.AsyncClient(base_url=API_URL, timeout=30.0) as client:
+        register_data = {"username": username, "password": password}
+        if invite_token:
+            register_data["invite_token"] = invite_token
         response = await client.post(
             "/api/auth/register",
-            json={"username": username, "password": password}
+            json=register_data
         )
 
         if response.status_code != 200:
@@ -164,7 +168,7 @@ async def signup_submit(
             return templates.TemplateResponse(
                 request,
                 "signup.html",
-                {"error": error_msg},
+                {"error": error_msg, "invite_token": invite_token},
                 status_code=400
             )
 
@@ -190,6 +194,54 @@ async def signup_submit(
 
         # Fallback: redirect to login page
         return RedirectResponse(url="/login", status_code=302)
+
+
+# -----------------------------------------------------------------------------
+# Routes: Invite Acceptance
+# -----------------------------------------------------------------------------
+
+@app.get("/invite/{token}", response_class=HTMLResponse)
+async def invite_page(request: Request, token: str):
+    """Display invite acceptance page."""
+    # Validate the token
+    async with httpx.AsyncClient(base_url=API_URL, timeout=30.0) as client:
+        response = await client.get(f"/api/invites/validate/{token}")
+        data = response.json()
+
+    if not data.get("valid"):
+        return templates.TemplateResponse(
+            request,
+            "invite.html",
+            {"valid": False, "error": "This invitation is invalid or has expired."}
+        )
+
+    # Check if user is already logged in
+    if request.cookies.get(SESSION_COOKIE_NAME):
+        # Could add "accept while logged in" flow here
+        # For now, redirect to home with a message
+        return templates.TemplateResponse(
+            request,
+            "invite.html",
+            {
+                "valid": True,
+                "logged_in": True,
+                "inviter_username": data.get("inviter_username"),
+                "token": token,
+            }
+        )
+
+    # Show signup form with invite context
+    return templates.TemplateResponse(
+        request,
+        "invite.html",
+        {
+            "valid": True,
+            "logged_in": False,
+            "inviter_username": data.get("inviter_username"),
+            "email": data.get("email"),
+            "token": token,
+        }
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -975,15 +1027,83 @@ async def delete_priority(request: Request, priority_id: str):
 # Routes: Sharing
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# Routes: Friends
+# -----------------------------------------------------------------------------
+
+@app.get("/friends", response_class=HTMLResponse)
+async def friends_page(request: Request):
+    """Friends view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        return await friends_list_partial(request)
+
+    # For full page, render the friends list
+    async with api_client(request) as client:
+        response = await client.get("/api/friends")
+        friends = response.json() if response.status_code == 200 else []
+
+    list_html = templates.get_template("partials/friends_list.html").render(
+        friends=friends
+    )
+
+    return await render_full_page(request, mode="friends", initial_list_html=list_html)
+
+
+@app.get("/friends/list", response_class=HTMLResponse)
+async def friends_list_partial(request: Request):
+    """HTMX partial: list of friends."""
+    async with api_client(request) as client:
+        response = await client.get("/api/friends")
+        friends = response.json() if response.status_code == 200 else []
+
+    return templates.TemplateResponse(
+        request,
+        "partials/friends_list.html",
+        {"friends": friends}
+    )
+
+
+@app.delete("/friends/{friend_id}", response_class=HTMLResponse)
+async def remove_friend(request: Request, friend_id: int):
+    """Remove a friend."""
+    async with api_client(request) as client:
+        response = await client.delete(f"/api/friends/{friend_id}")
+        if response.status_code != 200:
+            return HTMLResponse(content="<div class='error'>Failed to remove friend</div>")
+
+    # Return empty content to remove the row
+    return HTMLResponse(content="")
+
+
+@app.post("/invites")
+async def create_invite(request: Request):
+    """Create an invite and return the token."""
+    async with api_client(request) as client:
+        response = await client.post("/api/invites", json={})
+
+        if response.status_code != 200:
+            error_data = response.json() if response.content else {}
+            return Response(
+                content=json.dumps({"error": error_data.get("detail", "Failed to create invite")}),
+                media_type="application/json",
+                status_code=response.status_code
+            )
+
+        return Response(
+            content=response.content,
+            media_type="application/json"
+        )
+
+
 @app.get("/users", response_class=HTMLResponse)
 async def get_users_for_share(request: Request):
-    """Get list of users for share dropdown (as partial HTML)."""
+    """Get list of friends for share dropdown (only friends can be shared with)."""
     async with api_client(request) as client:
-        response = await client.get("/api/auth/users")
+        response = await client.get("/api/friends")
         if response.status_code != 200:
             return HTMLResponse(content="[]")
-        users = response.json()
-    return Response(content=json.dumps(users), media_type="application/json")
+        friends = response.json()
+    return Response(content=json.dumps(friends), media_type="application/json")
 
 
 @app.post("/priorities/{priority_id}/share")

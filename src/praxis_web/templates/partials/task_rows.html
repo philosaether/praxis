@@ -25,6 +25,7 @@
             {% endif %}
         </div>
     </div>
+    {% if task.can_toggle %}
     <button class="quick-done {% if task.status == 'done' %}checked{% endif %}"
             hx-post="/tasks/{{ task.id }}/toggle"
             hx-target="closest .task-row"
@@ -33,6 +34,7 @@
             title="{% if task.status == 'done' %}Requeue{% else %}Mark done{% endif %}">
         ✓
     </button>
+    {% endif %}
 </div>
 {% else %}
 <div class="empty-state">

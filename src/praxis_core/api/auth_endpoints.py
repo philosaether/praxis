@@ -12,6 +12,10 @@ from praxis_core.persistence import (
     delete_session,
     delete_user_sessions,
 )
+from praxis_core.persistence.user_persistence import (
+    validate_invitation,
+    accept_invitation,
+)
 from praxis_core.api.auth import get_current_user
 
 
@@ -26,6 +30,7 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
     email: str | None = None
+    invite_token: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -98,6 +103,16 @@ async def register(credentials: RegisterRequest):
             detail="Password must be at least 8 characters",
         )
 
+    # Validate invite token if provided
+    invitation = None
+    if credentials.invite_token:
+        invitation = validate_invitation(credentials.invite_token)
+        if invitation is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or expired invitation",
+            )
+
     # Create the user
     user = create_user(
         username=username,
@@ -105,10 +120,17 @@ async def register(credentials: RegisterRequest):
         email=credentials.email,
     )
 
+    # Accept invitation and create friendship
+    if invitation:
+        accept_invitation(credentials.invite_token, user.id)
+        message = f"Account created. You are now connected with {invitation['inviter_username']}!"
+    else:
+        message = "Account created successfully"
+
     return RegisterResponse(
         user_id=user.id,
         username=user.username,
-        message="Account created successfully",
+        message=message,
     )
 
 
