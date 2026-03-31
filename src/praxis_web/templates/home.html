@@ -750,5 +750,16 @@
             closeShareModal();
         }
     });
+
+    // On page load, check if browser restored a filter value and re-fetch if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        const priorityFilter = document.querySelector('[name="priority"]');
+        if (priorityFilter && priorityFilter.value) {
+            htmx.ajax('GET', '/tasks/list?priority=' + priorityFilter.value, {
+                target: '#item-list',
+                swap: 'innerHTML'
+            });
+        }
+    });
 </script>
 {% endblock %}
