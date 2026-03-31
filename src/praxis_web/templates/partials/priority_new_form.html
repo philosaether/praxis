@@ -79,6 +79,16 @@
                     {% include "partials/type_fields/goal_fields.html" %}
                 </div>
 
+                <!-- Notes -->
+                <div class="property-row">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes"
+                              name="notes"
+                              rows="6"
+                              class="property-input"
+                              placeholder="Add notes... (supports Markdown)"></textarea>
+                </div>
+
                 <!-- Actions -->
                 <div class="property-actions">
                     <button type="submit" class="btn btn-primary">Create Priority</button>
@@ -92,18 +102,6 @@
                 <!-- Validation errors -->
                 <div id="property-errors" class="property-errors"></div>
             </form>
-        </div>
-    </div>
-
-    <!-- Notes Section (placeholder for new priority) -->
-    <div class="notes-section">
-        <div class="notes-header">
-            <h3>Notes</h3>
-        </div>
-        <div class="notes-content">
-            <div class="notes-display empty">
-                <p class="empty-notes">Save the priority first to add notes.</p>
-            </div>
         </div>
     </div>
 </div>

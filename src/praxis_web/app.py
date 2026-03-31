@@ -306,10 +306,10 @@ async def create_priority_submit(request: Request):
 
     priority = data["priority"]
 
-    # Return priority detail view and trigger list refresh
+    # Return priority view mode and trigger list refresh
     html_response = templates.TemplateResponse(
         request,
-        "partials/item_detail.html",
+        "partials/priority_view.html",
         data
     )
     # Include priority data in trigger for tree update
@@ -483,7 +483,7 @@ async def priority_delete(request: Request, priority_id: str):
 
 @app.get("/priorities/{priority_id}", response_class=HTMLResponse)
 async def priority_detail(request: Request, priority_id: str, from_task: str | None = None):
-    """HTMX partial: detail view for a single priority."""
+    """HTMX partial: view mode for a single priority."""
     async with api_client(request) as client:
         response = await client.get(f"/api/priorities/{priority_id}")
         if response.status_code == 404:
@@ -493,22 +493,34 @@ async def priority_detail(request: Request, priority_id: str, from_task: str | N
             )
         data = response.json()
 
-    # Also fetch edit data to get raw notes and all_priorities
-    async with api_client(request) as client:
-        edit_response = await client.get(f"/api/priorities/{priority_id}/edit")
-        if edit_response.status_code == 200:
-            edit_data = edit_response.json()
-            data["priority"]["notes_raw"] = edit_data["priority"].get("notes", "")
-            data["all_priorities"] = edit_data.get("all_priorities", [])
-            data["priority_statuses"] = edit_data.get("priority_statuses", [])
-            data["priority_types"] = edit_data.get("priority_types", [])
-
     # Pass from_task for back navigation
     data["from_task"] = from_task
 
     return templates.TemplateResponse(
         request,
-        "partials/item_detail.html",
+        "partials/priority_view.html",
+        data
+    )
+
+
+@app.get("/priorities/{priority_id}/edit", response_class=HTMLResponse)
+async def priority_edit(request: Request, priority_id: str):
+    """HTMX partial: edit mode for a single priority."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/priorities/{priority_id}/edit")
+        if response.status_code == 404:
+            return HTMLResponse(
+                content="<div class='error'>Priority not found</div>",
+                status_code=404
+            )
+        data = response.json()
+
+    from praxis_core.model import PriorityType
+    data["priority_types"] = [t.value for t in PriorityType]
+
+    return templates.TemplateResponse(
+        request,
+        "partials/priority_edit.html",
         data
     )
 
@@ -555,7 +567,7 @@ async def priority_change_type(request: Request, priority_id: str):
 
 @app.post("/priorities/{priority_id}/properties", response_class=HTMLResponse)
 async def priority_save_properties(request: Request, priority_id: str):
-    """Save priority properties and return updated properties section + OOB row update."""
+    """Save priority properties and return view mode + OOB row update."""
     form_data = await request.form()
 
     async with api_client(request) as client:
@@ -576,18 +588,10 @@ async def priority_save_properties(request: Request, priority_id: str):
             )
         data = response.json()
 
-    # Determine which properties template to use based on priority type
-    priority_type = data["priority"]["priority_type"]
-    template_name = f"partials/properties/{priority_type}_properties.html"
-
-    # Add priority_types for the type dropdown
-    from praxis_core.model import PriorityType
-    data["priority_types"] = [t.value for t in PriorityType]
-
-    # Render properties section
-    properties_html = templates.TemplateResponse(
+    # Render view mode (confirms save was successful)
+    view_html = templates.TemplateResponse(
         request,
-        template_name,
+        "partials/priority_view.html",
         data
     ).body.decode()
 
@@ -598,7 +602,7 @@ async def priority_save_properties(request: Request, priority_id: str):
         {"priority": data["priority"], "oob": True}
     ).body.decode()
 
-    return HTMLResponse(content=properties_html + row_html)
+    return HTMLResponse(content=view_html + row_html)
 
 
 @app.post("/priorities/{priority_id}/notes", response_class=HTMLResponse)

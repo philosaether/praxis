@@ -110,6 +110,7 @@ async def create_priority_full(
     status: Annotated[str, Form()] = "active",
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = "on",
     auto_assign_creator: Annotated[str | None, Form()] = None,
@@ -139,6 +140,7 @@ async def create_priority_full(
     # Set common fields
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
+    priority.notes = notes.strip() if notes else None
 
     # Set task assignment settings (checkboxes: "on" if checked, None if not)
     priority.auto_assign_owner = auto_assign_owner == "on"
@@ -427,6 +429,7 @@ async def update_priority_properties(
     name: Annotated[str, Form()],
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = None,
     auto_assign_creator: Annotated[str | None, Form()] = None,
@@ -445,7 +448,7 @@ async def update_priority_properties(
     parent_id: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
-    """Update priority properties (everything except notes)."""
+    """Update priority properties including notes."""
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)
     priority = graph.get(priority_id)
@@ -457,11 +460,11 @@ async def update_priority_properties(
     if not name.strip():
         return JSONResponse({"error": "Name is required"}, status_code=400)
 
-    # Update common fields (preserve notes)
+    # Update common fields
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    # Note: priority.notes is NOT updated here
+    priority.notes = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
     # Update task assignment settings (checkboxes: "on" if checked, None if not)
