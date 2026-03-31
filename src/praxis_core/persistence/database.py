@@ -1,11 +1,20 @@
 """Database connection and schema management."""
 
+import os
 import sqlite3
 from pathlib import Path
 
 
-DB_DIR = Path.home() / ".praxis"
-DB_PATH = DB_DIR / "praxis.db"
+def _get_db_path() -> Path:
+    """Get database path from environment or default."""
+    env_path = os.environ.get("PRAXIS_DB_PATH")
+    if env_path:
+        return Path(env_path)
+    return Path.home() / ".praxis" / "praxis.db"
+
+
+DB_PATH = _get_db_path()
+DB_DIR = DB_PATH.parent
 
 
 def get_connection() -> sqlite3.Connection:
