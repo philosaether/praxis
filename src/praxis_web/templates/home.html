@@ -6,27 +6,30 @@
 <div class="container">
     <!-- Mode Navigation (Icon Bar) -->
     <nav class="mode-nav" role="navigation" aria-label="View mode">
-        <button class="mode-nav-btn"
+        <button class="mode-nav-btn {% if default_mode == 'inbox' %}active{% endif %}"
                 id="inbox-nav-btn"
                 hx-get="/tasks/inbox"
                 hx-target="#item-list"
+                hx-push-url="/tasks/inbox"
                 onclick="setMode('inbox')"
                 title="Inbox">
             <span class="mode-nav-icon mode-nav-icon--inbox"></span>
         </button>
-        <button class="mode-nav-btn active"
+        <button class="mode-nav-btn {% if default_mode == 'tasks' %}active{% endif %}"
                 id="tasks-nav-btn"
                 hx-get="/tasks/list"
                 hx-target="#item-list"
                 hx-include="[name='priority']"
+                hx-push-url="/tasks"
                 onclick="setMode('tasks')"
                 title="Queue">
             <span class="mode-nav-icon mode-nav-icon--tasks"></span>
         </button>
-        <button class="mode-nav-btn"
+        <button class="mode-nav-btn {% if default_mode == 'priorities' %}active{% endif %}"
                 id="priorities-nav-btn"
                 hx-get="/priorities/list"
                 hx-target="#item-list"
+                hx-push-url="/priorities"
                 onclick="setMode('priorities')"
                 title="Priorities">
             <span class="mode-nav-icon mode-nav-icon--priorities"></span>
@@ -57,8 +60,8 @@
 
         <!-- Filters -->
         <div class="filters">
-            <!-- Task filters (shown by default) -->
-            <div id="task-filters" class="filter-group">
+            <!-- Task filters (shown for tasks mode) -->
+            <div id="task-filters" class="filter-group" style="display: {% if default_mode == 'tasks' %}flex{% else %}none{% endif %};">
                 <select name="priority"
                         hx-get="/tasks/list"
                         hx-target="#item-list">
@@ -69,8 +72,8 @@
                 </select>
             </div>
 
-            <!-- Priority filters (hidden by default) -->
-            <div id="priority-filters" class="filter-group" style="display: none;">
+            <!-- Priority filters (shown for priorities mode) -->
+            <div id="priority-filters" class="filter-group" style="display: {% if default_mode == 'priorities' %}flex{% else %}none{% endif %}">
                 <select name="type"
                         hx-get="/priorities/list"
                         hx-target="#item-list"
@@ -95,7 +98,7 @@
 
         <!-- Add New Item Bar -->
         <div class="add-new-bar">
-            <div id="add-task-bar" style="display: flex;">
+            <div id="add-task-bar" style="display: {% if default_mode in ['tasks', 'inbox'] %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/tasks/new"
                         hx-target="#detail-pane"
@@ -103,7 +106,7 @@
                     + New Task
                 </button>
             </div>
-            <div id="add-priority-bar" style="display: none;">
+            <div id="add-priority-bar" style="display: {% if default_mode == 'priorities' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/priorities/new"
                         hx-target="#detail-pane"
@@ -115,16 +118,24 @@
 
         <!-- Item List -->
         <div class="priority-list" id="item-list">
-            {% include "partials/task_rows.html" %}
+            {% if initial_list_html %}
+                {{ initial_list_html|safe }}
+            {% else %}
+                {% include "partials/task_rows.html" %}
+            {% endif %}
         </div>
     </div>
 
     <!-- Right Pane: Detail View -->
     <div class="right-pane" id="detail-pane">
-        <div class="empty-state">
-            <h3>Select an item</h3>
-            <p>Click an item on the left to view details</p>
-        </div>
+        {% if initial_detail_html %}
+            {{ initial_detail_html|safe }}
+        {% else %}
+            <div class="empty-state">
+                <h3>Select an item</h3>
+                <p>Click an item on the left to view details</p>
+            </div>
+        {% endif %}
     </div>
 
     <!-- Floating Action Button -->
@@ -155,8 +166,8 @@
 </div>
 
 <script>
-    // Current view mode
-    window.currentMode = 'tasks';
+    // Current view mode (set from server)
+    window.currentMode = '{{ default_mode }}';
 
     window.setMode = function(mode) {
         window.currentMode = mode;

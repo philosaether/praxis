@@ -46,6 +46,11 @@ def api_client(request: Request | None = None):
     return httpx.AsyncClient(base_url=API_URL, timeout=30.0, headers=headers)
 
 
+def is_htmx_request(request: Request) -> bool:
+    """Check if this is an HTMX request (partial) vs full page load."""
+    return request.headers.get("HX-Request") == "true"
+
+
 # -----------------------------------------------------------------------------
 # Auth Routes
 # -----------------------------------------------------------------------------
@@ -191,9 +196,13 @@ async def signup_submit(
 # Routes: Pages
 # -----------------------------------------------------------------------------
 
-@app.get("/", response_class=HTMLResponse)
-async def home_page(request: Request):
-    """Full page: two-pane layout with tasks as default view."""
+async def render_full_page(
+    request: Request,
+    mode: str = "tasks",
+    initial_list_html: str | None = None,
+    initial_detail_html: str | None = None,
+):
+    """Render full home page with specific mode and optional pre-rendered content."""
     # Check if user is logged in
     if not request.cookies.get(SESSION_COOKIE_NAME):
         return RedirectResponse(url="/login", status_code=302)
@@ -202,35 +211,86 @@ async def home_page(request: Request):
         # Fetch user info
         me_response = await client.get("/api/auth/me")
         if me_response.status_code != 200:
-            # Session invalid, redirect to login
             response = RedirectResponse(url="/login", status_code=302)
             response.delete_cookie(key=SESSION_COOKIE_NAME)
             return response
         user = me_response.json()
 
-        # Fetch both tasks and priorities for initial load
-        tasks_response = await client.get("/api/tasks")
+        # Always fetch priorities for dropdowns
         priorities_response = await client.get("/api/priorities")
-        tasks_data = tasks_response.json()
         priorities_data = priorities_response.json()
+
+        # Fetch tasks for task modes (needed for default list if no initial_list_html)
+        tasks_data = {"tasks": []}
+        if mode in ["tasks", "inbox"] and not initial_list_html:
+            if mode == "inbox":
+                tasks_response = await client.get("/api/tasks/inbox")
+            else:
+                tasks_response = await client.get("/api/tasks")
+            tasks_data = tasks_response.json()
 
     return templates.TemplateResponse(
         request,
         "home.html",
         {
             "user": user,
-            "tasks": tasks_data["tasks"],
+            "tasks": tasks_data.get("tasks", []),
             "priorities": priorities_data["priorities"],
             "priority_types": priorities_data["priority_types"],
-            "default_mode": "tasks",
+            "default_mode": mode,
+            "initial_list_html": initial_list_html,
+            "initial_detail_html": initial_detail_html,
         }
     )
 
 
-@app.get("/priorities", response_class=RedirectResponse)
-async def priorities_redirect():
-    """Redirect to home page."""
-    return RedirectResponse(url="/", status_code=302)
+@app.get("/", response_class=HTMLResponse)
+async def home_page(request: Request):
+    """Full page: two-pane layout with tasks as default view."""
+    return await render_full_page(request, mode="tasks")
+
+
+@app.get("/tasks", response_class=HTMLResponse)
+async def tasks_page(request: Request):
+    """Tasks queue view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        # Return just the task list partial
+        return await tasks_list_partial(request)
+    return await render_full_page(request, mode="tasks")
+
+
+@app.get("/tasks/inbox", response_class=HTMLResponse)
+async def tasks_inbox_page(request: Request):
+    """Inbox view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        # Return just the inbox list partial
+        async with api_client(request) as client:
+            response = await client.get("/api/tasks", params={"inbox": "true"})
+            data = response.json()
+        return templates.TemplateResponse(
+            request,
+            "partials/task_rows.html",
+            {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
+        )
+    return await render_full_page(request, mode="inbox")
+
+
+@app.get("/priorities", response_class=HTMLResponse)
+async def priorities_page(request: Request):
+    """Priorities view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        return await priorities_list_partial(request)
+
+    # For full page, render the priority list
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    list_html = templates.get_template("partials/priority_rows.html").render(
+        priorities=data["priorities"]
+    )
+
+    return await render_full_page(request, mode="priorities", initial_list_html=list_html)
 
 # -----------------------------------------------------------------------------
 # Routes: HTMX Partials - Priority List
@@ -483,7 +543,7 @@ async def priority_delete(request: Request, priority_id: str):
 
 @app.get("/priorities/{priority_id}", response_class=HTMLResponse)
 async def priority_detail(request: Request, priority_id: str, from_task: str | None = None):
-    """HTMX partial: view mode for a single priority."""
+    """Priority detail - full page or HTMX partial."""
     async with api_client(request) as client:
         response = await client.get(f"/api/priorities/{priority_id}")
         if response.status_code == 404:
@@ -496,10 +556,33 @@ async def priority_detail(request: Request, priority_id: str, from_task: str | N
     # Pass from_task for back navigation
     data["from_task"] = from_task
 
-    return templates.TemplateResponse(
+    # HTMX request - return partial
+    if is_htmx_request(request):
+        return templates.TemplateResponse(
+            request,
+            "partials/priority_view.html",
+            data
+        )
+
+    # Full page request - render with priority detail and list pre-loaded
+    detail_html = templates.get_template("partials/priority_view.html").render(
+        request=request, **data
+    )
+
+    # Also get priority list for left pane
+    async with api_client(request) as client:
+        list_response = await client.get("/api/priorities")
+        list_data = list_response.json()
+
+    list_html = templates.get_template("partials/priority_rows.html").render(
+        priorities=list_data["priorities"]
+    )
+
+    return await render_full_page(
         request,
-        "partials/priority_view.html",
-        data
+        mode="priorities",
+        initial_list_html=list_html,
+        initial_detail_html=detail_html
     )
 
 
@@ -655,19 +738,6 @@ async def tasks_list_partial(
     )
 
 
-@app.get("/tasks/inbox", response_class=HTMLResponse)
-async def tasks_inbox_partial(request: Request):
-    """HTMX partial: inbox tasks (no priority assigned)."""
-    async with api_client(request) as client:
-        response = await client.get("/api/tasks", params={"inbox": "true"})
-        data = response.json()
-
-    return templates.TemplateResponse(
-        request,
-        "partials/task_rows.html",
-        {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
-    )
-
 
 @app.get("/tasks/new", response_class=HTMLResponse)
 async def new_task_form(request: Request):
@@ -747,7 +817,7 @@ async def quick_add_task(request: Request):
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
 async def task_detail(request: Request, task_id: str):
-    """HTMX partial: view mode for a single task."""
+    """Task detail - full page or HTMX partial."""
     async with api_client(request) as client:
         response = await client.get(f"/api/tasks/{task_id}")
         if response.status_code == 404:
@@ -757,10 +827,22 @@ async def task_detail(request: Request, task_id: str):
             )
         data = response.json()
 
-    return templates.TemplateResponse(
+    # HTMX request - return partial
+    if is_htmx_request(request):
+        return templates.TemplateResponse(
+            request,
+            "partials/task_view.html",
+            data
+        )
+
+    # Full page request - render with task detail pre-loaded
+    detail_html = templates.get_template("partials/task_view.html").render(
+        request=request, **data
+    )
+    return await render_full_page(
         request,
-        "partials/task_view.html",
-        data
+        mode="tasks",
+        initial_detail_html=detail_html
     )
 
 

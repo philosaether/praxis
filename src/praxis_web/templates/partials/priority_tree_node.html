@@ -22,6 +22,7 @@
              hx-get="/priorities/{{ node.id }}"
              hx-target="#detail-pane"
              hx-swap="innerHTML"
+             hx-push-url="true"
              onclick="selectTreeNode(this)">
 
             {# Rank badge (only for roots with rank) #}

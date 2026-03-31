@@ -5,7 +5,8 @@
     <div class="task-content"
          hx-get="/tasks/{{ task.id }}"
          hx-target="#detail-pane"
-         hx-swap="innerHTML">
+         hx-swap="innerHTML"
+         hx-push-url="true">
         <div class="task-title">{{ task.name }}</div>
         <div class="meta">
             {% if task.score is defined %}
