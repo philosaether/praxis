@@ -646,11 +646,8 @@
                 // Refresh the priority list
                 htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
 
-                // Clear detail pane if showing deleted priority
-                const detailPane = document.getElementById('detail-pane');
-                if (detailPane.innerHTML.includes('data-priority-id="' + priorityId + '"')) {
-                    detailPane.innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
-                }
+                // Navigate to tree view
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
             } else {
                 console.error('Failed to delete priority');
             }
