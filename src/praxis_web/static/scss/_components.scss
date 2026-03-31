@@ -193,8 +193,16 @@
   list-style: none;
 
   li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.4rem 0;
     border-bottom: 1px solid $border;
+  }
+
+  .badge-wrapper {
+    flex-shrink: 0;
+    min-width: 6.5rem;
   }
 
   a {

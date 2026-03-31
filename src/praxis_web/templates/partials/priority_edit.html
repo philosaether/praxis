@@ -24,11 +24,10 @@
                 <select id="priority_type"
                         name="new_priority_type"
                         class="property-input type-select"
-                        hx-get="/priorities/{{ priority.id }}/edit?new_type=true"
+                        hx-post="/priorities/{{ priority.id }}/change-type"
                         hx-target="#detail-pane"
                         hx-swap="innerHTML"
-                        hx-trigger="change"
-                        hx-include="[name='name'], [name='status'], [name='parent_id'], [name='agent_context'], [name='notes']">
+                        hx-trigger="change">
                     {% for t in priority_types %}
                     <option value="{{ t }}" {% if t == priority.priority_type %}selected{% endif %}>
                         {{ t|title }}

@@ -144,13 +144,15 @@
         <ul class="links-list">
             {% for child in children %}
             <li>
+                <span class="badge-wrapper">
+                    <span class="type-badge {{ child.priority_type }} small">{{ child.priority_type|upper }}</span>
+                </span>
                 <a href="#"
                    hx-get="/priorities/{{ child.id }}"
                    hx-target="#detail-pane"
                    hx-swap="innerHTML">
                     {{ child.name }}
                 </a>
-                <span class="type-badge {{ child.priority_type }} small">{{ child.priority_type|upper }}</span>
             </li>
             {% endfor %}
         </ul>

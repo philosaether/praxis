@@ -397,8 +397,15 @@ a:hover {
   list-style: none;
 }
 .links-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.4rem 0;
   border-bottom: 1px solid #d0c5af;
+}
+.links-list .badge-wrapper {
+  flex-shrink: 0;
+  min-width: 6.5rem;
 }
 .links-list a {
   color: #735c00;

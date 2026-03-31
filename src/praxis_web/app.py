@@ -543,7 +543,7 @@ async def priority_tasks_panel(request: Request, priority_id: str):
 
 @app.post("/priorities/{priority_id}/change-type", response_class=HTMLResponse)
 async def priority_change_type(request: Request, priority_id: str):
-    """Change priority type and return updated properties form."""
+    """Change priority type and return updated edit form."""
     form_data = await request.form()
 
     async with api_client(request) as client:
@@ -555,14 +555,14 @@ async def priority_change_type(request: Request, priority_id: str):
             return HTMLResponse(content="<div class='error'>Failed to change type</div>", status_code=400)
         data = response.json()
 
-    priority_type = data["priority"]["priority_type"]
-    template_name = f"partials/properties/{priority_type}_properties.html"
+    # Add notes_raw for editing
+    data["priority"]["notes_raw"] = data["priority"].get("notes") or ""
 
     # Add priority_types to the data for the dropdown
     from praxis_core.model import PriorityType
     data["priority_types"] = [t.value for t in PriorityType]
 
-    return templates.TemplateResponse(request, template_name, data)
+    return templates.TemplateResponse(request, "partials/priority_edit.html", data)
 
 
 @app.post("/priorities/{priority_id}/properties", response_class=HTMLResponse)

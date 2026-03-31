@@ -80,8 +80,12 @@ def fmt_date(dt: datetime | None) -> str | None:
 
 
 def render_md(text: str) -> str:
-    """Render markdown text to HTML."""
-    return markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+    """Render markdown text to HTML.
+
+    Uses standard CommonMark behavior - blank lines separate paragraphs,
+    lists need blank line before them.
+    """
+    return markdown.markdown(text, extensions=["fenced_code", "tables"])
 
 
 def serialize_priority(

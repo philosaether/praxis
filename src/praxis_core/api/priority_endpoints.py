@@ -300,8 +300,11 @@ async def get_priority_for_edit(
     # Get shares for ownership display
     shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
 
+    priority_data = _serialize_priority(priority, current_entity_id=entity_id, shares=shares)
+    priority_data["notes_raw"] = priority.notes or ""
+
     return {
-        "priority": _serialize_priority(priority, current_entity_id=entity_id, shares=shares),
+        "priority": priority_data,
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_types": [t.value for t in PriorityType],
