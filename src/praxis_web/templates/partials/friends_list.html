@@ -1,0 +1,26 @@
+{# Friends list partial #}
+{# Expects: friends (list of friend dicts) #}
+
+{% for friend in friends %}
+<div class="friend-row" id="friend-row-{{ friend.id }}">
+    <div class="friend-info">
+        <span class="friend-name">{{ friend.username }}</span>
+        {% if friend.email %}
+        <span class="friend-email">{{ friend.email }}</span>
+        {% endif %}
+    </div>
+    <button class="btn btn-sm btn-danger"
+            hx-delete="/friends/{{ friend.id }}"
+            hx-target="#friend-row-{{ friend.id }}"
+            hx-swap="outerHTML"
+            hx-confirm="Remove {{ friend.username }} from your friends?"
+            title="Remove friend">
+        Remove
+    </button>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No friends yet</h3>
+    <p>Invite someone to share priorities with them</p>
+</div>
+{% endfor %}

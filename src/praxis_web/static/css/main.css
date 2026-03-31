@@ -160,7 +160,8 @@ a:hover {
   background: #ebe8e2;
 }
 .add-new-bar #add-task-bar,
-.add-new-bar #add-priority-bar {
+.add-new-bar #add-priority-bar,
+.add-new-bar #add-friend-bar {
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -224,6 +225,9 @@ a:hover {
 }
 .mode-nav-icon--priorities::before {
   content: "★";
+}
+.mode-nav-icon--friends::before {
+  content: "☺";
 }
 
 .mode-nav-label {
@@ -413,6 +417,56 @@ a:hover {
 }
 .links-list a:hover {
   text-decoration: underline;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
+  transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.friend-row:hover {
+  background: #ebe8e2;
+}
+.friend-row:last-child {
+  border-bottom: none;
+}
+
+.friend-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.friend-name {
+  font-size: 1rem;
+  color: #1b1c1a;
+  font-weight: 500;
+}
+
+.friend-email {
+  font-size: 0.85rem;
+  color: #7a7976;
+}
+
+.invite-modal {
+  max-width: 480px;
+}
+
+.invite-link-container {
+  display: flex;
+  gap: 0.5rem;
+}
+.invite-link-container input {
+  flex: 1;
+}
+
+.invite-instructions {
+  font-size: 0.85rem;
+  color: #7a7976;
+  margin-top: 0.5rem;
 }
 
 .priority-list {
@@ -1468,6 +1522,22 @@ textarea.property-input {
 }
 .login-footer a:hover {
   color: #d4af37;
+}
+
+.invite-message {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  color: #1b1c1a;
+}
+.invite-message strong {
+  color: #735c00;
+}
+
+.invite-note {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #4a4a48;
+  font-size: 0.85rem;
 }
 
 .fab {

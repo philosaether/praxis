@@ -1,21 +1,48 @@
 {% extends "base.html" %}
 
-{% block title %}Sign Up{% endblock %}
+{% block title %}Invitation{% endblock %}
 
 {% block body %}
 <div class="login-container">
     <div class="login-card">
         <h1>Praxis</h1>
-        <p class="login-subtitle">Create an account</p>
+
+        {% if not valid %}
+        <p class="login-subtitle">Invalid Invitation</p>
+        <div class="login-error">{{ error }}</div>
+        <p class="login-footer">
+            <a href="/login">Sign in</a> or <a href="/signup">create an account</a>
+        </p>
+
+        {% elif logged_in %}
+        <p class="login-subtitle">You're Invited!</p>
+        <p class="invite-message">
+            <strong>{{ inviter_username }}</strong> wants to connect with you on Praxis.
+        </p>
+        <p class="invite-note">
+            You're already logged in. To accept this invitation, please log out first
+            and create a new account using the invite link.
+        </p>
+        <p class="login-footer">
+            <a href="/logout">Log out</a> | <a href="/">Go to Praxis</a>
+        </p>
+
+        {% else %}
+        <p class="login-subtitle">You're Invited!</p>
+        <p class="invite-message">
+            <strong>{{ inviter_username }}</strong> wants to connect with you on Praxis.
+        </p>
+        <p class="invite-note">
+            Create an account to get started. You'll automatically be connected as friends.
+        </p>
 
         {% if error %}
         <div class="login-error">{{ error }}</div>
         {% endif %}
 
         <form method="POST" action="/signup" class="login-form">
-            {% if invite_token %}
-            <input type="hidden" name="invite_token" value="{{ invite_token }}">
-            {% endif %}
+            <input type="hidden" name="invite_token" value="{{ token }}">
+
             <div class="form-group">
                 <label for="username">Username</label>
                 <input
@@ -62,6 +89,7 @@
         <p class="login-footer">
             Already have an account? <a href="/login">Sign in</a>
         </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

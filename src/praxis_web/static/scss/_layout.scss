@@ -144,7 +144,8 @@
   background: $bg-tertiary;
 
   #add-task-bar,
-  #add-priority-bar {
+  #add-priority-bar,
+  #add-friend-bar {
     display: flex;
     gap: $spacing-sm;
     align-items: center;

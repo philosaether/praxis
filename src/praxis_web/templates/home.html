@@ -34,6 +34,15 @@
                 title="Priorities">
             <span class="mode-nav-icon mode-nav-icon--priorities"></span>
         </button>
+        <button class="mode-nav-btn {% if default_mode == 'friends' %}active{% endif %}"
+                id="friends-nav-btn"
+                hx-get="/friends/list"
+                hx-target="#item-list"
+                hx-push-url="/friends"
+                onclick="setMode('friends')"
+                title="Friends">
+            <span class="mode-nav-icon mode-nav-icon--friends"></span>
+        </button>
     </nav>
 
     <!-- Left Pane -->
@@ -114,6 +123,11 @@
                     + New Priority
                 </button>
             </div>
+            <div id="add-friend-bar" style="display: {% if default_mode == 'friends' %}flex{% else %}none{% endif %};">
+                <button class="btn btn-primary btn-sm" onclick="openInviteModal()">
+                    + Invite Friend
+                </button>
+            </div>
         </div>
 
         <!-- Item List -->
@@ -149,6 +163,9 @@
 <!-- Share Priority Modal -->
 {% include "partials/share_priority_modal.html" %}
 
+<!-- Invite Friend Modal -->
+{% include "partials/invite_modal.html" %}
+
 <!-- Confirmation Modal -->
 {% include "partials/confirm_modal.html" %}
 
@@ -176,6 +193,7 @@
         document.getElementById('inbox-nav-btn').classList.toggle('active', mode === 'inbox');
         document.getElementById('tasks-nav-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
+        document.getElementById('friends-nav-btn').classList.toggle('active', mode === 'friends');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
@@ -185,15 +203,20 @@
         // Toggle add-new bar visibility
         document.getElementById('add-task-bar').style.display = (mode === 'tasks' || mode === 'inbox') ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
+        document.getElementById('add-friend-bar').style.display = mode === 'friends' ? 'flex' : 'none';
 
         // Update FAB color based on mode
         const fab = document.getElementById('fab-button');
         fab.classList.toggle('fab-priority', mode === 'priorities');
+        fab.classList.toggle('fab-friends', mode === 'friends');
 
         // Update detail pane based on mode
         if (mode === 'priorities') {
             // Load tree view in detail pane
             htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+        } else if (mode === 'friends') {
+            // Friends mode: left-pane only, clear detail pane
+            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
         } else {
             // Clear detail pane for tasks/inbox mode
             document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
@@ -765,8 +788,67 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeShareModal();
+            closeInviteModal();
         }
     });
+
+    // -------------------------------------------------------------------------
+    // Invite Friend Modal
+    // -------------------------------------------------------------------------
+
+    window.openInviteModal = function() {
+        document.getElementById('invite-modal-backdrop').classList.add('open');
+        document.getElementById('invite-result').style.display = 'none';
+        document.getElementById('create-invite-btn').disabled = false;
+        document.getElementById('create-invite-btn').textContent = 'Create Invite';
+    };
+
+    window.closeInviteModal = function() {
+        document.getElementById('invite-modal-backdrop').classList.remove('open');
+    };
+
+    window.createInvite = function() {
+        document.getElementById('create-invite-btn').disabled = true;
+        document.getElementById('create-invite-btn').textContent = 'Creating...';
+
+        fetch('/invites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.token) {
+                // Show the invite link
+                const inviteUrl = window.location.origin + '/invite/' + data.token;
+                document.getElementById('invite-link').value = inviteUrl;
+                document.getElementById('invite-result').style.display = 'block';
+                document.getElementById('create-invite-btn').textContent = 'Create Another';
+                document.getElementById('create-invite-btn').disabled = false;
+            } else {
+                alert(data.error || 'Failed to create invite');
+                document.getElementById('create-invite-btn').textContent = 'Create Invite';
+                document.getElementById('create-invite-btn').disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error('Failed to create invite:', err);
+            alert('Failed to create invite');
+            document.getElementById('create-invite-btn').textContent = 'Create Invite';
+            document.getElementById('create-invite-btn').disabled = false;
+        });
+    };
+
+    window.copyInviteLink = function() {
+        const linkInput = document.getElementById('invite-link');
+        linkInput.select();
+        document.execCommand('copy');
+        // Brief feedback
+        const btn = linkInput.nextElementSibling;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    };
 
     // On page load, check if browser restored a filter value and re-fetch if needed
     document.addEventListener('DOMContentLoaded', function() {

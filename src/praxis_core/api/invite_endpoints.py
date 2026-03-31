@@ -21,19 +21,19 @@ router = APIRouter()
 # -----------------------------------------------------------------------------
 
 class CreateInviteRequest(BaseModel):
-    email: str
+    email: str | None = None
 
 
 class InviteResponse(BaseModel):
     id: str
     token: str
-    email: str
+    email: str | None
     expires_at: str
 
 
 class InviteListItem(BaseModel):
     id: str
-    email: str
+    email: str | None
     status: str
     created_at: str
     expires_at: str
@@ -58,9 +58,7 @@ async def create_invite(
     Create an invitation to add a friend.
     Returns a token that can be shared with the invitee.
     """
-    email = request.email.strip().lower()
-    if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="Invalid email address")
+    email = request.email.strip().lower() if request.email else None
 
     invitation = create_invitation(
         inviter_user_id=user.id,

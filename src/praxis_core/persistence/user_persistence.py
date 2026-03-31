@@ -72,7 +72,7 @@ FRIENDS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS invitations (
     id TEXT PRIMARY KEY,
     inviter_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
+    email TEXT,  -- Optional, for future invite-by-email feature
     token TEXT NOT NULL UNIQUE,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -457,7 +457,7 @@ def _row_to_session(row) -> Session:
 
 def create_invitation(
     inviter_user_id: int,
-    email: str,
+    email: str | None = None,
     expires_in_days: int = 7,
 ) -> dict:
     """
@@ -469,6 +469,7 @@ def create_invitation(
     token = str(uuid.uuid4())
     now = datetime.now()
     expires_at = now + timedelta(days=expires_in_days)
+    clean_email = email.lower().strip() if email else None
 
     with get_connection() as conn:
         conn.execute(
@@ -476,13 +477,13 @@ def create_invitation(
             INSERT INTO invitations (id, inviter_user_id, email, token, status, created_at, expires_at)
             VALUES (?, ?, ?, ?, 'pending', ?, ?)
             """,
-            (invitation_id, inviter_user_id, email.lower().strip(), token, now.isoformat(), expires_at.isoformat())
+            (invitation_id, inviter_user_id, clean_email, token, now.isoformat(), expires_at.isoformat())
         )
 
     return {
         "id": invitation_id,
         "token": token,
-        "email": email.lower().strip(),
+        "email": clean_email,
         "expires_at": expires_at.isoformat(),
     }
 
