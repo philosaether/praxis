@@ -518,6 +518,12 @@ a:hover {
   font-size: 0.7rem;
   cursor: help;
 }
+.task-row .type-badge {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .quick-done {
   width: 28px;
