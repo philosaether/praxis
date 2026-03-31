@@ -53,29 +53,9 @@
         </div>
         {% endif %}
 
-        <!-- Agent Context (if any) -->
-        {% if priority.agent_context %}
-        <div class="property-row">
-            <label>Context</label>
-            <div class="property-display">{{ priority.agent_context }}</div>
-        </div>
-        {% endif %}
-
         <!-- Type-specific fields (read-only) -->
-        {% if priority.priority_type == 'value' %}
-            {% if priority.success_looks_like %}
-            <div class="property-row">
-                <label>Success Looks Like</label>
-                <div class="property-display">{{ priority.success_looks_like }}</div>
-            </div>
-            {% endif %}
-            {% if priority.obsolete_when %}
-            <div class="property-row">
-                <label>Obsolete When</label>
-                <div class="property-display">{{ priority.obsolete_when }}</div>
-            </div>
-            {% endif %}
-        {% elif priority.priority_type == 'goal' %}
+        {# Values have no type-specific fields - just notes #}
+        {% if priority.priority_type == 'goal' %}
             {% if priority.success_criteria %}
             <div class="property-row">
                 <label>Success Criteria</label>
