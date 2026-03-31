@@ -178,10 +178,10 @@ async def create_priority_full(
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     return {
-        "priority": _serialize_priority(priority, render_markdown=True),
-        "parents": [_serialize_priority(graph.get(pid)) for pid in sorted(parent_ids) if graph.get(pid)],
-        "children": [_serialize_priority(graph.get(cid)) for cid in sorted(child_ids) if graph.get(cid)],
-        "all_priorities": [_serialize_priority(p) for p in all_priorities],
+        "priority": _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id),
+        "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
+        "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
+        "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_statuses": [s.value for s in PriorityStatus],
     }
 

@@ -363,18 +363,22 @@
 
     // Listen for priority creation to refresh the list and update tree
     document.body.addEventListener('priorityCreated', function(event) {
-        // Refresh the priority list
-        htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+        const detail = event.detail;
+        const priorityId = detail?.id;
+        const parentId = detail?.parent_id;
+
+        // Refresh the priority list, then select the new row
+        htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'})
+            .then(() => {
+                if (priorityId) {
+                    const newRow = document.getElementById('priority-row-' + priorityId);
+                    if (newRow) selectRow(newRow);
+                }
+            });
 
         // If in priorities mode, also add to the tree view
-        if (window.currentMode === 'priorities') {
-            const detail = event.detail;
-            const priorityId = detail?.id;
-            const parentId = detail?.parent_id;
-
-            if (priorityId) {
-                addPriorityToTree(priorityId, parentId);
-            }
+        if (window.currentMode === 'priorities' && priorityId) {
+            addPriorityToTree(priorityId, parentId);
         }
     });
 
