@@ -11,7 +11,7 @@
             {% if task.priority_id and task.priority_name %}
                 <a href="#"
                    class="type-badge {{ task.priority_type }}"
-                   hx-get="/priorities/{{ task.priority_id }}"
+                   hx-get="/priorities/{{ task.priority_id }}?from_task={{ task.id }}"
                    hx-target="#detail-pane"
                    hx-swap="innerHTML">
                     {{ task.priority_name }}

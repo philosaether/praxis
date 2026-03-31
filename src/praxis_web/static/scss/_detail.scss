@@ -26,13 +26,13 @@
   font-family: $font-family-display;
   font-size: $font-size-xl;
   font-weight: 600;
-  margin: 0 0 $spacing-sm 0;
+  margin: 0 0 $spacing-lg 0;
   color: $text-primary;
   line-height: $line-height-tight;
 }
 
 .detail-priority {
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-xl;
 
   .type-badge {
     text-decoration: none;

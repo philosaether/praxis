@@ -482,7 +482,7 @@ async def priority_delete(request: Request, priority_id: str):
 # -----------------------------------------------------------------------------
 
 @app.get("/priorities/{priority_id}", response_class=HTMLResponse)
-async def priority_detail(request: Request, priority_id: str):
+async def priority_detail(request: Request, priority_id: str, from_task: str | None = None):
     """HTMX partial: detail view for a single priority."""
     async with api_client(request) as client:
         response = await client.get(f"/api/priorities/{priority_id}")
@@ -502,6 +502,9 @@ async def priority_detail(request: Request, priority_id: str):
             data["all_priorities"] = edit_data.get("all_priorities", [])
             data["priority_statuses"] = edit_data.get("priority_statuses", [])
             data["priority_types"] = edit_data.get("priority_types", [])
+
+    # Pass from_task for back navigation
+    data["from_task"] = from_task
 
     return templates.TemplateResponse(
         request,

@@ -4,8 +4,17 @@
 
 <div class="detail-view">
     {% if priority %}
-    <!-- Back to tree link for priorities -->
+    <!-- Back link for priorities -->
     <div class="detail-nav">
+        {% if from_task %}
+        <a href="#"
+           hx-get="/tasks/{{ from_task }}"
+           hx-target="#detail-pane"
+           hx-swap="innerHTML"
+           class="back-link">
+            ← Back to Task
+        </a>
+        {% else %}
         <a href="#"
            hx-get="/priorities/tree-pane"
            hx-target="#detail-pane"
@@ -13,6 +22,7 @@
            class="back-link">
             ← Back to Tree
         </a>
+        {% endif %}
     </div>
     {% endif %}
 
