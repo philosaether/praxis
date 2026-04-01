@@ -43,6 +43,35 @@ CREATE INDEX IF NOT EXISTS idx_tasks_entity ON tasks(entity_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);  -- deprecated
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
+
+-- Tags (user-scoped labels for tasks and priorities)
+CREATE TABLE IF NOT EXISTS tags (
+    id TEXT PRIMARY KEY,
+    entity_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(entity_id, name)
+);
+CREATE INDEX IF NOT EXISTS idx_tags_entity ON tags(entity_id);
+
+-- Junction table: task <-> tag (many-to-many)
+CREATE TABLE IF NOT EXISTS task_tags (
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (task_id, tag_id)
+);
+CREATE INDEX IF NOT EXISTS idx_task_tags_task ON task_tags(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_tags_tag ON task_tags(tag_id);
+
+-- Junction table: priority <-> tag (many-to-many)
+CREATE TABLE IF NOT EXISTS priority_tags (
+    priority_id TEXT NOT NULL REFERENCES priorities(id) ON DELETE CASCADE,
+    tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (priority_id, tag_id)
+);
+CREATE INDEX IF NOT EXISTS idx_priority_tags_priority ON priority_tags(priority_id);
+CREATE INDEX IF NOT EXISTS idx_priority_tags_tag ON priority_tags(tag_id);
 """
 
 
@@ -247,6 +276,7 @@ def list_tasks(
     user_id: int | None = None,  # deprecated, use entity_id
     inbox_only: bool = False,
     assigned_to: int | None = None,  # Filter by assigned user
+    tag_names: list[str] | None = None,  # Filter by tag names
 ) -> list[Task]:
     """List tasks with optional filters. Done tasks sorted to bottom.
 
@@ -254,15 +284,29 @@ def list_tasks(
     - Tasks assigned to the user (from any entity)
     - OR unassigned tasks owned by the user's entity
     - OR tasks created by the user (so they see tasks they made on shared priorities)
+
+    tag_names: If provided, only return tasks that have at least one of these tags.
     """
     ensure_schema()
     with get_connection() as conn:
-        query = """
-            SELECT t.*, p.name as priority_name, p.priority_type as priority_type
-            FROM tasks t
-            LEFT JOIN priorities p ON t.priority_id = p.id
-            WHERE 1=1
-        """
+        # Base query - may need additional JOINs for tag filtering
+        if tag_names:
+            # Join with task_tags and tags to filter by tag name
+            query = """
+                SELECT DISTINCT t.*, p.name as priority_name, p.priority_type as priority_type
+                FROM tasks t
+                LEFT JOIN priorities p ON t.priority_id = p.id
+                JOIN task_tags tt ON t.id = tt.task_id
+                JOIN tags tg ON tt.tag_id = tg.id
+                WHERE 1=1
+            """
+        else:
+            query = """
+                SELECT t.*, p.name as priority_name, p.priority_type as priority_type
+                FROM tasks t
+                LEFT JOIN priorities p ON t.priority_id = p.id
+                WHERE 1=1
+            """
         params = []
 
         # If both entity_id and assigned_to provided, use combined filter for queue
@@ -293,6 +337,12 @@ def list_tasks(
             params.append(status.value)
         elif not include_done:
             query += " AND t.status NOT IN ('done', 'dropped')"
+
+        # Tag filter
+        if tag_names:
+            placeholders = ",".join("?" * len(tag_names))
+            query += f" AND tg.name IN ({placeholders})"
+            params.extend(tag_names)
 
         # Sort: active tasks first (by created_at), then done tasks
         query += """ ORDER BY

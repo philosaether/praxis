@@ -157,8 +157,23 @@ $env-production-color: $accent; // Gold (default)
 
 .filter-group {
   display: flex;
-  gap: $spacing-md;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
   align-items: center;
+
+  select {
+    min-width: 100px;
+    max-width: 150px;
+  }
+}
+
+.filter-clear {
+  opacity: 0.7;
+  font-size: $font-size-xs;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 // -----------------------------------------------------------------------------

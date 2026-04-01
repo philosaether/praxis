@@ -73,12 +73,37 @@
             <div id="task-filters" class="filter-group" style="display: {% if default_mode == 'tasks' %}flex{% else %}none{% endif %};">
                 <select name="priority"
                         hx-get="/tasks/list"
-                        hx-target="#item-list">
+                        hx-target="#item-list"
+                        hx-include="#task-filters select, #task-filters input">
                     <option value="">All Priorities</option>
                     {% for p in priorities %}
                     <option value="{{ p.id }}">{{ p.name }}</option>
                     {% endfor %}
                 </select>
+
+                <select name="tag"
+                        hx-get="/tasks/list"
+                        hx-target="#item-list"
+                        hx-include="#task-filters select, #task-filters input">
+                    <option value="">All Tags</option>
+                    {% for t in user_tags %}
+                    <option value="{{ t.name }}">{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="status"
+                        hx-get="/tasks/list"
+                        hx-target="#item-list"
+                        hx-include="#task-filters select, #task-filters input">
+                    <option value="">All Statuses</option>
+                    <option value="queued">Queued</option>
+                    <option value="done">Done</option>
+                </select>
+
+                <button type="button"
+                        class="btn btn-sm filter-clear"
+                        onclick="clearTaskFilters()"
+                        title="Clear filters">Clear</button>
             </div>
 
             <!-- Priority filters (shown for priorities mode) -->
@@ -859,6 +884,25 @@
         setTimeout(() => { btn.textContent = originalText; }, 1500);
     };
 
+    // -------------------------------------------------------------------------
+    // Task Filters
+    // -------------------------------------------------------------------------
+
+    window.clearTaskFilters = function() {
+        // Reset all filter dropdowns
+        const taskFilters = document.getElementById('task-filters');
+        if (taskFilters) {
+            taskFilters.querySelectorAll('select').forEach(select => {
+                select.value = '';
+            });
+        }
+        // Refresh the task list without filters
+        htmx.ajax('GET', '/tasks/list', {
+            target: '#item-list',
+            swap: 'innerHTML'
+        });
+    };
+
     // On page load, check if browser restored a filter value and re-fetch if needed
     document.addEventListener('DOMContentLoaded', function() {
         const priorityFilter = document.querySelector('[name="priority"]');
@@ -866,6 +910,77 @@
             htmx.ajax('GET', '/tasks/list?priority=' + priorityFilter.value, {
                 target: '#item-list',
                 swap: 'innerHTML'
+            });
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // Tag Input Handling
+    // -------------------------------------------------------------------------
+
+    window.handleTagInputKey = function(event, input) {
+        const suggestions = input.parentElement.querySelector('.tag-suggestions');
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const value = input.value.trim();
+            if (value) {
+                addTagToItem(input, value);
+            }
+        } else if (event.key === 'Escape') {
+            input.value = '';
+            if (suggestions) {
+                suggestions.innerHTML = '';
+            }
+        }
+    };
+
+    window.selectTagSuggestion = function(element, tagName) {
+        // Find the input container
+        const suggestionsDiv = element.closest('.tag-suggestions');
+        const inputContainer = suggestionsDiv.parentElement;
+        const input = inputContainer.querySelector('.tag-input');
+
+        addTagToItem(input, tagName);
+    };
+
+    window.addTagToItem = function(input, tagName) {
+        const taskId = input.dataset.taskId;
+        const priorityId = input.dataset.priorityId;
+        const suggestionsDiv = input.parentElement.querySelector('.tag-suggestions');
+
+        let url, targetId;
+
+        if (taskId) {
+            url = '/tasks/' + taskId + '/tags';
+            targetId = 'task-tags-' + taskId;
+        } else if (priorityId) {
+            url = '/priorities/' + priorityId + '/tags';
+            targetId = 'priority-tags-' + priorityId;
+        } else {
+            console.error('No task or priority ID found for tag input');
+            return;
+        }
+
+        // Submit via HTMX
+        htmx.ajax('POST', url, {
+            target: '#' + targetId,
+            swap: 'innerHTML',
+            values: { name: tagName }
+        });
+
+        // Clear input and suggestions
+        input.value = '';
+        if (suggestionsDiv) {
+            suggestionsDiv.innerHTML = '';
+        }
+    };
+
+    // Close tag suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.tag-input-container')) {
+            document.querySelectorAll('.tag-suggestions').forEach(s => {
+                s.innerHTML = '';
             });
         }
     });

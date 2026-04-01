@@ -1,0 +1,6 @@
+{# Task tags list - just the chips, for HTMX swapping #}
+{# Expects: tags (list), task_id, removable (bool) #}
+
+{% for tag in tags %}
+{% include "partials/components/tag_chip.html" with context %}
+{% endfor %}

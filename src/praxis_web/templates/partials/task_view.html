@@ -21,6 +21,35 @@
             {% endif %}
         </div>
 
+        <!-- Tags -->
+        <div class="task-tags-section">
+            <div id="task-tags-{{ task.id }}" class="task-tags"
+                 hx-get="/tasks/{{ task.id }}/tags"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                {# Tags loaded via HTMX #}
+            </div>
+            {% if task.can_edit %}
+            <div class="tag-input-container">
+                <input type="text"
+                       class="tag-input"
+                       placeholder="Add tag..."
+                       autocomplete="off"
+                       hx-get="/tags/search"
+                       hx-trigger="keyup changed delay:200ms, focus"
+                       hx-target="#tag-suggestions-task-{{ task.id }}"
+                       hx-swap="innerHTML"
+                       name="q"
+                       data-task-id="{{ task.id }}"
+                       onkeydown="handleTagInputKey(event, this)">
+                <div id="tag-suggestions-task-{{ task.id }}"
+                     class="tag-suggestions"
+                     data-task-id="{{ task.id }}">
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Due Date (display) -->
         {% if task.due_date %}
         <div class="property-row">

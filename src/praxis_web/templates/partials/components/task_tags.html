@@ -1,0 +1,15 @@
+{# Task tags container - shows existing tags + input for adding more #}
+{# Expects: tags (list), task_id, can_edit (bool) #}
+
+<div class="task-tags-container">
+    <div id="task-tags-{{ task_id }}" class="task-tags">
+        {% for tag in tags %}
+        {% include "partials/components/tag_chip.html" with context %}
+        {% endfor %}
+    </div>
+
+    {% if can_edit %}
+    {% set context_id = "task-" ~ task_id %}
+    {% include "partials/components/tag_input.html" with context %}
+    {% endif %}
+</div>
