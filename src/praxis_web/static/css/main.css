@@ -308,6 +308,10 @@ a:hover {
   letter-spacing: 0.08em;
   font-family: "Newsreader", Georgia, "Times New Roman", serif;
 }
+.type-badge.initiative {
+  background: #d6e5f5;
+  color: #2a5082;
+}
 .type-badge.value {
   background: #d4edda;
   color: #2e5a30;
@@ -861,6 +865,10 @@ textarea.property-input {
 }
 .share-status .share-list li {
   margin-bottom: 0.25rem;
+}
+
+.initiative-properties {
+  border-left: 3px solid #2a5082;
 }
 
 .value-properties {
@@ -1565,10 +1573,10 @@ textarea.property-input {
   transform: scale(0.95);
 }
 .fab.fab-priority {
-  background: linear-gradient(135deg, #5c3d7a 0%, #7a5699 100%);
+  background: linear-gradient(135deg, #2a5082 0%, #4a7ab5 100%);
 }
 .fab.fab-priority:hover {
-  background: linear-gradient(135deg, #4a3163 0%, #5c3d7a 100%);
+  background: linear-gradient(135deg, #1e3d63 0%, #2a5082 100%);
 }
 
 .modal-backdrop {

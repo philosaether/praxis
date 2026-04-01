@@ -12,6 +12,7 @@ from praxis_core.model import (
     Value,
     Goal,
     Practice,
+    Initiative,
     User,
 )
 from praxis_core.api.auth import get_current_user_optional
@@ -67,20 +68,22 @@ def _generate_priority_id(name: str, graph) -> str:
 def _create_priority_by_type(priority_type: str, id: str, name: str, entity_id: str | None = None):
     """Create a priority instance of the appropriate subclass."""
     now = datetime.now()
-    if priority_type == "value":
+    if priority_type == "initiative":
+        return Initiative(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
+    elif priority_type == "value":
         return Value(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     elif priority_type == "goal":
         return Goal(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     elif priority_type == "practice":
         return Practice(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     else:
-        # Default to Goal
-        return Goal(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
+        # Default to Initiative
+        return Initiative(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
 
 
 @router.post("")
 async def create_priority_endpoint(
-    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "goal",
+    new_priority_type: Annotated[str, Form(alias="new-priority-type")] = "initiative",
     user: User | None = Depends(get_current_user_optional),
 ):
     """Create a new priority with default values (legacy endpoint)."""
@@ -105,7 +108,7 @@ async def create_priority_endpoint(
 
 @router.post("/create")
 async def create_priority_full(
-    priority_type: Annotated[str, Form()] = "goal",
+    priority_type: Annotated[str, Form()] = "initiative",
     name: Annotated[str, Form()] = "",
     status: Annotated[str, Form()] = "active",
     parent_id: Annotated[str | None, Form()] = None,

@@ -391,7 +391,7 @@ async def new_priority_form(request: Request):
 
 
 @app.get("/priorities/new/fields", response_class=HTMLResponse)
-async def priority_type_fields(request: Request, priority_type: str = "goal"):
+async def priority_type_fields(request: Request, priority_type: str = "initiative"):
     """Return type-specific fields for the selected priority type."""
     template_name = f"partials/type_fields/{priority_type}_fields.html"
     return templates.TemplateResponse(request, template_name, {})
@@ -474,7 +474,7 @@ async def quick_add_priority(request: Request):
 
 
 @app.get("/priorities/quick-add/fields", response_class=HTMLResponse)
-async def quick_add_priority_fields(request: Request, priority_type: str = "goal"):
+async def quick_add_priority_fields(request: Request, priority_type: str = "initiative"):
     """Return type-specific fields for quick-add modal."""
     template_name = f"partials/type_fields/{priority_type}_fields.html"
     return templates.TemplateResponse(request, template_name, {})
