@@ -1234,12 +1234,14 @@ async def add_task_tag(request: Request, task_id: str):
         )
         data = response.json()
 
-    # Return updated tags list
-    return templates.TemplateResponse(
+    # Return updated tags list with trigger to refresh filter dropdown
+    html_response = templates.TemplateResponse(
         request,
         "partials/components/task_tags_list.html",
         {"tags": data.get("tags", []), "task_id": task_id, "removable": True}
     )
+    html_response.headers["HX-Trigger"] = "tagCreated"
+    return html_response
 
 
 @app.delete("/tasks/{task_id}/tags/{tag_id}", response_class=HTMLResponse)
@@ -1273,12 +1275,14 @@ async def add_priority_tag(request: Request, priority_id: str):
         )
         data = response.json()
 
-    # Return updated tags list
-    return templates.TemplateResponse(
+    # Return updated tags list with trigger to refresh filter dropdown
+    html_response = templates.TemplateResponse(
         request,
         "partials/components/priority_tags_list.html",
         {"tags": data.get("tags", []), "priority_id": priority_id, "removable": True}
     )
+    html_response.headers["HX-Trigger"] = "tagCreated"
+    return html_response
 
 
 @app.delete("/priorities/{priority_id}/tags/{tag_id}", response_class=HTMLResponse)
@@ -1293,4 +1297,36 @@ async def remove_priority_tag(request: Request, priority_id: str, tag_id: str):
         request,
         "partials/components/priority_tags_list.html",
         {"tags": data.get("tags", []), "priority_id": priority_id, "removable": True}
+    )
+
+
+# -----------------------------------------------------------------------------
+# Filter Options (for dynamic dropdown refresh)
+# -----------------------------------------------------------------------------
+
+@app.get("/filters/priorities", response_class=HTMLResponse)
+async def filter_priority_options(request: Request, selected: str | None = None):
+    """Return priority filter options for dropdown refresh."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/components/filter_priority_options.html",
+        {"priorities": data.get("priorities", []), "selected": selected}
+    )
+
+
+@app.get("/filters/tags", response_class=HTMLResponse)
+async def filter_tag_options(request: Request, selected: str | None = None):
+    """Return tag filter options for dropdown refresh."""
+    async with api_client(request) as client:
+        response = await client.get("/api/tags")
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/components/filter_tag_options.html",
+        {"user_tags": data.get("tags", []), "selected": selected}
     )

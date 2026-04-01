@@ -103,6 +103,7 @@
                         <div class="filter-row">
                             <label>Priority</label>
                             <select name="priority"
+                                    id="filter-priority-select"
                                     hx-get="/tasks/list"
                                     hx-target="#item-list"
                                     hx-include="#task-filters select, #task-filters input"
@@ -116,6 +117,7 @@
                         <div class="filter-row">
                             <label>Tag</label>
                             <select name="tag"
+                                    id="filter-tag-select"
                                     hx-get="/tasks/list"
                                     hx-target="#item-list"
                                     hx-include="#task-filters select, #task-filters input"
@@ -1000,6 +1002,29 @@
         if (priorityFilter && priorityFilter.value) {
             htmx.ajax('GET', '/tasks/list?priority=' + priorityFilter.value, {
                 target: '#item-list',
+                swap: 'innerHTML'
+            });
+        }
+    });
+
+    // Refresh filter dropdowns when priorities/tags are created
+    document.body.addEventListener('priorityCreated', function() {
+        const select = document.getElementById('filter-priority-select');
+        if (select) {
+            const currentValue = select.value;
+            htmx.ajax('GET', '/filters/priorities?selected=' + encodeURIComponent(currentValue), {
+                target: '#filter-priority-select',
+                swap: 'innerHTML'
+            });
+        }
+    });
+
+    document.body.addEventListener('tagCreated', function() {
+        const select = document.getElementById('filter-tag-select');
+        if (select) {
+            const currentValue = select.value;
+            htmx.ajax('GET', '/filters/tags?selected=' + encodeURIComponent(currentValue), {
+                target: '#filter-tag-select',
                 swap: 'innerHTML'
             });
         }
