@@ -157,8 +157,144 @@ $env-production-color: $accent; // Gold (default)
 
 .filter-group {
   display: flex;
-  gap: $spacing-md;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
   align-items: center;
+
+  select {
+    min-width: 100px;
+    max-width: 150px;
+  }
+}
+
+// Search and filter bar
+.search-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 1;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 300px;
+
+  .search-icon {
+    position: absolute;
+    left: $spacing-sm;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $text-muted;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.4rem $spacing-sm 0.4rem 2rem;
+    background: $bg-tertiary;
+    border: 1px solid $border-subtle;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    color: $text-primary;
+    transition: border-color $transition-base;
+
+    &:focus {
+      outline: none;
+      border-color: $accent;
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+}
+
+.filters-dropdown-wrapper {
+  position: relative;
+}
+
+.filters-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem $spacing-sm;
+  background: $bg-tertiary;
+  border: 1px solid $border-subtle;
+  color: $text-secondary;
+
+  &:hover {
+    border-color: $accent;
+    color: $text-primary;
+  }
+
+  .filter-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.filter-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: $accent;
+  color: white;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.filters-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: $spacing-xs;
+  padding: $spacing-md;
+  background: $bg-secondary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  min-width: 200px;
+  z-index: 100;
+  display: none;
+
+  &.open {
+    display: block;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      font-size: $font-size-xs;
+      color: $text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    select {
+      width: 100%;
+      max-width: none;
+    }
+
+    &.filter-actions {
+      flex-direction: row;
+      justify-content: flex-end;
+      padding-top: $spacing-sm;
+      border-top: 1px solid $border-subtle;
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------

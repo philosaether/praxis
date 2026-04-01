@@ -1,0 +1,23 @@
+{# Tag input component with autocomplete #}
+{# Expects: task_id or priority_id, context_id (unique identifier for suggestions div) #}
+
+<div class="tag-input-container">
+    <input type="text"
+           class="tag-input"
+           placeholder="Add tag..."
+           autocomplete="off"
+           hx-get="/tags/search"
+           hx-trigger="keyup changed delay:200ms, focus"
+           hx-target="#tag-suggestions-{{ context_id }}"
+           hx-swap="innerHTML"
+           hx-include="this"
+           name="q"
+           {% if task_id %}data-task-id="{{ task_id }}"{% endif %}
+           {% if priority_id %}data-priority-id="{{ priority_id }}"{% endif %}
+           onkeydown="handleTagInputKey(event, this)">
+    <div id="tag-suggestions-{{ context_id }}"
+         class="tag-suggestions"
+         {% if task_id %}data-task-id="{{ task_id }}"{% endif %}
+         {% if priority_id %}data-priority-id="{{ priority_id }}"{% endif %}>
+    </div>
+</div>
