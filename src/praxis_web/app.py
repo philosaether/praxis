@@ -24,6 +24,7 @@ app = FastAPI(title="Praxis Web")
 # Config
 API_URL = os.getenv("PRAXIS_API_URL", "http://localhost:8000")
 SESSION_COOKIE_NAME = "praxis_session"
+PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 
 # Static files and templates
 STATIC_DIR = Path(__file__).parent / "static"
@@ -31,6 +32,9 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+# Make environment available in all templates
+templates.env.globals["praxis_env"] = PRAXIS_ENV
 
 # -----------------------------------------------------------------------------
 # API Client Helper

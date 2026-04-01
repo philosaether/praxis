@@ -91,6 +91,22 @@ a:hover {
   padding-top: 6px;
 }
 
+.brand h1 {
+  color: #735c00;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.env-local .brand-logo,
+.env-local .brand h1 {
+  color: #5c3d7a;
+}
+
+.env-staging .brand-logo,
+.env-staging .brand h1 {
+  color: #2a5082;
+}
+
 .user-info {
   display: flex;
   align-items: center;

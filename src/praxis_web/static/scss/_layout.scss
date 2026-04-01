@@ -61,6 +61,33 @@
   padding-top: 6px;
 }
 
+.brand h1 {
+  color: $accent;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+// Environment-specific brand colors
+$env-local-color: #5c3d7a;      // Goal purple
+$env-staging-color: #2a5082;    // Initiative blue
+$env-production-color: $accent; // Gold (default)
+
+.env-local {
+  .brand-logo,
+  .brand h1 {
+    color: $env-local-color;
+  }
+}
+
+.env-staging {
+  .brand-logo,
+  .brand h1 {
+    color: $env-staging-color;
+  }
+}
+
+// .env-production uses default $accent color
+
 .user-info {
   display: flex;
   align-items: center;
