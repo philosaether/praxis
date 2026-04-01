@@ -139,7 +139,7 @@
                 <div class="actions-right">
                     <button type="button"
                             class="btn btn-danger"
-                            onclick="showDeleteConfirmation('{{ priority.id }}', '{{ priority.name }}')">
+                            onclick="showDeleteConfirmation('{{ priority.id }}', {{ priority.name|tojson|e }})">
                         Delete
                     </button>
                 </div>

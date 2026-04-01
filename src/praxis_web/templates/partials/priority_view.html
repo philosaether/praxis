@@ -103,12 +103,12 @@
                 {% if priority.is_owner %}
                 <button type="button"
                         class="btn btn-secondary"
-                        onclick="openShareModal('{{ priority.id }}', '{{ priority.name }}')">
+                        onclick="openShareModal('{{ priority.id }}', {{ priority.name|tojson|e }})">
                     Share
                 </button>
                 <button type="button"
                         class="btn btn-danger"
-                        onclick="showDeleteConfirmation('{{ priority.id }}', '{{ priority.name }}')">
+                        onclick="showDeleteConfirmation('{{ priority.id }}', {{ priority.name|tojson|e }})">
                     Delete
                 </button>
                 {% endif %}

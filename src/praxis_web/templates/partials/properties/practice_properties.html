@@ -97,7 +97,7 @@
             <div class="actions-right">
                 <button type="button"
                         class="btn btn-secondary"
-                        onclick="openShareModal('{{ priority.id }}', '{{ priority.name }}')">
+                        onclick="openShareModal('{{ priority.id }}', {{ priority.name|tojson|e }})">
                     Share
                 </button>
             </div>

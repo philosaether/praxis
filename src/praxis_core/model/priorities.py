@@ -6,9 +6,10 @@ from enum import StrEnum
 
 
 class PriorityType(StrEnum):
-    VALUE = "value"        # Guiding principle (direction, never completes)
-    GOAL = "goal"          # Concrete outcome (destination, has end state)
-    PRACTICE = "practice"  # Recurring activity (generates tasks on rhythm)
+    INITIATIVE = "initiative"  # Ongoing bucket of work (pull-based, tactical)
+    VALUE = "value"            # Guiding principle (direction, never completes)
+    GOAL = "goal"              # Concrete outcome (destination, has end state)
+    PRACTICE = "practice"      # Recurring activity (generates tasks on rhythm)
 
 
 class PriorityStatus(StrEnum):
@@ -73,3 +74,10 @@ class Practice(Priority):
     rhythm_frequency: str | None = None   # e.g., "daily", "weekly", "2x daily"
     rhythm_constraints: str | None = None # e.g., "morning only", "not after 9pm"
     generation_prompt: str | None = None  # how agent generates specific tasks
+
+
+@dataclass
+class Initiative(Priority):
+    """An ongoing bucket of work. Pull-based and tactical, no special fields."""
+
+    priority_type: PriorityType = PriorityType.INITIATIVE
