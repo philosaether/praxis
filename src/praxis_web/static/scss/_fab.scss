@@ -4,10 +4,10 @@
 @use 'sass:color';
 @use 'variables' as *;
 
-// Priority mode colors (warm purple, not cold)
-$goal-purple: #5c3d7a;
-$goal-purple-hover: #4a3163;
-$goal-purple-light: #7a5699;
+// Priority mode colors (initiative blue)
+$initiative-blue: #2a5082;
+$initiative-blue-hover: #1e3d63;
+$initiative-blue-light: #4a7ab5;
 
 .fab {
   position: fixed;
@@ -37,12 +37,12 @@ $goal-purple-light: #7a5699;
     transform: scale(0.95);
   }
 
-  // Priority mode variant (muted purple for goals)
+  // Priority mode variant (initiative blue)
   &.fab-priority {
-    background: linear-gradient(135deg, $goal-purple 0%, $goal-purple-light 100%);
+    background: linear-gradient(135deg, $initiative-blue 0%, $initiative-blue-light 100%);
 
     &:hover {
-      background: linear-gradient(135deg, $goal-purple-hover 0%, $goal-purple 100%);
+      background: linear-gradient(135deg, $initiative-blue-hover 0%, $initiative-blue 100%);
     }
   }
 }

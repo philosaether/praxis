@@ -24,6 +24,7 @@ app = FastAPI(title="Praxis Web")
 # Config
 API_URL = os.getenv("PRAXIS_API_URL", "http://localhost:8000")
 SESSION_COOKIE_NAME = "praxis_session"
+PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 
 # Static files and templates
 STATIC_DIR = Path(__file__).parent / "static"
@@ -31,6 +32,9 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+# Make environment available in all templates
+templates.env.globals["praxis_env"] = PRAXIS_ENV
 
 # -----------------------------------------------------------------------------
 # API Client Helper
@@ -391,7 +395,7 @@ async def new_priority_form(request: Request):
 
 
 @app.get("/priorities/new/fields", response_class=HTMLResponse)
-async def priority_type_fields(request: Request, priority_type: str = "goal"):
+async def priority_type_fields(request: Request, priority_type: str = "initiative"):
     """Return type-specific fields for the selected priority type."""
     template_name = f"partials/type_fields/{priority_type}_fields.html"
     return templates.TemplateResponse(request, template_name, {})
@@ -474,7 +478,7 @@ async def quick_add_priority(request: Request):
 
 
 @app.get("/priorities/quick-add/fields", response_class=HTMLResponse)
-async def quick_add_priority_fields(request: Request, priority_type: str = "goal"):
+async def quick_add_priority_fields(request: Request, priority_type: str = "initiative"):
     """Return type-specific fields for quick-add modal."""
     template_name = f"partials/type_fields/{priority_type}_fields.html"
     return templates.TemplateResponse(request, template_name, {})
@@ -868,6 +872,21 @@ async def quick_add_task(request: Request):
     # Trigger event to close modal
     html_response.headers["HX-Trigger"] = "taskCreated"
     return html_response
+
+@app.get("/tasks/quick-add/priorities", response_class=HTMLResponse)
+async def quick_add_priorities(request: Request):
+    """Return fresh priority options for the quick-add modal dropdown."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    # Build options HTML
+    options = ['<option value="">Inbox (no priority)</option>']
+    for p in data["priorities"]:
+        options.append(f'<option value="{p["id"]}">{p["name"]}</option>')
+
+    return HTMLResponse(content="\n".join(options))
+
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
 async def task_detail(request: Request, task_id: str):

@@ -10,6 +10,7 @@ from praxis_core.model.priorities import (
     Value,
     Goal,
     Practice,
+    Initiative,
 )
 
 
@@ -155,6 +156,12 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
                 rhythm_frequency=row["rhythm_frequency"],
                 rhythm_constraints=row["rhythm_constraints"],
                 generation_prompt=row["generation_prompt"],
+            )
+
+        case PriorityType.INITIATIVE:
+            return Initiative(
+                **common_kwargs,
+                priority_type=priority_type,
             )
 
     raise ValueError(f"Unknown priority type: {priority_type}")
