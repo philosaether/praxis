@@ -235,20 +235,29 @@
     // Task Quick Add Modal
     let currentQuickAddPriorityId = null;
 
-    window.openQuickAdd = function(priorityId) {
+    window.openQuickAdd = async function(priorityId) {
         const backdrop = document.getElementById('quick-add-backdrop');
+        const select = document.getElementById('qa-priority');
+
+        // Fetch fresh priorities (in case user created new ones)
+        try {
+            const response = await fetch('/tasks/quick-add/priorities');
+            if (response.ok) {
+                select.innerHTML = await response.text();
+            }
+        } catch (e) {
+            console.error('Failed to refresh priorities:', e);
+        }
+
         backdrop.classList.add('open');
         currentQuickAddPriorityId = priorityId || null;
 
         // Pre-select priority if provided
-        if (priorityId) {
-            const select = document.getElementById('qa-priority');
-            if (select) {
-                select.value = priorityId;
-                // Open the details to show the priority is set
-                const details = backdrop.querySelector('.more-options');
-                if (details) details.open = true;
-            }
+        if (priorityId && select) {
+            select.value = priorityId;
+            // Open the details to show the priority is set
+            const details = backdrop.querySelector('.more-options');
+            if (details) details.open = true;
         }
 
         setTimeout(() => {

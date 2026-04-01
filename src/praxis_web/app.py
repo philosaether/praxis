@@ -869,6 +869,21 @@ async def quick_add_task(request: Request):
     html_response.headers["HX-Trigger"] = "taskCreated"
     return html_response
 
+@app.get("/tasks/quick-add/priorities", response_class=HTMLResponse)
+async def quick_add_priorities(request: Request):
+    """Return fresh priority options for the quick-add modal dropdown."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    # Build options HTML
+    options = ['<option value="">Inbox (no priority)</option>']
+    for p in data["priorities"]:
+        options.append(f'<option value="{p["id"]}">{p["name"]}</option>')
+
+    return HTMLResponse(content="\n".join(options))
+
+
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
 async def task_detail(request: Request, task_id: str):
     """Task detail - full page or HTMX partial."""
