@@ -277,6 +277,7 @@ def list_tasks(
     inbox_only: bool = False,
     assigned_to: int | None = None,  # Filter by assigned user
     tag_names: list[str] | None = None,  # Filter by tag names
+    search_query: str | None = None,  # Search in name and notes
 ) -> list[Task]:
     """List tasks with optional filters. Done tasks sorted to bottom.
 
@@ -286,6 +287,7 @@ def list_tasks(
     - OR tasks created by the user (so they see tasks they made on shared priorities)
 
     tag_names: If provided, only return tasks that have at least one of these tags.
+    search_query: If provided, filter to tasks where name or notes contains the query.
     """
     ensure_schema()
     with get_connection() as conn:
@@ -343,6 +345,12 @@ def list_tasks(
             placeholders = ",".join("?" * len(tag_names))
             query += f" AND tg.name IN ({placeholders})"
             params.extend(tag_names)
+
+        # Search filter (LIKE on name and notes)
+        if search_query:
+            search_pattern = f"%{search_query}%"
+            query += " AND (t.name LIKE ? OR t.notes LIKE ?)"
+            params.extend([search_pattern, search_pattern])
 
         # Sort: active tasks first (by created_at), then done tasks
         query += """ ORDER BY

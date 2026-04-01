@@ -317,11 +317,12 @@ async def tasks_page(
     priority: str | None = None,
     status: str | None = None,
     tag: str | None = None,
+    q: str | None = None,
 ):
     """Tasks queue view - full page or HTMX partial."""
     if is_htmx_request(request):
         # Return just the task list partial with filters
-        return await tasks_list_partial(request, priority=priority, status=status, tag=tag)
+        return await tasks_list_partial(request, priority=priority, status=status, tag=tag, q=q)
     return await render_full_page(request, mode="tasks")
 
 
@@ -788,6 +789,7 @@ async def tasks_list_partial(
     priority: str | None = None,
     status: str | None = None,
     tag: str | None = None,
+    q: str | None = None,
 ):
     """HTMX partial: filtered list of tasks."""
     async with api_client(request) as client:
@@ -798,6 +800,8 @@ async def tasks_list_partial(
             params["status"] = status
         if tag:
             params["tag"] = tag
+        if q:
+            params["q"] = q
         response = await client.get("/api/tasks", params=params)
         data = response.json()
 
@@ -809,6 +813,7 @@ async def tasks_list_partial(
             "priorities": data.get("priorities", []),
             "current_tag": tag,
             "current_status": status,
+            "current_search": q,
         }
     )
 

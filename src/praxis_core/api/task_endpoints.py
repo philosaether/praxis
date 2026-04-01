@@ -187,6 +187,7 @@ async def list_tasks_endpoint(
     priority: str | None = None,
     status: str | None = None,
     tag: str | None = None,
+    q: str | None = None,
     inbox: bool = False,
     user: User | None = Depends(get_current_user_optional),
 ):
@@ -200,6 +201,7 @@ async def list_tasks_endpoint(
     - priority: Filter by priority ID
     - status: Filter by status (queued, done, etc.)
     - tag: Filter by tag name
+    - q: Search query (searches name and notes)
     - inbox: If true, show only tasks without a priority
     """
     task_status = None
@@ -214,6 +216,9 @@ async def list_tasks_endpoint(
     if tag:
         tag_names = [t.strip() for t in tag.split(",") if t.strip()]
 
+    # Clean search query
+    search_query = q.strip() if q else None
+
     entity_id = user.entity_id if user else None
     user_id = user.id if user else None
 
@@ -225,6 +230,7 @@ async def list_tasks_endpoint(
         assigned_to=user_id,
         inbox_only=inbox,
         tag_names=tag_names,
+        search_query=search_query,
     )
     graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
