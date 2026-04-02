@@ -5,6 +5,7 @@ Run with: uvicorn praxis_web.app:app --port 8080
 Requires: PRAXIS_API_URL environment variable (default: http://localhost:8000)
 """
 
+import asyncio
 import json
 import os
 import httpx
@@ -13,7 +14,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from starlette.responses import StreamingResponse
 from typing import Annotated
+
+from praxis_core.api.sse import get_sse_manager, SSEEvent
 
 # -----------------------------------------------------------------------------
 # App Setup
@@ -35,6 +39,70 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # Make environment available in all templates
 templates.env.globals["praxis_env"] = PRAXIS_ENV
+
+# -----------------------------------------------------------------------------
+# Server-Sent Events (SSE)
+# -----------------------------------------------------------------------------
+
+@app.get("/events")
+async def event_stream(request: Request):
+    """
+    SSE endpoint for real-time updates.
+
+    Streams events to the client for:
+    - task_created: New task created (by trigger or other user)
+    - task_updated: Task modified
+    - task_deleted: Task deleted
+    - rescore: Task list needs refresh (time boundary crossed)
+    - trigger_fired: A trigger was executed
+    - priority_updated: Priority modified
+    """
+    # Get user ID from session
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return Response(status_code=401)
+
+    # Validate session and get entity_id
+    async with api_client(request) as client:
+        me_response = await client.get("/api/auth/me")
+        if me_response.status_code != 200:
+            return Response(status_code=401)
+        user = me_response.json()
+        entity_id = user.get("id", "")
+
+    sse_manager = get_sse_manager()
+
+    async def generate():
+        queue = await sse_manager.subscribe(entity_id)
+        try:
+            # Send initial connection event
+            yield "event: connected\ndata: {}\n\n"
+
+            while True:
+                try:
+                    # Wait for events with timeout for keepalive
+                    event: SSEEvent = await asyncio.wait_for(
+                        queue.get(),
+                        timeout=30.0
+                    )
+                    yield event.format()
+                except asyncio.TimeoutError:
+                    # Send keepalive comment
+                    yield ": keepalive\n\n"
+                except asyncio.CancelledError:
+                    break
+        finally:
+            await sse_manager.unsubscribe(queue)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
 
 # -----------------------------------------------------------------------------
 # API Client Helper
@@ -1763,4 +1831,323 @@ async def delete_rule_web(request: Request, rule_id: str):
         response = await client.delete(f"/api/rules/{rule_id}")
         if response.status_code != 200:
             return HTMLResponse("<div class='error'>Failed to delete rule</div>")
+    return HTMLResponse("")
+
+
+# -----------------------------------------------------------------------------
+# Routes: Triggers
+# -----------------------------------------------------------------------------
+
+# Trigger templates for the wizard
+TRIGGER_TEMPLATES = [
+    {
+        "id": "daily_practice",
+        "name": "Daily Practice",
+        "icon": "🌅",
+        "description": "Create a task every day at a specific time.",
+        "event": {"type": "schedule", "params": {"interval": "daily", "at": "08:00"}},
+        "conditions": [],
+        "actions": [{"type": "create_task", "task_template": {"name_pattern": "Daily practice for {{date}}", "due_date_offset": "end_of_day"}}],
+    },
+    {
+        "id": "weekday_task",
+        "name": "Weekday Task",
+        "icon": "📅",
+        "description": "Create a task on weekdays only.",
+        "event": {"type": "schedule", "params": {"interval": "weekdays", "at": "09:00"}},
+        "conditions": [],
+        "actions": [{"type": "create_task", "task_template": {"name_pattern": "Weekday task for {{date}}", "due_date_offset": "end_of_day"}}],
+    },
+    {
+        "id": "weekly_review",
+        "name": "Weekly Review",
+        "icon": "📋",
+        "description": "Create a weekly review task.",
+        "event": {"type": "schedule", "params": {"interval": "weekly", "day": "sunday", "at": "10:00"}},
+        "conditions": [],
+        "actions": [{"type": "create_task", "task_template": {"name_pattern": "Weekly review - week of {{date}}", "due_date_offset": "end_of_day"}}],
+    },
+    {
+        "id": "goal_followup",
+        "name": "Goal Follow-up",
+        "icon": "🎯",
+        "description": "Create a follow-up task when a goal is completed.",
+        "event": {"type": "priority_completed", "params": {"priority_type": "goal"}},
+        "conditions": [],
+        "actions": [{"type": "create_task", "task_template": {"name_pattern": "Write case study: {{event.priority.name}}", "tags": ["case-study"]}}],
+    },
+    {
+        "id": "custom",
+        "name": "Custom Trigger",
+        "icon": "✨",
+        "description": "Start from scratch with a blank trigger.",
+        "event": {"type": "schedule", "params": {"interval": "daily", "at": "08:00"}},
+        "conditions": [],
+        "actions": [{"type": "create_task", "task_template": {"name_pattern": "New task"}}],
+    },
+]
+
+
+@app.get("/triggers", response_class=HTMLResponse)
+async def triggers_page(request: Request):
+    """Triggers view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        return await triggers_list_partial(request)
+
+    async with api_client(request) as client:
+        response = await client.get("/api/triggers")
+        data = response.json() if response.status_code == 200 else {}
+        triggers = data.get("triggers", [])
+
+    list_html = templates.get_template("partials/triggers_list.html").render(triggers=triggers)
+    return await render_full_page(request, mode="triggers", initial_list_html=list_html)
+
+
+@app.get("/triggers/list", response_class=HTMLResponse)
+async def triggers_list_partial(request: Request):
+    """HTMX partial: list of triggers."""
+    async with api_client(request) as client:
+        response = await client.get("/api/triggers")
+        data = response.json() if response.status_code == 200 else {}
+        triggers = data.get("triggers", [])
+
+    return templates.TemplateResponse(
+        request,
+        "partials/triggers_list.html",
+        {"triggers": triggers}
+    )
+
+
+@app.get("/triggers/new", response_class=HTMLResponse)
+async def new_trigger_wizard(request: Request):
+    """Show trigger template wizard."""
+    return templates.TemplateResponse(
+        request,
+        "partials/trigger_new_wizard.html",
+        {"templates": TRIGGER_TEMPLATES}
+    )
+
+
+@app.post("/triggers/new/from-template", response_class=HTMLResponse)
+async def new_trigger_from_template(request: Request):
+    """Create a new trigger from a template and open the editor."""
+    form_data = await request.form()
+    template_id = form_data.get("template_id", "custom")
+
+    # Find the template
+    template = next((t for t in TRIGGER_TEMPLATES if t["id"] == template_id), TRIGGER_TEMPLATES[-1])
+
+    # Build trigger data
+    trigger_data = {
+        "name": template["name"] if template_id != "custom" else "New Trigger",
+        "description": template["description"] if template_id != "custom" else "",
+        "event": template["event"],
+        "conditions": template["conditions"],
+        "actions": template["actions"],
+    }
+
+    # Create the trigger via API
+    async with api_client(request) as client:
+        response = await client.post("/api/triggers", json=trigger_data)
+
+        if response.status_code != 200:
+            error = response.json().get("detail", "Failed to create trigger")
+            return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
+
+        data = response.json()
+        trigger = data.get("trigger")
+
+        # Get YAML representation for the editor
+        yaml_response = await client.get(f"/api/triggers/export/{trigger['id']}")
+        trigger_yaml = yaml_response.text if yaml_response.status_code == 200 else ""
+
+    # Return the edit form for the new trigger
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/trigger_edit.html",
+        {"trigger": trigger, "trigger_yaml": trigger_yaml}
+    )
+    html_response.headers["HX-Trigger"] = "triggerCreated"
+    return html_response
+
+
+@app.get("/triggers/{trigger_id}", response_class=HTMLResponse)
+async def trigger_detail(request: Request, trigger_id: str):
+    """Trigger detail - full page or HTMX partial."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/triggers/{trigger_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Trigger not found</div>", status_code=404)
+        data = response.json()
+        trigger = data.get("trigger")
+
+    # HTMX request - return partial
+    if is_htmx_request(request):
+        return templates.TemplateResponse(
+            request,
+            "partials/trigger_view.html",
+            {"trigger": trigger}
+        )
+
+    # Full page request - render with trigger detail pre-loaded
+    detail_html = templates.get_template("partials/trigger_view.html").render(
+        request=request, trigger=trigger
+    )
+
+    # Get triggers list for left pane
+    async with api_client(request) as client:
+        list_response = await client.get("/api/triggers")
+        list_data = list_response.json() if list_response.status_code == 200 else {}
+        triggers = list_data.get("triggers", [])
+
+    list_html = templates.get_template("partials/triggers_list.html").render(triggers=triggers)
+
+    return await render_full_page(
+        request,
+        mode="triggers",
+        initial_list_html=list_html,
+        initial_detail_html=detail_html
+    )
+
+
+@app.get("/triggers/{trigger_id}/edit", response_class=HTMLResponse)
+async def trigger_edit(request: Request, trigger_id: str):
+    """HTMX partial: trigger edit mode."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/triggers/{trigger_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Trigger not found</div>", status_code=404)
+        data = response.json()
+        trigger = data.get("trigger")
+
+        # Get YAML representation for toggle view
+        yaml_response = await client.get(f"/api/triggers/export/{trigger_id}")
+        trigger_yaml = yaml_response.text if yaml_response.status_code == 200 else ""
+
+    return templates.TemplateResponse(
+        request,
+        "partials/trigger_edit.html",
+        {"trigger": trigger, "trigger_yaml": trigger_yaml}
+    )
+
+
+@app.post("/triggers/{trigger_id}", response_class=HTMLResponse)
+async def trigger_save(request: Request, trigger_id: str):
+    """Save trigger edits and return view mode."""
+    form_data = await request.form()
+
+    # Check if we're in YAML mode
+    yaml_content = form_data.get("yaml_content")
+
+    if yaml_content:
+        # YAML mode: update via API
+        async with api_client(request) as client:
+            response = await client.put(
+                f"/api/triggers/{trigger_id}/yaml",
+                content=yaml_content,
+                headers={"Content-Type": "text/plain"}
+            )
+            if response.status_code != 200:
+                error = response.json().get("detail", "Failed to save trigger")
+                return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
+            data = response.json()
+            trigger = data.get("trigger")
+    else:
+        # Form mode: build trigger data from form
+        trigger_data = {
+            "name": form_data.get("name", ""),
+            "description": form_data.get("description", ""),
+            "priority": int(form_data.get("priority", 0)),
+            "enabled": form_data.get("enabled") == "on",
+        }
+
+        # Parse event
+        event_type = form_data.get("event_type", "schedule")
+        event_params = {}
+
+        if event_type == "schedule":
+            event_params["interval"] = form_data.get("event_interval", "daily")
+            event_params["at"] = form_data.get("event_at", "08:00")
+            if form_data.get("event_day"):
+                event_params["day"] = form_data.get("event_day")
+        elif event_type == "priority_completed":
+            if form_data.get("event_priority_type"):
+                event_params["priority_type"] = form_data.get("event_priority_type")
+        elif event_type == "task_completed":
+            if form_data.get("event_tag"):
+                event_params["tag"] = form_data.get("event_tag")
+
+        trigger_data["event"] = {"type": event_type, "params": event_params}
+
+        # Parse action (simplified: just task template)
+        action_name = form_data.get("action_name", "New task")
+        action_due = form_data.get("action_due", "")
+        action_tags = form_data.get("action_tags", "")
+
+        trigger_data["actions"] = [{
+            "type": "create_task",
+            "task_template": {
+                "name_pattern": action_name,
+                "due_date_offset": action_due if action_due else None,
+                "tags": [t.strip() for t in action_tags.split(",") if t.strip()] if action_tags else [],
+            }
+        }]
+
+        trigger_data["conditions"] = []
+
+        async with api_client(request) as client:
+            response = await client.put(f"/api/triggers/{trigger_id}", json=trigger_data)
+            if response.status_code != 200:
+                error = response.json().get("detail", "Failed to save trigger")
+                return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
+            data = response.json()
+            trigger = data.get("trigger")
+
+    # Return view mode with trigger to refresh list
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/trigger_view.html",
+        {"trigger": trigger}
+    )
+    html_response.headers["HX-Trigger"] = "triggerUpdated"
+    return html_response
+
+
+@app.post("/triggers/{trigger_id}/toggle", response_class=HTMLResponse)
+async def toggle_trigger_web(request: Request, trigger_id: str):
+    """Toggle a trigger's enabled state."""
+    async with api_client(request) as client:
+        response = await client.post(f"/api/triggers/{trigger_id}/toggle")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to toggle trigger</div>")
+    return HTMLResponse("")
+
+
+@app.post("/triggers/{trigger_id}/fire", response_class=HTMLResponse)
+async def fire_trigger_web(request: Request, trigger_id: str):
+    """Manually fire a trigger."""
+    async with api_client(request) as client:
+        response = await client.post(f"/api/triggers/{trigger_id}/fire")
+        if response.status_code != 200:
+            error = response.json().get("detail", "Failed to fire trigger")
+            return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
+        data = response.json()
+
+    # Return success message with actions taken
+    actions = data.get("actions_taken", [])
+    if actions:
+        msg = f"Trigger fired! Created: {actions[0].get('task_name', 'task')}"
+    else:
+        msg = "Trigger fired but no actions taken"
+
+    return HTMLResponse(f"<div class='success-message'>{msg}</div>")
+
+
+@app.delete("/triggers/{trigger_id}", response_class=HTMLResponse)
+async def delete_trigger_web(request: Request, trigger_id: str):
+    """Delete a trigger."""
+    async with api_client(request) as client:
+        response = await client.delete(f"/api/triggers/{trigger_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to delete trigger</div>")
     return HTMLResponse("")

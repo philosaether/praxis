@@ -1,0 +1,222 @@
+<!-- Trigger View Mode -->
+<div class="detail-header">
+    <h2>{{ trigger.name }}</h2>
+    <div class="detail-actions">
+        <button class="btn btn-sm"
+                hx-post="/triggers/{{ trigger.id }}/fire"
+                hx-target="#fire-result"
+                hx-swap="innerHTML"
+                title="Test this trigger now">
+            Fire Now
+        </button>
+        <button class="btn btn-sm"
+                hx-get="/triggers/{{ trigger.id }}/edit"
+                hx-target="#detail-pane"
+                hx-swap="innerHTML">
+            Edit
+        </button>
+        <button class="btn btn-sm btn-danger"
+                hx-delete="/triggers/{{ trigger.id }}"
+                hx-confirm="Delete this trigger?"
+                hx-target="#trigger-row-{{ trigger.id }}"
+                hx-swap="outerHTML"
+                onclick="htmx.ajax('GET', '/triggers/list', {target: '#item-list'})">
+            Delete
+        </button>
+    </div>
+</div>
+
+<div id="fire-result"></div>
+
+<div class="detail-content">
+    <!-- Status -->
+    <div class="detail-section">
+        <div class="status-row">
+            <label class="toggle-label">
+                <input type="checkbox"
+                       {% if trigger.enabled %}checked{% endif %}
+                       hx-post="/triggers/{{ trigger.id }}/toggle"
+                       hx-swap="none"
+                       onchange="this.closest('.trigger-row')?.classList.toggle('disabled')">
+                <span>Enabled</span>
+            </label>
+            {% if trigger.fire_count > 0 %}
+            <span class="fire-stats">
+                Fired {{ trigger.fire_count }} time{% if trigger.fire_count != 1 %}s{% endif %}
+                {% if trigger.last_fired_at %}
+                <span class="last-fired">(last: {{ trigger.last_fired_at[:16] }})</span>
+                {% endif %}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Description -->
+    {% if trigger.description %}
+    <div class="detail-section">
+        <label>Description</label>
+        <p class="description-text">{{ trigger.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Event (When) -->
+    <div class="detail-section">
+        <label>When</label>
+        <div class="event-display">
+            {% if trigger.event.type == 'schedule' %}
+                {% set params = trigger.event.params %}
+                {% set interval = params.interval or 'daily' %}
+                <span class="event-type">Schedule:</span>
+                <span class="event-detail">
+                    {{ interval }}
+                    {% if params.day %}on {{ params.day }}{% endif %}
+                    at {{ params.at or '08:00' }}
+                </span>
+            {% elif trigger.event.type == 'priority_completed' %}
+                <span class="event-type">When priority completed:</span>
+                <span class="event-detail">
+                    {% if trigger.event.params.priority_type %}
+                        type = {{ trigger.event.params.priority_type }}
+                    {% elif trigger.event.params.priority_id %}
+                        specific priority
+                    {% else %}
+                        any priority
+                    {% endif %}
+                </span>
+            {% elif trigger.event.type == 'task_completed' %}
+                <span class="event-type">When task completed:</span>
+                <span class="event-detail">
+                    {% if trigger.event.params.tag %}
+                        tagged "{{ trigger.event.params.tag }}"
+                    {% else %}
+                        any task
+                    {% endif %}
+                </span>
+            {% else %}
+                <span class="event-type">{{ trigger.event.type }}:</span>
+                <span class="event-detail">{{ trigger.event.params }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Conditions (If any) -->
+    {% if trigger.conditions %}
+    <div class="detail-section">
+        <label>Conditions</label>
+        <ul class="conditions-list">
+            {% for cond in trigger.conditions %}
+            <li class="condition-item">
+                {{ cond.type }}: {{ cond.params }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Actions (Then) -->
+    <div class="detail-section">
+        <label>Then</label>
+        {% for action in trigger.actions %}
+        <div class="action-display">
+            {% if action.type == 'create_task' and action.task_template %}
+                {% set tpl = action.task_template %}
+                <span class="action-type">Create task:</span>
+                <div class="action-detail">
+                    <strong>"{{ tpl.name_pattern }}"</strong>
+                    {% if tpl.due_date_offset %}
+                    <span class="action-meta">due: {{ tpl.due_date_offset }}</span>
+                    {% endif %}
+                    {% if tpl.tags %}
+                    <span class="action-meta">tags: {{ tpl.tags | join(', ') }}</span>
+                    {% endif %}
+                </div>
+            {% elif action.type == 'collate_tasks' and action.collate_config %}
+                {% set cfg = action.collate_config %}
+                <span class="action-type">Collate tasks:</span>
+                <div class="action-detail">
+                    <strong>"{{ cfg.batch_name_pattern }}"</strong>
+                    {% if cfg.source_tag %}
+                    <span class="action-meta">from tag: {{ cfg.source_tag }}</span>
+                    {% endif %}
+                </div>
+            {% else %}
+                <span class="action-type">{{ action.type }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Practice Link -->
+    {% if trigger.practice_id %}
+    <div class="detail-section">
+        <label>Linked Practice</label>
+        <a href="/priorities/{{ trigger.practice_id }}" class="practice-link">
+            View Practice
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.fire-stats {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+.last-fired {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+.event-display, .action-display {
+    background: var(--surface-elevated);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+.event-type, .action-type {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+.event-detail, .action-detail {
+    margin-top: 4px;
+}
+.action-meta {
+    display: block;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+.conditions-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0 0;
+}
+.condition-item {
+    padding: 8px 12px;
+    background: var(--surface-elevated);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+}
+.description-text {
+    color: var(--text-secondary);
+    margin: 0;
+}
+.success-message {
+    background: var(--surface-elevated);
+    border-left: 3px solid var(--accent);
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+</style>

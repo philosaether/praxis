@@ -52,6 +52,15 @@
                 title="Rules">
             <span class="mode-nav-icon mode-nav-icon--rules"></span>
         </button>
+        <button class="mode-nav-btn {% if default_mode == 'triggers' %}active{% endif %}"
+                id="triggers-nav-btn"
+                hx-get="/triggers/list"
+                hx-target="#item-list"
+                hx-push-url="/triggers"
+                onclick="setMode('triggers')"
+                title="Triggers">
+            <span class="mode-nav-icon mode-nav-icon--triggers"></span>
+        </button>
     </nav>
 
     <!-- Left Pane -->
@@ -576,6 +585,15 @@
 
     document.body.addEventListener('ruleUpdated', function(event) {
         htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
+    });
+
+    // Listen for trigger creation/update to refresh the list
+    document.body.addEventListener('triggerCreated', function(event) {
+        htmx.ajax('GET', '/triggers/list', {target: '#item-list', swap: 'innerHTML'});
+    });
+
+    document.body.addEventListener('triggerUpdated', function(event) {
+        htmx.ajax('GET', '/triggers/list', {target: '#item-list', swap: 'innerHTML'});
     });
 
     // Add a newly created priority to the tree without collapsing existing nodes
@@ -1368,6 +1386,175 @@
             document.querySelectorAll('.tag-suggestions').forEach(s => {
                 s.innerHTML = '';
             });
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // Server-Sent Events (SSE) for Real-Time Updates
+    // -------------------------------------------------------------------------
+
+    let sseConnection = null;
+    let sseReconnectAttempts = 0;
+    const SSE_MAX_RECONNECT_ATTEMPTS = 5;
+    const SSE_RECONNECT_DELAY = 3000;
+
+    function connectSSE() {
+        if (sseConnection) {
+            sseConnection.close();
+        }
+
+        sseConnection = new EventSource('/events');
+
+        sseConnection.addEventListener('connected', function(e) {
+            console.log('SSE connected');
+            sseReconnectAttempts = 0;
+        });
+
+        sseConnection.addEventListener('task_created', function(e) {
+            const data = JSON.parse(e.data);
+            console.log('SSE: task_created', data);
+
+            // Only refresh if in a task-viewing mode
+            if (window.currentMode === 'tasks' || window.currentMode === 'inbox') {
+                if (window.currentMode === 'inbox') {
+                    htmx.ajax('GET', '/tasks/inbox', {target: '#item-list', swap: 'innerHTML'});
+                } else {
+                    const priorityFilter = document.querySelector('[name="priority"]')?.value || '';
+                    const listUrl = priorityFilter ? `/tasks/list?priority=${priorityFilter}` : '/tasks/list';
+                    htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+                }
+            }
+
+            // Show toast notification
+            showToast('New task created', 'info');
+        });
+
+        sseConnection.addEventListener('task_updated', function(e) {
+            const data = JSON.parse(e.data);
+            console.log('SSE: task_updated', data);
+
+            // If viewing this task, refresh the detail pane
+            const currentDetailUrl = document.getElementById('detail-pane')?.dataset?.currentUrl;
+            if (currentDetailUrl && currentDetailUrl.includes('/tasks/' + data.task_id)) {
+                htmx.ajax('GET', '/tasks/' + data.task_id, {target: '#detail-pane', swap: 'innerHTML'});
+            }
+        });
+
+        sseConnection.addEventListener('task_deleted', function(e) {
+            const data = JSON.parse(e.data);
+            console.log('SSE: task_deleted', data);
+
+            // Remove the task row if it exists
+            const taskRow = document.getElementById('task-row-' + data.task_id);
+            if (taskRow) {
+                taskRow.remove();
+            }
+
+            // If viewing this task, show empty state
+            const currentDetailUrl = document.getElementById('detail-pane')?.dataset?.currentUrl;
+            if (currentDetailUrl && currentDetailUrl.includes('/tasks/' + data.task_id)) {
+                document.getElementById('detail-pane').innerHTML = '<div class="empty-state">Task deleted</div>';
+            }
+        });
+
+        sseConnection.addEventListener('rescore', function(e) {
+            const data = JSON.parse(e.data);
+            console.log('SSE: rescore', data);
+
+            // Refresh task list to get new scores
+            if (window.currentMode === 'tasks' || window.currentMode === 'inbox') {
+                if (window.currentMode === 'inbox') {
+                    htmx.ajax('GET', '/tasks/inbox', {target: '#item-list', swap: 'innerHTML'});
+                } else {
+                    const priorityFilter = document.querySelector('[name="priority"]')?.value || '';
+                    const listUrl = priorityFilter ? `/tasks/list?priority=${priorityFilter}` : '/tasks/list';
+                    htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+                }
+            }
+        });
+
+        sseConnection.addEventListener('trigger_fired', function(e) {
+            const data = JSON.parse(e.data);
+            console.log('SSE: trigger_fired', data);
+
+            // Show toast notification
+            showToast(`Trigger fired: ${data.trigger_name}`, 'success');
+        });
+
+        sseConnection.addEventListener('priority_updated', function(e) {
+            const data = JSON.parse(e.data);
+            console.log('SSE: priority_updated', data);
+
+            // If in priorities mode, refresh the tree
+            if (window.currentMode === 'priorities') {
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            }
+        });
+
+        sseConnection.onerror = function(e) {
+            console.log('SSE error, reconnecting...');
+            sseConnection.close();
+
+            if (sseReconnectAttempts < SSE_MAX_RECONNECT_ATTEMPTS) {
+                sseReconnectAttempts++;
+                setTimeout(connectSSE, SSE_RECONNECT_DELAY);
+            } else {
+                console.log('SSE max reconnect attempts reached');
+            }
+        };
+    }
+
+    // Toast notification system
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.style.cssText = 'background:var(--surface-elevated);border:1px solid var(--border);padding:12px 16px;border-radius:8px;margin-top:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:slideIn 0.3s ease;';
+        toast.textContent = message;
+
+        container.appendChild(toast);
+
+        // Remove after 4 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // Add toast animations
+    if (!document.getElementById('toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-styles';
+        style.textContent = `
+            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+            .toast-success { border-left: 3px solid var(--accent); }
+            .toast-info { border-left: 3px solid var(--text-secondary); }
+            .toast-error { border-left: 3px solid #e74c3c; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Connect SSE when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Only connect if user is logged in (check for user-info element)
+        if (document.querySelector('.user-info')) {
+            connectSSE();
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (sseConnection) {
+            sseConnection.close();
         }
     });
 </script>

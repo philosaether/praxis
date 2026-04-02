@@ -1,0 +1,66 @@
+<!-- Trigger Template Wizard -->
+<div class="detail-header">
+    <h2>New Trigger</h2>
+</div>
+
+<div class="detail-content">
+    <p class="wizard-intro">Choose a template to get started, or create a custom trigger from scratch.</p>
+
+    <div class="template-grid">
+        {% for template in templates %}
+        <div class="template-card"
+             hx-post="/triggers/new/from-template"
+             hx-target="#detail-pane"
+             hx-swap="innerHTML"
+             hx-vals='{"template_id": "{{ template.id }}"}'>
+            <div class="template-icon">{{ template.icon }}</div>
+            <div class="template-info">
+                <h3 class="template-name">{{ template.name }}</h3>
+                <p class="template-desc">{{ template.description }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.wizard-intro {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+.template-card {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.template-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.template-icon {
+    font-size: 2em;
+    line-height: 1;
+}
+.template-info {
+    flex: 1;
+}
+.template-name {
+    margin: 0 0 4px 0;
+    font-size: 1em;
+}
+.template-desc {
+    margin: 0;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+</style>

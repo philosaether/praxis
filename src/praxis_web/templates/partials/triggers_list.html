@@ -1,0 +1,111 @@
+<!-- Triggers List -->
+<div class="list-header">
+    <h2>Triggers</h2>
+    <button class="btn btn-primary btn-sm"
+            hx-get="/triggers/new"
+            hx-target="#detail-pane"
+            hx-swap="innerHTML">
+        + New
+    </button>
+</div>
+
+{% if triggers %}
+<ul class="item-list">
+    {% for trigger in triggers %}
+    <li class="trigger-row {% if not trigger.enabled %}disabled{% endif %}"
+        id="trigger-row-{{ trigger.id }}"
+        hx-get="/triggers/{{ trigger.id }}"
+        hx-target="#detail-pane"
+        hx-swap="innerHTML"
+        hx-push-url="/triggers/{{ trigger.id }}"
+        onclick="selectRow(this)">
+        <div class="trigger-row-content">
+            <div class="trigger-row-main">
+                <span class="trigger-name">{{ trigger.name }}</span>
+                <span class="trigger-event-badge">
+                    {% if trigger.event.type == 'schedule' %}
+                        {% set interval = trigger.event.params.interval or 'daily' %}
+                        {% set at_time = trigger.event.params.at or '08:00' %}
+                        {{ interval }} @ {{ at_time }}
+                    {% elif trigger.event.type == 'priority_completed' %}
+                        on goal complete
+                    {% elif trigger.event.type == 'task_completed' %}
+                        on task complete
+                    {% else %}
+                        {{ trigger.event.type }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="trigger-row-meta">
+                {% if trigger.fire_count > 0 %}
+                <span class="fire-count" title="Times fired">{{ trigger.fire_count }}x</span>
+                {% endif %}
+                {% if not trigger.enabled %}
+                <span class="status-badge status-disabled">disabled</span>
+                {% endif %}
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state">
+    <p>No triggers yet.</p>
+    <p class="empty-hint">Create a trigger to automatically generate tasks on a schedule or when events occur.</p>
+</div>
+{% endif %}
+
+<style>
+.trigger-row {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.trigger-row:hover {
+    background-color: var(--surface-hover);
+}
+.trigger-row.selected {
+    background-color: var(--surface-selected);
+}
+.trigger-row.disabled {
+    opacity: 0.6;
+}
+.trigger-row-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.trigger-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.trigger-name {
+    font-weight: 500;
+}
+.trigger-event-badge {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    background: var(--surface-elevated);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+.trigger-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.fire-count {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+.status-badge.status-disabled {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    font-size: 0.75em;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+</style>

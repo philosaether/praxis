@@ -23,6 +23,9 @@ from praxis_core.api.invite_endpoints import router as invite_router
 from praxis_core.api.friends_endpoints import router as friends_router
 from praxis_core.api.tag_endpoints import router as tag_router
 from praxis_core.api.rule_endpoints import router as rule_router
+from praxis_core.api.trigger_endpoints import router as trigger_router
+from praxis_core.api.sse import get_sse_manager
+from praxis_core.triggers import start_scheduler, stop_scheduler
 
 
 # ---------------------------------------------------------------------
@@ -34,8 +37,19 @@ async def lifespan(app: FastAPI):
     """Handle app startup and shutdown."""
     # Startup: seed default rules
     ensure_default_rules()
+
+    # Wire up scheduler lifecycle to SSE connections
+    # Scheduler starts when first client connects, stops when last disconnects
+    sse_manager = get_sse_manager()
+    sse_manager.set_lifecycle_callbacks(
+        on_first_connect=start_scheduler,
+        on_last_disconnect=stop_scheduler,
+    )
+
     yield
-    # Shutdown: nothing to clean up
+
+    # Shutdown: ensure scheduler is stopped
+    stop_scheduler()
 
 
 # ---------------------------------------------------------------------
@@ -55,6 +69,7 @@ app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
 app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
 app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
+app.include_router(trigger_router, prefix="/api/triggers", tags=["triggers"])
 
 
 # ---------------------------------------------------------------------

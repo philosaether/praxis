@@ -1,0 +1,281 @@
+<!-- Trigger Edit Mode -->
+<div class="detail-header">
+    <h2>Edit Trigger</h2>
+    <div class="detail-actions">
+        <button class="btn btn-sm"
+                hx-get="/triggers/{{ trigger.id }}"
+                hx-target="#detail-pane"
+                hx-swap="innerHTML">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<div class="detail-content">
+    <!-- Mode Toggle: Form vs YAML -->
+    <div class="edit-mode-toggle">
+        <button type="button" class="mode-btn active" onclick="showFormMode(this)">Form</button>
+        <button type="button" class="mode-btn" onclick="showYamlMode(this)">YAML</button>
+    </div>
+
+    <!-- Form Mode -->
+    <form id="trigger-form-mode"
+          hx-post="/triggers/{{ trigger.id }}"
+          hx-target="#detail-pane"
+          hx-swap="innerHTML">
+
+        <!-- Basic Info -->
+        <div class="form-section">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" value="{{ trigger.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="2">{{ trigger.description or '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="toggle-label">
+                    <input type="checkbox" name="enabled" {% if trigger.enabled %}checked{% endif %}>
+                    <span>Enabled</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Event Configuration -->
+        <div class="form-section">
+            <h3>When (Event)</h3>
+
+            <div class="form-group">
+                <label for="event_type">Event Type</label>
+                <select id="event_type" name="event_type" onchange="updateEventFields()">
+                    <option value="schedule" {% if trigger.event.type == 'schedule' %}selected{% endif %}>Schedule (time-based)</option>
+                    <option value="priority_completed" {% if trigger.event.type == 'priority_completed' %}selected{% endif %}>Priority Completed</option>
+                    <option value="task_completed" {% if trigger.event.type == 'task_completed' %}selected{% endif %}>Task Completed</option>
+                </select>
+            </div>
+
+            <!-- Schedule Event Fields -->
+            <div id="event-schedule-fields" class="event-fields">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="event_interval">Interval</label>
+                        <select id="event_interval" name="event_interval">
+                            <option value="daily" {% if trigger.event.params.interval == 'daily' %}selected{% endif %}>Daily</option>
+                            <option value="weekdays" {% if trigger.event.params.interval == 'weekdays' %}selected{% endif %}>Weekdays</option>
+                            <option value="weekly" {% if trigger.event.params.interval == 'weekly' %}selected{% endif %}>Weekly</option>
+                            <option value="2x_daily" {% if trigger.event.params.interval == '2x_daily' %}selected{% endif %}>Twice Daily</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="event_at">Time</label>
+                        <input type="time" id="event_at" name="event_at" value="{{ trigger.event.params.at or '08:00' }}">
+                    </div>
+                </div>
+                <div class="form-group" id="event-day-group" style="display: none;">
+                    <label for="event_day">Day (for weekly)</label>
+                    <select id="event_day" name="event_day">
+                        <option value="">Select day...</option>
+                        <option value="monday" {% if trigger.event.params.day == 'monday' %}selected{% endif %}>Monday</option>
+                        <option value="tuesday" {% if trigger.event.params.day == 'tuesday' %}selected{% endif %}>Tuesday</option>
+                        <option value="wednesday" {% if trigger.event.params.day == 'wednesday' %}selected{% endif %}>Wednesday</option>
+                        <option value="thursday" {% if trigger.event.params.day == 'thursday' %}selected{% endif %}>Thursday</option>
+                        <option value="friday" {% if trigger.event.params.day == 'friday' %}selected{% endif %}>Friday</option>
+                        <option value="saturday" {% if trigger.event.params.day == 'saturday' %}selected{% endif %}>Saturday</option>
+                        <option value="sunday" {% if trigger.event.params.day == 'sunday' %}selected{% endif %}>Sunday</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Priority Completed Fields -->
+            <div id="event-priority-fields" class="event-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="event_priority_type">Priority Type</label>
+                    <select id="event_priority_type" name="event_priority_type">
+                        <option value="">Any</option>
+                        <option value="goal" {% if trigger.event.params.priority_type == 'goal' %}selected{% endif %}>Goal</option>
+                        <option value="initiative" {% if trigger.event.params.priority_type == 'initiative' %}selected{% endif %}>Initiative</option>
+                        <option value="practice" {% if trigger.event.params.priority_type == 'practice' %}selected{% endif %}>Practice</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Task Completed Fields -->
+            <div id="event-task-fields" class="event-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="event_tag">With Tag</label>
+                    <input type="text" id="event_tag" name="event_tag" value="{{ trigger.event.params.tag or '' }}" placeholder="Optional tag filter">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Configuration -->
+        <div class="form-section">
+            <h3>Then (Action)</h3>
+
+            {% set action = trigger.actions[0] if trigger.actions else {} %}
+            {% set tpl = action.task_template if action else {} %}
+
+            <div class="form-group">
+                <label for="action_name">Task Name</label>
+                <input type="text" id="action_name" name="action_name"
+                       value="{{ tpl.name_pattern or 'New task for {{date}}' }}"
+                       placeholder="Use {{date}}, {{practice.name}}, etc.">
+                <small class="form-hint">Variables: {{date}}, {{time}}, {{day_of_week}}, {{practice.name}}, {{event.priority.name}}</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="action_due">Due Date</label>
+                    <select id="action_due" name="action_due">
+                        <option value="">No due date</option>
+                        <option value="end_of_day" {% if tpl.due_date_offset == 'end_of_day' %}selected{% endif %}>End of day</option>
+                        <option value="+1d" {% if tpl.due_date_offset == '+1d' %}selected{% endif %}>+1 day</option>
+                        <option value="+2d" {% if tpl.due_date_offset == '+2d' %}selected{% endif %}>+2 days</option>
+                        <option value="+1h" {% if tpl.due_date_offset == '+1h' %}selected{% endif %}>+1 hour</option>
+                        <option value="+2h" {% if tpl.due_date_offset == '+2h' %}selected{% endif %}>+2 hours</option>
+                        <option value="end_of_week" {% if tpl.due_date_offset == 'end_of_week' %}selected{% endif %}>End of week</option>
+                        <option value="tomorrow" {% if tpl.due_date_offset == 'tomorrow' %}selected{% endif %}>Tomorrow</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="action_tags">Tags</label>
+                    <input type="text" id="action_tags" name="action_tags"
+                           value="{{ tpl.tags | join(', ') if tpl.tags else '' }}"
+                           placeholder="tag1, tag2">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Trigger</button>
+        </div>
+    </form>
+
+    <!-- YAML Mode -->
+    <form id="trigger-yaml-mode" style="display: none;"
+          hx-post="/triggers/{{ trigger.id }}"
+          hx-target="#detail-pane"
+          hx-swap="innerHTML">
+
+        <div class="form-section">
+            <div class="form-group">
+                <label for="yaml_content">YAML</label>
+                <textarea id="yaml_content" name="yaml_content" rows="20" class="yaml-editor">{{ trigger_yaml }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save YAML</button>
+        </div>
+    </form>
+</div>
+
+<script>
+function showFormMode(btn) {
+    document.getElementById('trigger-form-mode').style.display = 'block';
+    document.getElementById('trigger-yaml-mode').style.display = 'none';
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function showYamlMode(btn) {
+    document.getElementById('trigger-form-mode').style.display = 'none';
+    document.getElementById('trigger-yaml-mode').style.display = 'block';
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function updateEventFields() {
+    const eventType = document.getElementById('event_type').value;
+
+    // Hide all
+    document.querySelectorAll('.event-fields').forEach(f => f.style.display = 'none');
+
+    // Show relevant
+    if (eventType === 'schedule') {
+        document.getElementById('event-schedule-fields').style.display = 'block';
+        updateDayVisibility();
+    } else if (eventType === 'priority_completed') {
+        document.getElementById('event-priority-fields').style.display = 'block';
+    } else if (eventType === 'task_completed') {
+        document.getElementById('event-task-fields').style.display = 'block';
+    }
+}
+
+function updateDayVisibility() {
+    const interval = document.getElementById('event_interval').value;
+    const dayGroup = document.getElementById('event-day-group');
+    dayGroup.style.display = interval === 'weekly' ? 'block' : 'none';
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    updateEventFields();
+    document.getElementById('event_interval')?.addEventListener('change', updateDayVisibility);
+});
+
+// Also run immediately in case the DOM is already ready
+updateEventFields();
+</script>
+
+<style>
+.edit-mode-toggle {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--surface-elevated);
+    padding: 4px;
+    border-radius: 6px;
+    width: fit-content;
+}
+.mode-btn {
+    padding: 6px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.mode-btn.active {
+    background: var(--surface);
+    color: var(--text);
+}
+.form-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+.form-section:last-child {
+    border-bottom: none;
+}
+.form-section h3 {
+    margin: 0 0 16px 0;
+    font-size: 1em;
+    color: var(--text-secondary);
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+.yaml-editor {
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.event-fields {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface-elevated);
+    border-radius: 6px;
+}
+</style>

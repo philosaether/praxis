@@ -65,6 +65,18 @@ from praxis_core.persistence.tag_persistence import (
     get_tags_for_task,
     get_tags_for_tasks,
 )
+from praxis_core.persistence.trigger_persistence import (
+    TRIGGERS_SCHEMA,
+    create_trigger,
+    get_trigger,
+    list_triggers,
+    list_triggers_by_event_type,
+    update_trigger,
+    delete_trigger,
+    toggle_trigger,
+    record_trigger_fire,
+    delete_triggers_for_practice,
+)
 
 __all__ = [
     # Database
@@ -122,4 +134,15 @@ __all__ = [
     # Tag persistence (subset)
     "get_tags_for_task",
     "get_tags_for_tasks",
+    # Trigger persistence
+    "TRIGGERS_SCHEMA",
+    "create_trigger",
+    "get_trigger",
+    "list_triggers",
+    "list_triggers_by_event_type",
+    "update_trigger",
+    "delete_trigger",
+    "toggle_trigger",
+    "record_trigger_fire",
+    "delete_triggers_for_practice",
 ]
