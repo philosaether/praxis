@@ -1717,3 +1717,13 @@ async def toggle_rule_web(request: Request, rule_id: str):
         if response.status_code != 200:
             return HTMLResponse("<div class='error'>Failed to toggle rule</div>")
     return HTMLResponse("")
+
+
+@app.delete("/rules/{rule_id}", response_class=HTMLResponse)
+async def delete_rule_web(request: Request, rule_id: str):
+    """Delete a rule."""
+    async with api_client(request) as client:
+        response = await client.delete(f"/api/rules/{rule_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to delete rule</div>")
+    return HTMLResponse("")

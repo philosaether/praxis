@@ -876,6 +876,51 @@ a:hover {
   font-size: 0.85rem;
 }
 
+.rule-properties .detail-priority {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rule-condition-list,
+.rule-effect-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rule-condition-item,
+.rule-effect-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #ebe8e2;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+.rule-condition-item strong,
+.rule-effect-item strong {
+  color: #1b1c1a;
+}
+.rule-condition-item code,
+.rule-effect-item code {
+  background: #f5f3ef;
+  padding: 2px 6px;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.condition-icon,
+.effect-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
 .import-modal {
   max-width: 500px;
 }
@@ -986,20 +1031,20 @@ a:hover {
   color: #7a7976;
 }
 
-.property-row {
+.rule-property-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
-.property-row label {
+.rule-property-row label {
   min-width: 80px;
   font-size: 0.85rem;
   color: #4a4a48;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.property-row .property-input {
+.rule-property-row .rule-property-input {
   flex: 1;
   padding: 0.5rem;
   background: #ebe8e2;
@@ -1008,15 +1053,15 @@ a:hover {
   color: #1b1c1a;
   font-size: 1rem;
 }
-.property-row .property-input:focus {
+.rule-property-row .rule-property-input:focus {
   outline: none;
   border-color: #735c00;
 }
-.property-row .property-input-sm {
+.rule-property-row .rule-property-input-sm {
   flex: 0;
   width: 80px;
 }
-.property-row .property-hint {
+.rule-property-row .rule-property-hint {
   font-size: 0.85rem;
   color: #7a7976;
 }

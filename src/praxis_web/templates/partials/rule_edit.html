@@ -4,15 +4,15 @@
             <input type="text" name="name" value="{{ rule.name }}" class="rule-name-input" placeholder="Rule name">
         </div>
 
-        <div class="property-row">
+        <div class="rule-property-row">
             <label>Description</label>
-            <input type="text" name="description" value="{{ rule.description or '' }}" class="property-input" placeholder="Optional description">
+            <input type="text" name="description" value="{{ rule.description or '' }}" class="rule-property-input" placeholder="Optional description">
         </div>
 
-        <div class="property-row">
+        <div class="rule-property-row">
             <label>Priority</label>
-            <input type="number" name="priority" value="{{ rule.priority }}" class="property-input property-input-sm" min="0" max="1000">
-            <span class="property-hint">Higher = evaluated first</span>
+            <input type="number" name="priority" value="{{ rule.priority }}" class="rule-property-input rule-property-input-sm" min="0" max="1000">
+            <span class="rule-property-hint">Higher = evaluated first</span>
         </div>
 
         <!-- Conditions Section -->

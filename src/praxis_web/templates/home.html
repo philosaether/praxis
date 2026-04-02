@@ -182,6 +182,16 @@
                     Active only
                 </label>
             </div>
+
+            <!-- Rules toolbar (shown for rules mode) -->
+            <div id="rule-filters" class="filter-group" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %}">
+                <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+                    Import
+                </button>
+                <a class="btn btn-secondary btn-sm" href="/rules/export" download="praxis-rules.yml">
+                    Export
+                </a>
+            </div>
         </div>
 
         <!-- Add New Item Bar -->
@@ -214,12 +224,6 @@
                         hx-swap="innerHTML">
                     + New Rule
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
-                    Import
-                </button>
-                <a class="btn btn-secondary btn-sm" href="/rules/export" download="praxis-rules.yml">
-                    Export
-                </a>
                 <button class="btn btn-secondary btn-sm"
                         hx-post="/rules/restore-defaults"
                         hx-target="#item-list"
@@ -301,6 +305,7 @@
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
+        document.getElementById('rule-filters').style.display = mode === 'rules' ? 'flex' : 'none';
         // Hide task filters in inbox mode (all inbox tasks have no priority)
         document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
 

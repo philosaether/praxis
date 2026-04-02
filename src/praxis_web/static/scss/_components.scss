@@ -563,6 +563,53 @@
   font-size: $font-size-sm;
 }
 
+.rule-properties {
+  .detail-priority {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.rule-condition-list,
+.rule-effect-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.rule-condition-item,
+.rule-effect-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+
+  strong {
+    color: $text-primary;
+  }
+
+  code {
+    background: $bg-secondary;
+    padding: 2px 6px;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+  }
+}
+
+.condition-icon,
+.effect-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
 // -----------------------------------------------------------------------------
 // Import Rules Modal
 // -----------------------------------------------------------------------------
@@ -689,7 +736,7 @@
   }
 }
 
-.property-row {
+.rule-property-row {
   display: flex;
   align-items: center;
   gap: $spacing-md;
@@ -703,7 +750,7 @@
     letter-spacing: 0.05em;
   }
 
-  .property-input {
+  .rule-property-input {
     flex: 1;
     padding: $spacing-sm;
     background: $bg-tertiary;
@@ -718,12 +765,12 @@
     }
   }
 
-  .property-input-sm {
+  .rule-property-input-sm {
     flex: 0;
     width: 80px;
   }
 
-  .property-hint {
+  .rule-property-hint {
     font-size: $font-size-sm;
     color: $text-muted;
   }

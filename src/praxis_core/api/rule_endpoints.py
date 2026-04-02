@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse, Response
 
 from praxis_core.model import User
 from praxis_core.model.rules import ConditionType, EffectTarget, EffectOperator, RuleCondition, RuleEffect
-from praxis_core.persistence import list_rules, get_rule, toggle_rule, restore_default_rules, create_rule, update_rule
+from praxis_core.persistence import list_rules, get_rule, toggle_rule, restore_default_rules, create_rule, update_rule, delete_rule
 from praxis_core.api.auth import get_current_user, get_current_user_optional
 from praxis_core.rules import serialize_rules, serialize_rule, parse_rules, DSLParseError
 
@@ -354,3 +354,20 @@ async def update_rule_from_yaml(
         return JSONResponse({"error": "Failed to update rule"}, status_code=500)
 
     return {"rule": _serialize_rule_json(updated)}
+
+
+@router.delete("/{rule_id}")
+async def delete_rule_endpoint(
+    rule_id: str,
+    user: User = Depends(get_current_user),
+):
+    """Delete a rule."""
+    rule = get_rule(rule_id)
+    if not rule:
+        return JSONResponse({"error": "Rule not found"}, status_code=404)
+
+    success = delete_rule(rule_id)
+    if not success:
+        return JSONResponse({"error": "Failed to delete rule"}, status_code=500)
+
+    return {"success": True}
