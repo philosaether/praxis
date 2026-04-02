@@ -2003,6 +2003,15 @@ textarea.property-input {
 .tree-node {
   user-select: none;
 }
+.tree-node.status-dormant .tree-node-content {
+  opacity: 0.5;
+}
+.tree-node.status-completed .tree-node-content {
+  opacity: 0.4;
+}
+.tree-node.status-completed .tree-node-name {
+  text-decoration: line-through;
+}
 
 .tree-node-row {
   display: flex;
@@ -2129,24 +2138,36 @@ textarea.property-input {
   transition: all 0.2s ease;
 }
 .tree-children:empty {
-  min-height: 1.5rem;
+  min-height: 2rem;
   border-left-color: transparent;
   position: relative;
+  border-radius: 0.25rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 .tree-children:empty::after {
-  content: "Drop here to add as child";
+  content: "Drop here";
   position: absolute;
-  left: 0.5rem;
-  top: 0.25rem;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 0.7rem;
   color: transparent;
   transition: color 0.2s ease;
 }
 .sortable-ghost ~ .tree-children:empty, .tree-children:empty:hover {
   border-left-color: #735c00;
-  background: rgba(115, 92, 0, 0.05);
+  background: rgba(115, 92, 0, 0.08);
 }
 .sortable-ghost ~ .tree-children:empty::after, .tree-children:empty:hover::after {
+  color: #7a7976;
+}
+
+body:has(.tree-node-drag) .tree-children:empty {
+  border-left-color: rgba(208, 197, 175, 0.4);
+  background: rgba(115, 92, 0, 0.03);
+}
+body:has(.tree-node-drag) .tree-children:empty::after {
   color: #7a7976;
 }
 

@@ -348,16 +348,36 @@ async def priorities_page(request: Request):
     if is_htmx_request(request):
         return await priorities_list_partial(request)
 
-    # For full page, render the priority list
+    # For full page, render the priority list and tree pane
     async with api_client(request) as client:
         response = await client.get("/api/priorities")
         data = response.json()
+
+        # Also get tree data for detail pane
+        tree_response = await client.get("/api/priorities/tree")
+        tree_data = tree_response.json()
 
     list_html = templates.get_template("partials/priority_rows.html").render(
         priorities=data["priorities"]
     )
 
-    return await render_full_page(request, mode="priorities", initial_list_html=list_html)
+    # Build nested tree structure for recursive rendering
+    children_map = tree_data["children_map"]
+
+    def nest_children(node):
+        node_id = node["id"]
+        node["children"] = children_map.get(node_id, [])
+        for child in node["children"]:
+            nest_children(child)
+        return node
+
+    roots = [nest_children(root) for root in tree_data["roots"]]
+
+    detail_html = templates.get_template("partials/priority_tree_pane.html").render(
+        roots=roots
+    )
+
+    return await render_full_page(request, mode="priorities", initial_list_html=list_html, initial_detail_html=detail_html)
 
 # -----------------------------------------------------------------------------
 # Routes: HTMX Partials - Priority List
@@ -493,6 +513,22 @@ async def quick_add_priority_fields(request: Request, priority_type: str = "init
     """Return type-specific fields for quick-add modal."""
     template_name = f"partials/type_fields/{priority_type}_fields.html"
     return templates.TemplateResponse(request, template_name, {})
+
+
+@app.get("/priorities/parent-options", response_class=HTMLResponse)
+async def priority_parent_options(request: Request, exclude: str | None = None):
+    """Return fresh parent priority options for dropdowns."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    options = ['<option value="">None</option>']
+    for p in data["priorities"]:
+        if exclude and p["id"] == exclude:
+            continue
+        options.append(f'<option value="{p["id"]}">{p["name"]} ({p["priority_type"]})</option>')
+
+    return HTMLResponse(content="\n".join(options))
 
 
 @app.get("/priorities/tree", response_class=HTMLResponse)
@@ -903,10 +939,11 @@ async def quick_add_priorities(request: Request):
         response = await client.get("/api/priorities")
         data = response.json()
 
-    # Build options HTML
+    # Build options HTML with type prefix for scannability
     options = ['<option value="">Inbox (no priority)</option>']
     for p in data["priorities"]:
-        options.append(f'<option value="{p["id"]}">{p["name"]}</option>')
+        type_prefix = p["priority_type"][:3].upper()
+        options.append(f'<option value="{p["id"]}">[{type_prefix}] {p["name"]}</option>')
 
     return HTMLResponse(content="\n".join(options))
 

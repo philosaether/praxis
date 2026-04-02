@@ -23,7 +23,7 @@
                         <select id="qa-priority" name="priority_id">
                             <option value="">Inbox (no priority)</option>
                             {% for p in priorities %}
-                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            <option value="{{ p.id }}">[{{ p.priority_type[:3]|upper }}] {{ p.name }}</option>
                             {% endfor %}
                         </select>
                     </div>

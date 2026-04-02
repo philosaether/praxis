@@ -42,6 +42,24 @@
 
 .tree-node {
   user-select: none;
+
+  // Dormant priorities appear faded
+  &.status-dormant {
+    .tree-node-content {
+      opacity: 0.5;
+    }
+  }
+
+  // Completed priorities - strikethrough and faded
+  &.status-completed {
+    .tree-node-content {
+      opacity: 0.4;
+    }
+
+    .tree-node-name {
+      text-decoration: line-through;
+    }
+  }
 }
 
 .tree-node-row {
@@ -197,15 +215,19 @@
   transition: all $transition-fast;
 
   &:empty {
-    min-height: 1.5rem;
+    min-height: 2rem;
     border-left-color: transparent;
     position: relative;
+    border-radius: $radius-sm;
+    margin-top: $spacing-xs;
+    margin-bottom: $spacing-xs;
 
     &::after {
-      content: "Drop here to add as child";
+      content: "Drop here";
       position: absolute;
-      left: 0.5rem;
-      top: 0.25rem;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
       font-size: 0.7rem;
       color: transparent;
       transition: color $transition-fast;
@@ -216,11 +238,21 @@
   .sortable-ghost ~ &:empty,
   &:empty:hover {
     border-left-color: $accent;
-    background: rgba($accent, 0.05);
+    background: rgba($accent, 0.08);
 
     &::after {
       color: $text-muted;
     }
+  }
+}
+
+// When any drag is happening, show all empty drop zones
+body:has(.tree-node-drag) .tree-children:empty {
+  border-left-color: $border-subtle;
+  background: rgba($accent, 0.03);
+
+  &::after {
+    color: $text-muted;
   }
 }
 
