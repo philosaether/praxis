@@ -414,3 +414,603 @@
     }
   }
 }
+
+// -----------------------------------------------------------------------------
+// Rules
+// -----------------------------------------------------------------------------
+
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: background $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.selected {
+    background: $accent-glow;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+
+.rule-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.rule-description {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-top: 2px;
+}
+
+.rule-badge {
+  font-size: $font-size-xs;
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+  background: $bg-tertiary;
+  color: $text-muted;
+
+  &.system {
+    background: $accent-glow;
+    color: $accent;
+  }
+}
+
+.rule-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-slider {
+      background: $accent;
+
+      &::before {
+        transform: translateX(16px);
+      }
+    }
+  }
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: $bg-tertiary;
+  border-radius: 20px;
+  transition: background $transition-base;
+
+  &::before {
+    content: "";
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform $transition-base;
+  }
+}
+
+.rule-view {
+  padding: $spacing-lg;
+}
+
+.rule-section {
+  margin-top: $spacing-lg;
+
+  h3 {
+    font-size: $font-size-base;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+.rule-conditions,
+.rule-effects {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $border-subtle;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    code {
+      background: $bg-tertiary;
+      padding: 2px 6px;
+      border-radius: $radius-sm;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+.rule-meta {
+  margin-top: $spacing-lg;
+  display: flex;
+  gap: $spacing-lg;
+  font-size: $font-size-sm;
+}
+
+.rule-properties {
+  .detail-priority {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.rule-condition-list,
+.rule-effect-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.rule-condition-item,
+.rule-effect-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+
+  strong {
+    color: $text-primary;
+  }
+
+  code {
+    background: $bg-secondary;
+    padding: 2px 6px;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+  }
+}
+
+.condition-icon,
+.effect-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+// -----------------------------------------------------------------------------
+// Import Rules Modal
+// -----------------------------------------------------------------------------
+
+.import-modal {
+  max-width: 500px;
+}
+
+.file-upload-area {
+  border: 2px dashed $border;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  text-align: center;
+  transition: all $transition-base;
+  cursor: pointer;
+
+  &:hover,
+  &.drag-over {
+    border-color: $accent;
+    background: $accent-glow;
+  }
+}
+
+.file-upload-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: $spacing-sm;
+}
+
+.import-error {
+  margin-top: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: $radius-md;
+  color: #dc3545;
+  font-size: $font-size-sm;
+}
+
+.import-rules-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+}
+
+.import-rule-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+  cursor: pointer;
+  transition: background $transition-base;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  input[type="checkbox"] {
+    flex-shrink: 0;
+  }
+}
+
+.import-rule-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.import-rule-meta {
+  font-size: $font-size-sm;
+  color: $text-muted;
+}
+
+.import-select-actions {
+  margin-top: $spacing-sm;
+  display: flex;
+  gap: $spacing-md;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: $accent;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Rule Editor (Block-based)
+// -----------------------------------------------------------------------------
+
+.rule-edit {
+  padding: $spacing-lg;
+}
+
+.rule-name-input {
+  width: 100%;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: $text-primary;
+  padding: $spacing-sm 0;
+  transition: border-color $transition-base;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: $accent;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.rule-property-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+
+  label {
+    min-width: 80px;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .rule-property-input {
+    flex: 1;
+    padding: $spacing-sm;
+    background: $bg-tertiary;
+    border: 1px solid $border-subtle;
+    border-radius: $radius-md;
+    color: $text-primary;
+    font-size: $font-size-base;
+
+    &:focus {
+      outline: none;
+      border-color: $accent;
+    }
+  }
+
+  .rule-property-input-sm {
+    flex: 0;
+    width: 80px;
+  }
+
+  .rule-property-hint {
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+}
+
+.rule-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-base;
+    font-weight: 600;
+  }
+}
+
+.block-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-height: 40px;
+}
+
+.rule-block {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  transition: background $transition-base, box-shadow $transition-base;
+
+  &.condition-block {
+    background: rgba(#5b8def, 0.15);
+    border: 1px solid rgba(#5b8def, 0.3);
+  }
+
+  &.effect-block {
+    background: rgba(#9b59b6, 0.15);
+    border: 1px solid rgba(#9b59b6, 0.3);
+  }
+
+  &.block-ghost {
+    opacity: 0.4;
+  }
+
+  &:hover {
+    box-shadow: $shadow-sm;
+  }
+}
+
+.block-drag-handle {
+  cursor: grab;
+  color: $text-muted;
+  font-size: $font-size-sm;
+  padding: 0 $spacing-xs;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.block-type-select {
+  background: $bg-secondary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+  min-width: 120px;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.block-select {
+  background: $bg-secondary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.block-fields {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.block-input {
+  background: $bg-secondary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+
+  &.block-input-sm {
+    width: 60px;
+  }
+}
+
+.block-label {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+.block-delete {
+  background: none;
+  border: none;
+  color: $text-muted;
+  font-size: $font-size-lg;
+  cursor: pointer;
+  padding: 0 $spacing-xs;
+  line-height: 1;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $error;
+  }
+}
+
+.day-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: $font-size-sm;
+  color: $text-secondary;
+  cursor: pointer;
+
+  input {
+    margin: 0;
+  }
+}
+
+.rule-yaml-section {
+  margin-top: $spacing-lg;
+}
+
+.yaml-editor {
+  width: 100%;
+  min-height: 200px;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  font-family: monospace;
+  font-size: $font-size-sm;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.rule-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-xl;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-subtle;
+}
+
+.rule-edit-actions-right {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+// -----------------------------------------------------------------------------
+// Rule Wizard (Template Picker)
+// -----------------------------------------------------------------------------
+
+.rule-wizard {
+  padding: $spacing-lg;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+}
+
+.template-card {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    border-color: $accent;
+    background: $accent-glow;
+    box-shadow: $shadow-md;
+  }
+}
+
+.template-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.template-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-name {
+  margin: 0 0 $spacing-xs;
+  font-size: $font-size-base;
+  font-weight: 600;
+}
+
+.template-description {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-muted;
+  line-height: 1.4;
+}

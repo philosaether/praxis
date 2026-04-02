@@ -49,6 +49,22 @@ from praxis_core.persistence.user_persistence import (
     delete_user_sessions,
     cleanup_expired_sessions,
 )
+from praxis_core.persistence.rule_persistence import (
+    RULES_SCHEMA,
+    create_rule,
+    get_rule,
+    list_rules,
+    update_rule,
+    delete_rule,
+    toggle_rule,
+    seed_user_rules,
+    restore_default_rules,
+    ensure_default_rules,
+)
+from praxis_core.persistence.tag_persistence import (
+    get_tags_for_task,
+    get_tags_for_tasks,
+)
 
 __all__ = [
     # Database
@@ -92,4 +108,18 @@ __all__ = [
     "delete_session",
     "delete_user_sessions",
     "cleanup_expired_sessions",
+    # Rule persistence
+    "RULES_SCHEMA",
+    "create_rule",
+    "get_rule",
+    "list_rules",
+    "update_rule",
+    "delete_rule",
+    "toggle_rule",
+    "seed_user_rules",
+    "restore_default_rules",
+    "ensure_default_rules",
+    # Tag persistence (subset)
+    "get_tags_for_task",
+    "get_tags_for_tasks",
 ]

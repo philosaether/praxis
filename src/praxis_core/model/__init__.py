@@ -33,6 +33,14 @@ from praxis_core.model.entities import (
     EntityRole,
     EntityMember,
 )
+from praxis_core.model.rules import (
+    Rule,
+    RuleCondition,
+    RuleEffect,
+    ConditionType,
+    EffectTarget,
+    EffectOperator,
+)
 
 __all__ = [
     # Priorities
@@ -63,4 +71,11 @@ __all__ = [
     "EntityType",
     "EntityRole",
     "EntityMember",
+    # Rules
+    "Rule",
+    "RuleCondition",
+    "RuleEffect",
+    "ConditionType",
+    "EffectTarget",
+    "EffectOperator",
 ]

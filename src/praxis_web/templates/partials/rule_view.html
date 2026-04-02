@@ -1,0 +1,133 @@
+<div class="detail-view rule-view" id="rule-view-{{ rule.id }}">
+    <div class="properties-section rule-properties">
+        <!-- Title -->
+        <h2 class="detail-title">{{ rule.name }}</h2>
+
+        <!-- Status badge -->
+        <div class="detail-priority">
+            {% if rule.enabled %}
+            <span class="type-badge practice">ENABLED</span>
+            {% else %}
+            <span class="type-badge" style="background: var(--bg-tertiary); color: var(--text-muted);">DISABLED</span>
+            {% endif %}
+            <span class="priority-badge">Priority: {{ rule.priority }}</span>
+        </div>
+
+        <!-- Description -->
+        {% if rule.description %}
+        <div class="property-row">
+            <label>Description</label>
+            <div class="property-display">{{ rule.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Conditions -->
+        <div class="property-row">
+            <label>When</label>
+            <div class="property-display">
+                {% if rule.conditions %}
+                <ul class="rule-condition-list">
+                    {% for condition in rule.conditions %}
+                    <li class="rule-condition-item">
+                        {% if condition.type == 'time_window' %}
+                        <span class="condition-icon">🕐</span>
+                        Time is between <strong>{{ condition.params.start or '00:00' }}</strong> and <strong>{{ condition.params.end or '23:59' }}</strong>
+                        {% elif condition.type == 'day_of_week' %}
+                        <span class="condition-icon">📅</span>
+                        Day is {% for day in condition.params.days %}<strong>{{ day|capitalize }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}
+                        {% elif condition.type == 'tag_match' %}
+                        <span class="condition-icon">🏷️</span>
+                        Task has tag <strong>{{ condition.params.tag }}</strong>
+                        {% elif condition.type == 'tag_missing' %}
+                        <span class="condition-icon">🏷️</span>
+                        Task is missing tag <strong>{{ condition.params.tag }}</strong>
+                        {% elif condition.type == 'due_date_proximity' %}
+                        <span class="condition-icon">⏰</span>
+                        {% if condition.params.due_type == 'overdue' %}
+                        Task is <strong>overdue</strong>
+                        {% elif condition.params.due_type == 'within_hours' %}
+                        Task is due within <strong>{{ condition.params.hours }} hours</strong>
+                        {% elif condition.params.due_type == 'has_due_date' %}
+                        Task <strong>has a due date</strong>
+                        {% elif condition.params.due_type == 'not_overdue' %}
+                        Task is <strong>not overdue</strong>
+                        {% endif %}
+                        {% elif condition.type == 'staleness' %}
+                        <span class="condition-icon">🧹</span>
+                        Task untouched for <strong>{{ condition.params.days }} days</strong>
+                        {% else %}
+                        {{ condition.type }}: {{ condition.params }}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <span class="text-muted">Always applies (no conditions)</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Effects -->
+        <div class="property-row">
+            <label>Then</label>
+            <div class="property-display">
+                {% if rule.effects %}
+                <ul class="rule-effect-list">
+                    {% for effect in rule.effects %}
+                    <li class="rule-effect-item">
+                        {% if effect.operator == 'multiply' %}
+                        <span class="effect-icon">×</span>
+                        Multiply <strong>{{ effect.target }}</strong> by <strong>{{ effect.value }}</strong>
+                        {% elif effect.operator == 'add' %}
+                        <span class="effect-icon">+</span>
+                        Add <strong>{{ effect.value }}</strong> to <strong>{{ effect.target }}</strong>
+                        {% elif effect.operator == 'set' %}
+                        <span class="effect-icon">=</span>
+                        Set <strong>{{ effect.target }}</strong> to <strong>{{ effect.value }}</strong>
+                        {% elif effect.operator == 'formula' %}
+                        <span class="effect-icon">ƒ</span>
+                        Set <strong>{{ effect.target }}</strong> using formula: <code>{{ effect.formula }}</code>
+                        {% else %}
+                        {{ effect.target }}: {{ effect.operator }} {{ effect.value or effect.formula }}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <span class="text-muted">No effects defined</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="property-actions">
+            <div class="actions-left">
+                <button type="button"
+                        class="btn btn-primary"
+                        hx-get="/rules/{{ rule.id }}/edit"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
+                    Edit
+                </button>
+            </div>
+            <div class="actions-right">
+                <button type="button"
+                        class="btn btn-danger"
+                        hx-delete="/rules/{{ rule.id }}"
+                        hx-swap="none"
+                        hx-confirm="Delete '{{ rule.name }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { document.getElementById('rule-row-{{ rule.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select a rule</h3><p>Click a rule on the left to view details</p></div>'; }">
+                    Delete
+                </button>
+            </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="property-meta">
+            <span class="meta-item">#{{ rule.id }}</span>
+            {% if rule.created_at %}
+            <span class="meta-item">Created: {{ rule.created_at }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
