@@ -562,3 +562,100 @@
   gap: $spacing-lg;
   font-size: $font-size-sm;
 }
+
+// -----------------------------------------------------------------------------
+// Import Rules Modal
+// -----------------------------------------------------------------------------
+
+.import-modal {
+  max-width: 500px;
+}
+
+.file-upload-area {
+  border: 2px dashed $border;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  text-align: center;
+  transition: all $transition-base;
+  cursor: pointer;
+
+  &:hover,
+  &.drag-over {
+    border-color: $accent;
+    background: $accent-glow;
+  }
+}
+
+.file-upload-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: $spacing-sm;
+}
+
+.import-error {
+  margin-top: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: $radius-md;
+  color: #dc3545;
+  font-size: $font-size-sm;
+}
+
+.import-rules-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+}
+
+.import-rule-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+  cursor: pointer;
+  transition: background $transition-base;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  input[type="checkbox"] {
+    flex-shrink: 0;
+  }
+}
+
+.import-rule-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.import-rule-meta {
+  font-size: $font-size-sm;
+  color: $text-muted;
+}
+
+.import-select-actions {
+  margin-top: $spacing-sm;
+  display: flex;
+  gap: $spacing-md;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: $accent;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

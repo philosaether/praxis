@@ -876,6 +876,93 @@ a:hover {
   font-size: 0.85rem;
 }
 
+.import-modal {
+  max-width: 500px;
+}
+
+.file-upload-area {
+  border: 2px dashed #d0c5af;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+.file-upload-area:hover, .file-upload-area.drag-over {
+  border-color: #735c00;
+  background: #f7e1a6;
+}
+
+.file-upload-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.import-error {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 0.5rem;
+  color: #dc3545;
+  font-size: 0.85rem;
+}
+
+.import-rules-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #d0c5af;
+  border-radius: 0.5rem;
+}
+
+.import-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
+  cursor: pointer;
+  transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.import-rule-item:last-child {
+  border-bottom: none;
+}
+.import-rule-item:hover {
+  background: #ebe8e2;
+}
+.import-rule-item input[type=checkbox] {
+  flex-shrink: 0;
+}
+
+.import-rule-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.import-rule-meta {
+  font-size: 0.85rem;
+  color: #7a7976;
+}
+
+.import-select-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #735c00;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+.btn-link:hover {
+  text-decoration: underline;
+}
+
 .priority-list {
   flex: 1;
   overflow-y: auto;

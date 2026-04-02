@@ -1419,3 +1419,48 @@ async def new_rule_form(request: Request):
             <p>Rule creation wizard coming soon</p>
         </div>
     """)
+
+
+@app.get("/rules/export")
+async def export_rules_web(request: Request):
+    """Export all rules as YAML file."""
+    async with api_client(request) as client:
+        response = await client.get("/api/rules/export")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to export rules</div>")
+
+        return Response(
+            content=response.content,
+            media_type="text/yaml",
+            headers={"Content-Disposition": "attachment; filename=praxis-rules.yml"}
+        )
+
+
+@app.post("/rules/import/preview")
+async def import_preview_web(request: Request):
+    """Preview rules from YAML content."""
+    body = await request.body()
+    async with api_client(request) as client:
+        response = await client.post(
+            "/api/rules/import/preview",
+            content=body.decode('utf-8'),
+            headers={"Content-Type": "text/plain"}
+        )
+        return Response(
+            content=response.content,
+            media_type="application/json",
+            status_code=response.status_code
+        )
+
+
+@app.post("/rules/import")
+async def import_rules_web(request: Request):
+    """Import selected rules from YAML."""
+    data = await request.json()
+    async with api_client(request) as client:
+        response = await client.post("/api/rules/import", json=data)
+        return Response(
+            content=response.content,
+            media_type="application/json",
+            status_code=response.status_code
+        )
