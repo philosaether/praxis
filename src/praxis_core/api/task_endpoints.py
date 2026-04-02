@@ -102,12 +102,12 @@ def can_view_task(permission: str | None) -> bool:
 
 def can_edit_task(permission: str | None) -> bool:
     """Check if user can edit task properties (name, notes, due date)."""
-    return permission in ("owner", "assignee")
+    return permission in ("owner", "assignee", "creator")
 
 
 def can_toggle_task(permission: str | None) -> bool:
     """Check if user can toggle task done/undone."""
-    return permission in ("owner", "assignee")
+    return permission in ("owner", "assignee", "creator")
 
 
 def can_delete_task(permission: str | None) -> bool:
@@ -288,8 +288,11 @@ async def get_task_for_edit(
     graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
+    task_data = _serialize_task(task, render_markdown=False, current_user=user, graph=graph)
+    task_data["notes_raw"] = task.notes or ""
+
     return {
-        "task": _serialize_task(task, render_markdown=False, current_user=user, graph=graph),
+        "task": task_data,
         "priorities": [_serialize_priority(p) for p in priorities],
         "task_statuses": [s.value for s in TaskStatus],
         "edit_mode": True,
