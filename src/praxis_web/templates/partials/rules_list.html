@@ -8,16 +8,10 @@
          hx-push-url="/rules/{{ rule.id }}"
          onclick="selectRow(this)">
         <div class="rule-row-content">
-            <div class="rule-name">
-                {{ rule.name }}
-                {% if rule.is_system %}
-                <span class="rule-badge system">System</span>
-                {% endif %}
-            </div>
+            <div class="rule-name">{{ rule.name }}</div>
             <div class="rule-description">{{ rule.description or '' }}</div>
         </div>
         <div class="rule-row-actions">
-            {% if not rule.is_system %}
             <label class="rule-toggle" onclick="event.stopPropagation()">
                 <input type="checkbox"
                        {% if rule.enabled %}checked{% endif %}
@@ -25,14 +19,13 @@
                        hx-swap="none">
                 <span class="toggle-slider"></span>
             </label>
-            {% endif %}
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
 <div class="empty-list">
-    <p>No custom rules yet</p>
-    <p class="text-muted">System rules are applied automatically</p>
+    <p>No rules yet</p>
+    <p class="text-muted">Click "Restore Defaults" to add the default rules</p>
 </div>
 {% endif %}

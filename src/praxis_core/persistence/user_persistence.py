@@ -183,16 +183,20 @@ def create_user(
             (entity_id, user_id, now_str),
         )
 
-        return User(
-            id=user_id,
-            username=username,
-            email=email,
-            password_hash=password_hash,
-            entity_id=entity_id,
-            role=role,
-            is_active=True,
-            created_at=now,
-        )
+    # Seed default rules for the new user (outside transaction)
+    from praxis_core.persistence.rule_persistence import seed_user_rules
+    seed_user_rules(entity_id)
+
+    return User(
+        id=user_id,
+        username=username,
+        email=email,
+        password_hash=password_hash,
+        entity_id=entity_id,
+        role=role,
+        is_active=True,
+        created_at=now,
+    )
 
 
 def get_user(user_id: int) -> User | None:

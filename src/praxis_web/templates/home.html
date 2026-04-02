@@ -207,6 +207,21 @@
                     + Invite Friend
                 </button>
             </div>
+            <div id="add-rule-bar" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %};">
+                <button class="btn btn-primary btn-sm"
+                        hx-get="/rules/new"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
+                    + New Rule
+                </button>
+                <button class="btn btn-secondary btn-sm"
+                        hx-post="/rules/restore-defaults"
+                        hx-target="#item-list"
+                        hx-swap="innerHTML"
+                        hx-confirm="Replace all your rules with defaults? This cannot be undone.">
+                    Restore Defaults
+                </button>
+            </div>
         </div>
 
         <!-- Item List -->
@@ -284,6 +299,7 @@
         document.getElementById('add-task-bar').style.display = (mode === 'tasks' || mode === 'inbox') ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
         document.getElementById('add-friend-bar').style.display = mode === 'friends' ? 'flex' : 'none';
+        document.getElementById('add-rule-bar').style.display = mode === 'rules' ? 'flex' : 'none';
 
         // Update FAB color based on mode
         const fab = document.getElementById('fab-button');
@@ -469,7 +485,7 @@
 
     window.selectRow = function(element) {
         // Remove selected class from all rows
-        document.querySelectorAll('.task-row.selected, .priority-row.selected')
+        document.querySelectorAll('.task-row.selected, .priority-row.selected, .rule-row.selected')
             .forEach(el => el.classList.remove('selected'));
         // Add selected class to clicked row
         element.classList.add('selected');

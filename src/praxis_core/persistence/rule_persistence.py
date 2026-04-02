@@ -183,15 +183,11 @@ def update_rule(
 ) -> Rule | None:
     """
     Update a rule. Only provided fields are updated.
-
-    System rules (is_system=1) cannot be modified.
     """
     ensure_schema()
     rule = get_rule(rule_id)
     if not rule:
         return None
-    if rule.is_system:
-        raise ValueError("Cannot modify system rules")
 
     updates = []
     params = []
@@ -232,21 +228,11 @@ def update_rule(
 
 
 def delete_rule(rule_id: str) -> bool:
-    """
-    Delete a rule.
-
-    System rules (is_system=1) cannot be deleted.
-    """
+    """Delete a rule."""
     ensure_schema()
-    rule = get_rule(rule_id)
-    if not rule:
-        return False
-    if rule.is_system:
-        raise ValueError("Cannot delete system rules")
-
     with get_connection() as conn:
-        conn.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
-    return True
+        result = conn.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
+        return result.rowcount > 0
 
 
 def toggle_rule(rule_id: str) -> Rule | None:
@@ -259,65 +245,55 @@ def toggle_rule(rule_id: str) -> Rule | None:
 
 
 # -----------------------------------------------------------------------------
-# System Rules Management
+# User Rules Management
 # -----------------------------------------------------------------------------
 
-def create_system_rule(
-    rule_id: str,
-    name: str,
-    conditions: list[RuleCondition],
-    effects: list[RuleEffect],
-    description: str | None = None,
-    priority: int = 0,
-) -> Rule:
+def seed_user_rules(entity_id: str) -> list[Rule]:
     """
-    Create or update a system rule with a fixed ID.
+    Seed default rules for a new user.
 
-    System rules are global (entity_id=None) and cannot be deleted by users.
-    This is idempotent - if the rule exists, it will be updated.
-    """
-    ensure_schema()
-    now = datetime.now()
-
-    conditions_json = json.dumps([c.to_dict() for c in conditions])
-    effects_json = json.dumps([e.to_dict() for e in effects])
-
-    with get_connection() as conn:
-        conn.execute(
-            """
-            INSERT INTO rules (id, entity_id, name, description, enabled, priority,
-                             conditions, effects, is_system, created_at, updated_at)
-            VALUES (?, NULL, ?, ?, 1, ?, ?, ?, 1, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                name = excluded.name,
-                description = excluded.description,
-                priority = excluded.priority,
-                conditions = excluded.conditions,
-                effects = excluded.effects,
-                updated_at = excluded.updated_at
-            """,
-            (rule_id, name, description, priority,
-             conditions_json, effects_json,
-             now.isoformat(), now.isoformat()),
-        )
-
-    return get_rule(rule_id)
-
-
-def ensure_default_rules() -> None:
-    """
-    Ensure all default system rules exist.
-
-    Called on app startup to seed the database with built-in rules.
+    Creates copies of the default rules with the user's entity_id.
+    Called when a new user is created.
     """
     from praxis_core.rules.defaults import get_default_rules
 
+    created_rules = []
     for rule_def in get_default_rules():
-        create_system_rule(
-            rule_id=rule_def["id"],
+        rule = create_rule(
             name=rule_def["name"],
             description=rule_def.get("description"),
             conditions=[RuleCondition.from_dict(c) for c in rule_def["conditions"]],
             effects=[RuleEffect.from_dict(e) for e in rule_def["effects"]],
+            entity_id=entity_id,
+            enabled=True,
             priority=rule_def.get("priority", 0),
         )
+        created_rules.append(rule)
+    return created_rules
+
+
+def restore_default_rules(entity_id: str) -> list[Rule]:
+    """
+    Restore a user's rules to defaults.
+
+    Deletes all existing rules for the entity and creates fresh copies
+    of the default rules.
+    """
+    ensure_schema()
+
+    # Delete all existing rules for this entity
+    with get_connection() as conn:
+        conn.execute("DELETE FROM rules WHERE entity_id = ?", (entity_id,))
+
+    # Seed fresh defaults
+    return seed_user_rules(entity_id)
+
+
+def ensure_default_rules() -> None:
+    """
+    Legacy function - no longer seeds global system rules.
+
+    Rules are now per-user and seeded at user creation time.
+    This function is kept for backwards compatibility but does nothing.
+    """
+    pass

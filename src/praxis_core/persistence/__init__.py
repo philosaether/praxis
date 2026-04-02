@@ -57,7 +57,8 @@ from praxis_core.persistence.rule_persistence import (
     update_rule,
     delete_rule,
     toggle_rule,
-    create_system_rule,
+    seed_user_rules,
+    restore_default_rules,
     ensure_default_rules,
 )
 from praxis_core.persistence.tag_persistence import (
@@ -115,7 +116,8 @@ __all__ = [
     "update_rule",
     "delete_rule",
     "toggle_rule",
-    "create_system_rule",
+    "seed_user_rules",
+    "restore_default_rules",
     "ensure_default_rules",
     # Tag persistence (subset)
     "get_tags_for_task",

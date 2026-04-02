@@ -1,9 +1,6 @@
 <div class="detail-view rule-view">
     <div class="detail-header">
         <h2>{{ rule.name }}</h2>
-        {% if rule.is_system %}
-        <span class="rule-badge system">System Rule</span>
-        {% endif %}
     </div>
 
     {% if rule.description %}
@@ -43,8 +40,6 @@
 
     <div class="rule-meta">
         <span class="text-muted">Priority: {{ rule.priority }}</span>
-        {% if not rule.is_system %}
         <span class="text-muted">Status: {% if rule.enabled %}Enabled{% else %}Disabled{% endif %}</span>
-        {% endif %}
     </div>
 </div>

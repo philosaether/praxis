@@ -1391,3 +1391,31 @@ async def toggle_rule_web(request: Request, rule_id: str):
         if response.status_code != 200:
             return HTMLResponse("<div class='error'>Failed to toggle rule</div>")
     return HTMLResponse("")
+
+
+@app.post("/rules/restore-defaults", response_class=HTMLResponse)
+async def restore_defaults_web(request: Request):
+    """Restore user's rules to defaults and return updated list."""
+    async with api_client(request) as client:
+        response = await client.post("/api/rules/restore-defaults")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to restore defaults</div>")
+        data = response.json()
+        rules = data.get("rules", [])
+
+    return templates.TemplateResponse(
+        request,
+        "partials/rules_list.html",
+        {"rules": rules}
+    )
+
+
+@app.get("/rules/new", response_class=HTMLResponse)
+async def new_rule_form(request: Request):
+    """Show new rule form (placeholder for now)."""
+    return HTMLResponse("""
+        <div class="empty-state">
+            <h3>New Rule</h3>
+            <p>Rule creation wizard coming soon</p>
+        </div>
+    """)
