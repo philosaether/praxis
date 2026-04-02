@@ -119,7 +119,7 @@
                                     onchange="updateFilterBadge()">
                                 <option value="">All</option>
                                 {% for p in priorities %}
-                                <option value="{{ p.id }}">{{ p.name }}</option>
+                                <option value="{{ p.id }}">[{{ p.priority_type[:3]|upper }}] {{ p.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -278,6 +278,10 @@
 
 <!-- Tree Context Menu -->
 <div class="tree-context-menu" id="tree-context-menu">
+    <button class="tree-context-menu-item" onclick="handleTreeMenuEdit()">
+        <span class="menu-icon">✎</span>
+        <span>Edit</span>
+    </button>
     <button class="tree-context-menu-item" onclick="handleTreeMenuAddChild()">
         <span class="menu-icon">+</span>
         <span>Add child</span>
@@ -536,7 +540,34 @@
         if (window.currentMode === 'priorities' && priorityId) {
             addPriorityToTree(priorityId, parentId);
         }
+
+        // Refresh parent dropdowns in any open forms
+        refreshParentDropdowns();
     });
+
+    // Refresh all parent_id dropdowns with fresh options
+    window.refreshParentDropdowns = async function() {
+        const dropdowns = document.querySelectorAll('select[name="parent_id"]');
+        if (dropdowns.length === 0) return;
+
+        try {
+            const response = await fetch('/priorities/parent-options');
+            if (response.ok) {
+                const optionsHtml = await response.text();
+                dropdowns.forEach(select => {
+                    const currentValue = select.value;
+                    select.innerHTML = optionsHtml;
+                    // Restore selection if still valid
+                    if (currentValue) {
+                        const option = select.querySelector(`option[value="${currentValue}"]`);
+                        if (option) select.value = currentValue;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to refresh parent dropdowns:', e);
+        }
+    };
 
     // Listen for rule creation/update to refresh the list
     document.body.addEventListener('ruleCreated', function(event) {
@@ -695,6 +726,23 @@
         const menu = document.getElementById('tree-context-menu');
         menu.classList.remove('open');
         document.querySelectorAll('.tree-node-menu-btn.active').forEach(b => b.classList.remove('active'));
+    };
+
+    window.handleTreeMenuEdit = function() {
+        closeTreeContextMenu();
+
+        // Load the priority edit view into the detail pane
+        htmx.ajax('GET', '/priorities/' + treeMenuTarget.id + '/edit', {
+            target: '#detail-pane',
+            swap: 'innerHTML'
+        });
+
+        // Select the node in the tree
+        const treeNode = document.querySelector('.tree-node[data-id="' + treeMenuTarget.id + '"]');
+        if (treeNode) {
+            const nodeContent = treeNode.querySelector(':scope > .tree-node-row .tree-node-content');
+            if (nodeContent) selectTreeNode(nodeContent);
+        }
     };
 
     window.handleTreeMenuAddChild = function() {

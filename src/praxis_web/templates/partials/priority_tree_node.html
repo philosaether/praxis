@@ -3,7 +3,7 @@
 {% set depth = depth|default(0) %}
 {% set node = node|default(root) %}
 
-<div class="tree-node" data-id="{{ node.id }}" data-depth="{{ depth }}" data-name="{{ node.name }}">
+<div class="tree-node{% if node.status == 'dormant' %} status-dormant{% endif %}{% if node.status == 'completed' %} status-completed{% endif %}" data-id="{{ node.id }}" data-depth="{{ depth }}" data-name="{{ node.name }}">
     <div class="tree-node-row"
          style="padding-left: {{ depth * 1.5 + 0.5 }}rem;"
          oncontextmenu="showTreeContextMenuFromElement(event, this)">
