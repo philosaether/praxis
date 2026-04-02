@@ -1191,6 +1191,57 @@ a:hover {
   gap: 0.5rem;
 }
 
+.rule-wizard {
+  padding: 1rem;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.template-card {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f5f3ef;
+  border: 1px solid rgba(208, 197, 175, 0.4);
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.template-card:hover {
+  border-color: #735c00;
+  background: #f7e1a6;
+  box-shadow: 0 4px 16px rgba(77, 70, 53, 0.08);
+}
+
+.template-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.template-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-name {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.template-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7a7976;
+  line-height: 1.4;
+}
+
 .priority-list {
   flex: 1;
   overflow-y: auto;

@@ -50,6 +50,56 @@ async def list_rules_endpoint(
     return {"rules": [_serialize_rule_json(r) for r in rules]}
 
 
+@router.post("")
+async def create_rule_endpoint(
+    name: Annotated[str, Body()],
+    description: Annotated[str | None, Body()] = None,
+    conditions: Annotated[list[dict], Body()] = [],
+    effects: Annotated[list[dict], Body()] = [],
+    user: User = Depends(get_current_user),
+):
+    """Create a new rule."""
+    # Convert condition dicts to RuleCondition objects
+    parsed_conditions = []
+    for c in conditions:
+        try:
+            cond_type = ConditionType(c.get("type"))
+            parsed_conditions.append(RuleCondition(type=cond_type, params=c.get("params", {})))
+        except ValueError:
+            return JSONResponse({"error": f"Invalid condition type: {c.get('type')}"}, status_code=400)
+
+    # Convert effect dicts to RuleEffect objects
+    parsed_effects = []
+    for e in effects:
+        try:
+            target = EffectTarget(e.get("target"))
+            operator = EffectOperator(e.get("operator"))
+            value = e.get("value", "")
+
+            # Parse value based on operator
+            if operator == EffectOperator.FORMULA:
+                parsed_effects.append(RuleEffect(target=target, operator=operator, formula=str(value)))
+            else:
+                # Try to parse as number
+                try:
+                    numeric_value = float(value) if value else 0.0
+                except (ValueError, TypeError):
+                    numeric_value = 0.0
+                parsed_effects.append(RuleEffect(target=target, operator=operator, value=numeric_value))
+        except ValueError as e:
+            return JSONResponse({"error": f"Invalid effect: {str(e)}"}, status_code=400)
+
+    rule = create_rule(
+        name=name,
+        description=description or "",
+        conditions=parsed_conditions,
+        effects=parsed_effects,
+        entity_id=user.entity_id,
+    )
+
+    return {"rule": _serialize_rule_json(rule)}
+
+
 # -----------------------------------------------------------------------------
 # Export Endpoints (must be before /{rule_id} to avoid route conflicts)
 # -----------------------------------------------------------------------------

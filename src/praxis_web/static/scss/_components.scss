@@ -911,3 +911,59 @@
   display: flex;
   gap: $spacing-sm;
 }
+
+// -----------------------------------------------------------------------------
+// Rule Wizard (Template Picker)
+// -----------------------------------------------------------------------------
+
+.rule-wizard {
+  padding: $spacing-lg;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+}
+
+.template-card {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    border-color: $accent;
+    background: $accent-glow;
+    box-shadow: $shadow-md;
+  }
+}
+
+.template-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.template-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-name {
+  margin: 0 0 $spacing-xs;
+  font-size: $font-size-base;
+  font-weight: 600;
+}
+
+.template-description {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-muted;
+  line-height: 1.4;
+}

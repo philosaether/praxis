@@ -1366,16 +1366,122 @@ async def rules_list_partial(request: Request):
     )
 
 
+# Rule templates for the wizard
+RULE_TEMPLATES = [
+    {
+        "id": "morning_boost",
+        "name": "Morning Boost",
+        "icon": "🌅",
+        "description": "Increase aptness for tasks during morning hours when focus is high.",
+        "conditions": [{"type": "time_window", "params": {"start": "06:00", "end": "12:00"}}],
+        "effects": [{"target": "aptness", "operator": "multiply", "value": 1.5}],
+    },
+    {
+        "id": "evening_wind_down",
+        "name": "Evening Wind-down",
+        "icon": "🌙",
+        "description": "Reduce aptness in the evening to favor lighter tasks.",
+        "conditions": [{"type": "time_window", "params": {"start": "20:00", "end": "23:59"}}],
+        "effects": [{"target": "aptness", "operator": "multiply", "value": 0.5}],
+    },
+    {
+        "id": "weekend_rest",
+        "name": "Weekend Rest",
+        "icon": "🛋️",
+        "description": "Lower task urgency on weekends to encourage rest.",
+        "conditions": [{"type": "day_of_week", "params": {"days": ["saturday", "sunday"]}}],
+        "effects": [{"target": "aptness", "operator": "multiply", "value": 0.3}],
+    },
+    {
+        "id": "deadline_crunch",
+        "name": "Deadline Crunch",
+        "icon": "⏰",
+        "description": "Boost urgency when a task's due date is approaching.",
+        "conditions": [{"type": "due_date_proximity", "params": {"due_type": "within_hours", "hours": 24}}],
+        "effects": [{"target": "urgency", "operator": "add", "value": 5}],
+    },
+    {
+        "id": "overdue_penalty",
+        "name": "Overdue Penalty",
+        "icon": "🚨",
+        "description": "Significantly boost urgency for overdue tasks.",
+        "conditions": [{"type": "due_date_proximity", "params": {"due_type": "overdue"}}],
+        "effects": [{"target": "urgency", "operator": "set", "value": 10}],
+    },
+    {
+        "id": "stale_nudge",
+        "name": "Stale Task Nudge",
+        "icon": "🧹",
+        "description": "Increase urgency for tasks untouched for several days.",
+        "conditions": [{"type": "staleness", "params": {"days": 7}}],
+        "effects": [{"target": "urgency", "operator": "add", "value": 3}],
+    },
+    {
+        "id": "deep_work",
+        "name": "Deep Work Focus",
+        "icon": "🎯",
+        "description": "Boost aptness for tasks tagged with 'deep-work'.",
+        "conditions": [{"type": "tag_match", "params": {"tag": "deep-work"}}],
+        "effects": [{"target": "aptness", "operator": "multiply", "value": 2.0}],
+    },
+    {
+        "id": "custom",
+        "name": "Custom Rule",
+        "icon": "✨",
+        "description": "Start from scratch with a blank rule.",
+        "conditions": [],
+        "effects": [],
+    },
+]
+
+
 # Specific routes MUST come before /{rule_id} catch-all
 @app.get("/rules/new", response_class=HTMLResponse)
-async def new_rule_form(request: Request):
-    """Show new rule form (placeholder for now)."""
-    return HTMLResponse("""
-        <div class="empty-state">
-            <h3>New Rule</h3>
-            <p>Rule creation wizard coming soon</p>
-        </div>
-    """)
+async def new_rule_wizard(request: Request):
+    """Show rule template wizard."""
+    return templates.TemplateResponse(
+        request,
+        "partials/rule_new_wizard.html",
+        {"templates": RULE_TEMPLATES}
+    )
+
+
+@app.post("/rules/new/from-template", response_class=HTMLResponse)
+async def new_rule_from_template(request: Request):
+    """Create a new rule from a template and open the editor."""
+    form_data = await request.form()
+    template_id = form_data.get("template_id", "custom")
+
+    # Find the template
+    template = next((t for t in RULE_TEMPLATES if t["id"] == template_id), RULE_TEMPLATES[-1])
+
+    # Create the rule via API
+    async with api_client(request) as client:
+        response = await client.post("/api/rules", json={
+            "name": template["name"] if template_id != "custom" else "New Rule",
+            "description": template["description"] if template_id != "custom" else "",
+            "conditions": template["conditions"],
+            "effects": template["effects"],
+        })
+
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to create rule</div>", status_code=400)
+
+        data = response.json()
+        rule = data.get("rule")
+
+        # Get YAML representation for the editor
+        yaml_response = await client.get(f"/api/rules/export/{rule['id']}")
+        rule_yaml = yaml_response.text if yaml_response.status_code == 200 else ""
+
+    # Return the edit form for the new rule
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/rule_edit.html",
+        {"rule": rule, "rule_yaml": rule_yaml}
+    )
+    html_response.headers["HX-Trigger"] = "ruleCreated"
+    return html_response
 
 
 @app.get("/rules/export")

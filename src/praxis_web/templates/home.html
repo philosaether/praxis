@@ -533,6 +533,15 @@
         }
     });
 
+    // Listen for rule creation/update to refresh the list
+    document.body.addEventListener('ruleCreated', function(event) {
+        htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
+    });
+
+    document.body.addEventListener('ruleUpdated', function(event) {
+        htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
+    });
+
     // Add a newly created priority to the tree without collapsing existing nodes
     window.addPriorityToTree = function(priorityId, parentId) {
         const treeContainer = document.getElementById('priority-tree');
