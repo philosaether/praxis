@@ -1366,50 +1366,7 @@ async def rules_list_partial(request: Request):
     )
 
 
-@app.get("/rules/{rule_id}", response_class=HTMLResponse)
-async def rule_detail(request: Request, rule_id: str):
-    """HTMX partial: rule detail view."""
-    async with api_client(request) as client:
-        response = await client.get(f"/api/rules/{rule_id}")
-        if response.status_code != 200:
-            return HTMLResponse("<div class='error'>Rule not found</div>", status_code=404)
-        data = response.json()
-        rule = data.get("rule")
-
-    return templates.TemplateResponse(
-        request,
-        "partials/rule_view.html",
-        {"rule": rule}
-    )
-
-
-@app.post("/rules/{rule_id}/toggle", response_class=HTMLResponse)
-async def toggle_rule_web(request: Request, rule_id: str):
-    """Toggle a rule's enabled state."""
-    async with api_client(request) as client:
-        response = await client.post(f"/api/rules/{rule_id}/toggle")
-        if response.status_code != 200:
-            return HTMLResponse("<div class='error'>Failed to toggle rule</div>")
-    return HTMLResponse("")
-
-
-@app.post("/rules/restore-defaults", response_class=HTMLResponse)
-async def restore_defaults_web(request: Request):
-    """Restore user's rules to defaults and return updated list."""
-    async with api_client(request) as client:
-        response = await client.post("/api/rules/restore-defaults")
-        if response.status_code != 200:
-            return HTMLResponse("<div class='error'>Failed to restore defaults</div>")
-        data = response.json()
-        rules = data.get("rules", [])
-
-    return templates.TemplateResponse(
-        request,
-        "partials/rules_list.html",
-        {"rules": rules}
-    )
-
-
+# Specific routes MUST come before /{rule_id} catch-all
 @app.get("/rules/new", response_class=HTMLResponse)
 async def new_rule_form(request: Request):
     """Show new rule form (placeholder for now)."""
@@ -1434,6 +1391,23 @@ async def export_rules_web(request: Request):
             media_type="text/yaml",
             headers={"Content-Disposition": "attachment; filename=praxis-rules.yml"}
         )
+
+
+@app.post("/rules/restore-defaults", response_class=HTMLResponse)
+async def restore_defaults_web(request: Request):
+    """Restore user's rules to defaults and return updated list."""
+    async with api_client(request) as client:
+        response = await client.post("/api/rules/restore-defaults")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to restore defaults</div>")
+        data = response.json()
+        rules = data.get("rules", [])
+
+    return templates.TemplateResponse(
+        request,
+        "partials/rules_list.html",
+        {"rules": rules}
+    )
 
 
 @app.post("/rules/import/preview")
@@ -1464,3 +1438,31 @@ async def import_rules_web(request: Request):
             media_type="application/json",
             status_code=response.status_code
         )
+
+
+# Catch-all routes MUST come after specific routes
+@app.get("/rules/{rule_id}", response_class=HTMLResponse)
+async def rule_detail(request: Request, rule_id: str):
+    """HTMX partial: rule detail view."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/rules/{rule_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Rule not found</div>", status_code=404)
+        data = response.json()
+        rule = data.get("rule")
+
+    return templates.TemplateResponse(
+        request,
+        "partials/rule_view.html",
+        {"rule": rule}
+    )
+
+
+@app.post("/rules/{rule_id}/toggle", response_class=HTMLResponse)
+async def toggle_rule_web(request: Request, rule_id: str):
+    """Toggle a rule's enabled state."""
+    async with api_client(request) as client:
+        response = await client.post(f"/api/rules/{rule_id}/toggle")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to toggle rule</div>")
+    return HTMLResponse("")
