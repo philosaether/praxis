@@ -49,6 +49,17 @@ from praxis_core.persistence.user_persistence import (
     delete_user_sessions,
     cleanup_expired_sessions,
 )
+from praxis_core.persistence.rule_persistence import (
+    RULES_SCHEMA,
+    create_rule,
+    get_rule,
+    list_rules,
+    update_rule,
+    delete_rule,
+    toggle_rule,
+    create_system_rule,
+    ensure_default_rules,
+)
 
 __all__ = [
     # Database
@@ -92,4 +103,14 @@ __all__ = [
     "delete_session",
     "delete_user_sessions",
     "cleanup_expired_sessions",
+    # Rule persistence
+    "RULES_SCHEMA",
+    "create_rule",
+    "get_rule",
+    "list_rules",
+    "update_rule",
+    "delete_rule",
+    "toggle_rule",
+    "create_system_rule",
+    "ensure_default_rules",
 ]
