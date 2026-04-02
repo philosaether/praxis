@@ -50,7 +50,7 @@
                           name="notes"
                           rows="6"
                           class="property-input"
-                          placeholder="Add notes... (supports Markdown)">{{ task.notes or '' }}</textarea>
+                          placeholder="Add notes... (supports Markdown)">{{ task.notes_raw or task.notes or '' }}</textarea>
             </div>
 
             <!-- Actions -->
