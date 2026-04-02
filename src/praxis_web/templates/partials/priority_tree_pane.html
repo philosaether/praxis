@@ -21,12 +21,81 @@
 </div>
 
 <script>
+    // Storage key for collapsed node state
+    const TREE_STATE_KEY = 'praxis-tree-collapsed';
+
+    // Get collapsed node IDs from storage
+    window.getCollapsedNodes = function() {
+        try {
+            return JSON.parse(sessionStorage.getItem(TREE_STATE_KEY) || '[]');
+        } catch {
+            return [];
+        }
+    };
+
+    // Save collapsed node IDs to storage
+    window.saveCollapsedNodes = function(ids) {
+        try {
+            sessionStorage.setItem(TREE_STATE_KEY, JSON.stringify(ids));
+        } catch {
+            // Ignore storage errors
+        }
+    };
+
     window.toggleTreeNode = function(toggle) {
         toggle.classList.toggle('collapsed');
         const node = toggle.closest('.tree-node');
         const children = node.querySelector(':scope > .tree-children');
         if (children) {
             children.classList.toggle('collapsed');
+        }
+
+        // Persist state
+        const nodeId = node.dataset.id;
+        const collapsedIds = getCollapsedNodes();
+        const isCollapsed = toggle.classList.contains('collapsed');
+
+        if (isCollapsed && !collapsedIds.includes(nodeId)) {
+            collapsedIds.push(nodeId);
+        } else if (!isCollapsed && collapsedIds.includes(nodeId)) {
+            collapsedIds.splice(collapsedIds.indexOf(nodeId), 1);
+        }
+        saveCollapsedNodes(collapsedIds);
+    };
+
+    // Restore collapsed state on load, or apply defaults for fresh session
+    window.restoreTreeState = function() {
+        const hasSavedState = sessionStorage.getItem(TREE_STATE_KEY) !== null;
+
+        if (hasSavedState) {
+            // Restore saved state
+            const collapsedIds = getCollapsedNodes();
+            collapsedIds.forEach(nodeId => {
+                const node = document.querySelector('.tree-node[data-id="' + nodeId + '"]');
+                if (node) {
+                    const toggle = node.querySelector(':scope > .tree-node-row .tree-toggle');
+                    const children = node.querySelector(':scope > .tree-children');
+                    if (toggle) toggle.classList.add('collapsed');
+                    if (children) children.classList.add('collapsed');
+                }
+            });
+        } else {
+            // Fresh session: collapse nodes at depth >= 1 (show only roots + first children)
+            const defaultCollapsed = [];
+            document.querySelectorAll('.tree-node').forEach(node => {
+                const depth = parseInt(node.dataset.depth || '0');
+                if (depth >= 1) {
+                    const toggle = node.querySelector(':scope > .tree-node-row .tree-toggle');
+                    const children = node.querySelector(':scope > .tree-children');
+                    if (toggle && children && children.children.length > 0) {
+                        toggle.classList.add('collapsed');
+                        children.classList.add('collapsed');
+                        defaultCollapsed.push(node.dataset.id);
+                    }
+                }
+            });
+            // Save the default state so it persists
+            saveCollapsedNodes(defaultCollapsed);
         }
     };
 
@@ -42,7 +111,7 @@
                 swapThreshold: 0.75,        // was 0.65, now needs more overlap                                                                                                                                                  
                 invertSwap: true,           // swap on edges instead of center                                                                                                                                                   
                 invertedSwapThreshold: 0.5, // threshold for edge swaps                                                                                                                                                          
-                emptyInsertThreshold: 10,   // easier to drop into empty children                                                                                                                                                
+                emptyInsertThreshold: 20,   // easier to drop into empty children                                                                                                                                                
                 handle: '.tree-node-row',                                                                                                                                                                                        
                 draggable: '.tree-node',    
                 ghostClass: 'tree-node-ghost',
@@ -159,5 +228,8 @@
 
         // Initialize on all children containers
         document.querySelectorAll('.tree-children').forEach(initSortable);
+
+        // Restore collapsed state from session
+        restoreTreeState();
     })();
 </script>
