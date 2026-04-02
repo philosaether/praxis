@@ -1549,7 +1549,7 @@ async def import_rules_web(request: Request):
 # Catch-all routes MUST come after specific routes
 @app.get("/rules/{rule_id}", response_class=HTMLResponse)
 async def rule_detail(request: Request, rule_id: str):
-    """HTMX partial: rule detail view."""
+    """Rule detail - full page or HTMX partial."""
     async with api_client(request) as client:
         response = await client.get(f"/api/rules/{rule_id}")
         if response.status_code != 200:
@@ -1557,10 +1557,32 @@ async def rule_detail(request: Request, rule_id: str):
         data = response.json()
         rule = data.get("rule")
 
-    return templates.TemplateResponse(
+    # HTMX request - return partial
+    if is_htmx_request(request):
+        return templates.TemplateResponse(
+            request,
+            "partials/rule_view.html",
+            {"rule": rule}
+        )
+
+    # Full page request - render with rule detail pre-loaded
+    detail_html = templates.get_template("partials/rule_view.html").render(
+        request=request, rule=rule
+    )
+
+    # Get rules list for left pane
+    async with api_client(request) as client:
+        list_response = await client.get("/api/rules")
+        list_data = list_response.json() if list_response.status_code == 200 else {}
+        rules = list_data.get("rules", [])
+
+    list_html = templates.get_template("partials/rules_list.html").render(rules=rules)
+
+    return await render_full_page(
         request,
-        "partials/rule_view.html",
-        {"rule": rule}
+        mode="rules",
+        initial_list_html=list_html,
+        initial_detail_html=detail_html
     )
 
 
