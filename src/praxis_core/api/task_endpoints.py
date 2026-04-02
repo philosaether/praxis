@@ -14,9 +14,16 @@ from praxis_core.persistence import (
     update_task,
     update_task_status,
     delete_task,
+    list_rules,
+    get_tags_for_tasks,
 )
 from praxis_core.prioritization import rank_tasks
 from praxis_core.api.auth import get_current_user, get_current_user_optional
+
+
+def _get_active_rules(entity_id: str | None):
+    """Get active rules for scoring (system + user rules)."""
+    return list_rules(entity_id=entity_id, include_system=True, enabled_only=True)
 
 
 router = APIRouter()
@@ -235,8 +242,13 @@ async def list_tasks_endpoint(
     graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
-    # Rank tasks by importance + urgency
-    scored_tasks = rank_tasks(tasks, graph)
+    # Load rules and tags for rule-based scoring
+    rules = _get_active_rules(entity_id)
+    task_ids = [t.id for t in tasks]
+    task_tags_map = get_tags_for_tasks(task_ids) if task_ids else {}
+
+    # Rank tasks by (importance + urgency) × aptness
+    scored_tasks = rank_tasks(tasks, graph, rules=rules, task_tags_map=task_tags_map)
 
     # Serialize with score included
     serialized = []
@@ -245,6 +257,7 @@ async def list_tasks_endpoint(
         task_data["score"] = round(st.score, 2)
         task_data["importance"] = round(st.importance, 1)
         task_data["urgency"] = round(st.urgency, 1)
+        task_data["aptness"] = round(st.aptness, 2)
         serialized.append(task_data)
 
     return {
@@ -364,12 +377,16 @@ async def toggle_task(
     task_data = _serialize_task(task, current_user=user, graph=graph)
 
     # Include score data for the row display
-    scored_tasks = rank_tasks([task], graph)
+    entity_id = user.entity_id if user else None
+    rules = _get_active_rules(entity_id)
+    task_tags_map = get_tags_for_tasks([task_id])
+    scored_tasks = rank_tasks([task], graph, rules=rules, task_tags_map=task_tags_map)
     if scored_tasks:
         st = scored_tasks[0]
         task_data["score"] = round(st.score, 2)
         task_data["importance"] = round(st.importance, 1)
         task_data["urgency"] = round(st.urgency, 1)
+        task_data["aptness"] = round(st.aptness, 2)
 
     return {"task": task_data}
 

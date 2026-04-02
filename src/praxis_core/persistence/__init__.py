@@ -60,6 +60,10 @@ from praxis_core.persistence.rule_persistence import (
     create_system_rule,
     ensure_default_rules,
 )
+from praxis_core.persistence.tag_persistence import (
+    get_tags_for_task,
+    get_tags_for_tasks,
+)
 
 __all__ = [
     # Database
@@ -113,4 +117,7 @@ __all__ = [
     "toggle_rule",
     "create_system_rule",
     "ensure_default_rules",
+    # Tag persistence (subset)
+    "get_tags_for_task",
+    "get_tags_for_tasks",
 ]

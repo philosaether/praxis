@@ -4,6 +4,7 @@ FastAPI application for Praxis Core API.
 Run with: uvicorn praxis_core.api.app:app --reload
 """
 
+from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI
 import markdown
@@ -13,7 +14,7 @@ from praxis_core.model import (
     Goal,
     Practice,
 )
-from praxis_core.persistence import get_connection, PriorityGraph
+from praxis_core.persistence import get_connection, PriorityGraph, ensure_default_rules
 
 from praxis_core.api.priority_endpoints import router as priority_router
 from praxis_core.api.task_endpoints import router as task_router
@@ -24,10 +25,27 @@ from praxis_core.api.tag_endpoints import router as tag_router
 
 
 # ---------------------------------------------------------------------
+# App Lifespan
+# ---------------------------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle app startup and shutdown."""
+    # Startup: seed default rules
+    ensure_default_rules()
+    yield
+    # Shutdown: nothing to clean up
+
+
+# ---------------------------------------------------------------------
 # App Setup
 # ---------------------------------------------------------------------
 
-app = FastAPI(title="Praxis Core API", description="Cue-based task management")
+app = FastAPI(
+    title="Praxis Core API",
+    description="Cue-based task management",
+    lifespan=lifespan,
+)
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(priority_router, prefix="/api/priorities", tags=["priorities"])

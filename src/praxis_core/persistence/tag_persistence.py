@@ -222,6 +222,33 @@ def get_task_ids_by_tag_names(entity_id: str, tag_names: list[str]) -> set[str]:
         return {row["task_id"] for row in rows}
 
 
+def get_tags_for_tasks(task_ids: list[str]) -> dict[str, set[str]]:
+    """
+    Get tags for multiple tasks in a single query.
+
+    Returns a dict mapping task_id -> set of tag names.
+    """
+    ensure_schema()
+    if not task_ids:
+        return {}
+
+    with get_connection() as conn:
+        placeholders = ",".join("?" * len(task_ids))
+        rows = conn.execute(
+            f"""
+            SELECT tt.task_id, t.name FROM task_tags tt
+            JOIN tags t ON tt.tag_id = t.id
+            WHERE tt.task_id IN ({placeholders})
+            """,
+            task_ids,
+        ).fetchall()
+
+        result: dict[str, set[str]] = {tid: set() for tid in task_ids}
+        for row in rows:
+            result[row["task_id"]].add(row["name"])
+        return result
+
+
 # ---------------------------------------------------------------------
 # Priority <-> Tag Junction Operations
 # ---------------------------------------------------------------------
