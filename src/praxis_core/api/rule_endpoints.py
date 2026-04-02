@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, Body
 from fastapi.responses import JSONResponse, Response
 
 from praxis_core.model import User
-from praxis_core.persistence import list_rules, get_rule, toggle_rule, restore_default_rules, create_rule
+from praxis_core.model.rules import ConditionType, EffectTarget, EffectOperator, RuleCondition, RuleEffect
+from praxis_core.persistence import list_rules, get_rule, toggle_rule, restore_default_rules, create_rule, update_rule
 from praxis_core.api.auth import get_current_user, get_current_user_optional
 from praxis_core.rules import serialize_rules, serialize_rule, parse_rules, DSLParseError
 
@@ -200,4 +201,106 @@ async def toggle_rule_endpoint(
         return JSONResponse({"error": "Rule not found"}, status_code=404)
 
     updated = toggle_rule(rule_id)
+    return {"rule": _serialize_rule_json(updated)}
+
+
+@router.put("/{rule_id}")
+async def update_rule_endpoint(
+    rule_id: str,
+    name: Annotated[str, Body()],
+    description: Annotated[str | None, Body()] = None,
+    priority: Annotated[int, Body()] = 0,
+    conditions: Annotated[list[dict], Body()] = [],
+    effects: Annotated[list[dict], Body()] = [],
+    user: User = Depends(get_current_user),
+):
+    """Update a rule from block editor form data."""
+    rule = get_rule(rule_id)
+    if not rule:
+        return JSONResponse({"error": "Rule not found"}, status_code=404)
+
+    # Convert condition dicts to RuleCondition objects
+    parsed_conditions = []
+    for c in conditions:
+        try:
+            cond_type = ConditionType(c.get("type"))
+            parsed_conditions.append(RuleCondition(type=cond_type, params=c.get("params", {})))
+        except ValueError:
+            return JSONResponse({"error": f"Invalid condition type: {c.get('type')}"}, status_code=400)
+
+    # Convert effect dicts to RuleEffect objects
+    parsed_effects = []
+    for e in effects:
+        try:
+            target = EffectTarget(e.get("target"))
+            operator = EffectOperator(e.get("operator"))
+            value = e.get("value", "")
+
+            # Parse value based on operator
+            if operator == EffectOperator.FORMULA:
+                parsed_effects.append(RuleEffect(target=target, operator=operator, formula=value))
+            else:
+                # Try to parse as number
+                try:
+                    numeric_value = float(value)
+                except (ValueError, TypeError):
+                    numeric_value = 0.0
+                parsed_effects.append(RuleEffect(target=target, operator=operator, value=numeric_value))
+        except ValueError as e:
+            return JSONResponse({"error": f"Invalid effect: {str(e)}"}, status_code=400)
+
+    updated = update_rule(
+        rule_id=rule_id,
+        name=name,
+        description=description,
+        conditions=parsed_conditions,
+        effects=parsed_effects,
+        priority=priority,
+    )
+
+    if not updated:
+        return JSONResponse({"error": "Failed to update rule"}, status_code=500)
+
+    return {"rule": _serialize_rule_json(updated)}
+
+
+@router.put("/{rule_id}/yaml")
+async def update_rule_from_yaml(
+    rule_id: str,
+    yaml_content: Annotated[str, Body(media_type="text/plain")],
+    user: User = Depends(get_current_user),
+):
+    """Update a rule from YAML content."""
+    rule = get_rule(rule_id)
+    if not rule:
+        return JSONResponse({"error": "Rule not found"}, status_code=404)
+
+    # Parse the YAML - should contain exactly one rule
+    try:
+        parsed_rules = parse_rules(yaml_content)
+    except DSLParseError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+    if not parsed_rules:
+        return JSONResponse({"error": "No rule found in YAML"}, status_code=400)
+
+    if len(parsed_rules) > 1:
+        return JSONResponse({"error": "Expected exactly one rule in YAML"}, status_code=400)
+
+    parsed = parsed_rules[0]
+
+    # Update the rule with parsed content
+    updated = update_rule(
+        rule_id=rule_id,
+        name=parsed.name,
+        description=parsed.description,
+        conditions=parsed.conditions,
+        effects=parsed.effects,
+        priority=parsed.priority,
+        enabled=parsed.enabled,
+    )
+
+    if not updated:
+        return JSONResponse({"error": "Failed to update rule"}, status_code=500)
+
     return {"rule": _serialize_rule_json(updated)}

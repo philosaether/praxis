@@ -1,6 +1,10 @@
-<div class="detail-view rule-view">
+<div class="detail-view rule-view" id="rule-view-{{ rule.id }}">
     <div class="detail-header">
         <h2>{{ rule.name }}</h2>
+        <button class="btn btn-secondary btn-sm"
+                hx-get="/rules/{{ rule.id }}/edit"
+                hx-target="#detail-pane"
+                hx-swap="innerHTML">Edit</button>
     </div>
 
     {% if rule.description %}

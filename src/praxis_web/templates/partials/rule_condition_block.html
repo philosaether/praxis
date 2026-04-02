@@ -1,0 +1,45 @@
+<div class="rule-block condition-block" data-index="{{ idx }}">
+    <span class="block-drag-handle">⋮⋮</span>
+    <select name="conditions[{{ idx }}][type]" class="block-type-select" onchange="updateConditionFields(this, {{ idx }})">
+        <option value="">Select condition...</option>
+        <option value="time_window" {% if condition.type == 'time_window' %}selected{% endif %}>Time of day</option>
+        <option value="day_of_week" {% if condition.type == 'day_of_week' %}selected{% endif %}>Day of week</option>
+        <option value="tag_match" {% if condition.type == 'tag_match' %}selected{% endif %}>Has tag</option>
+        <option value="tag_missing" {% if condition.type == 'tag_missing' %}selected{% endif %}>Missing tag</option>
+        <option value="due_date_proximity" {% if condition.type == 'due_date_proximity' %}selected{% endif %}>Due date</option>
+        <option value="staleness" {% if condition.type == 'staleness' %}selected{% endif %}>Staleness</option>
+    </select>
+    <div class="block-fields" id="condition-fields-{{ idx }}">
+        {% if condition.type == 'time_window' %}
+        <input type="time" name="conditions[{{ idx }}][start]" value="{{ condition.params.start or '08:00' }}" class="block-input">
+        <span class="block-label">to</span>
+        <input type="time" name="conditions[{{ idx }}][end]" value="{{ condition.params.end or '17:00' }}" class="block-input">
+        {% elif condition.type == 'day_of_week' %}
+        {% set days = condition.params.days or [] %}
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="monday" {% if 'monday' in days %}checked{% endif %}> Mon</label>
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="tuesday" {% if 'tuesday' in days %}checked{% endif %}> Tue</label>
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="wednesday" {% if 'wednesday' in days %}checked{% endif %}> Wed</label>
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="thursday" {% if 'thursday' in days %}checked{% endif %}> Thu</label>
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="friday" {% if 'friday' in days %}checked{% endif %}> Fri</label>
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="saturday" {% if 'saturday' in days %}checked{% endif %}> Sat</label>
+        <label class="day-check"><input type="checkbox" name="conditions[{{ idx }}][days][]" value="sunday" {% if 'sunday' in days %}checked{% endif %}> Sun</label>
+        {% elif condition.type == 'tag_match' or condition.type == 'tag_missing' %}
+        <input type="text" name="conditions[{{ idx }}][tag]" value="{{ condition.params.tag or '' }}" placeholder="tag name" class="block-input">
+        {% elif condition.type == 'due_date_proximity' %}
+        {% set due_type = condition.params.due_type or 'has_due_date' %}
+        <select name="conditions[{{ idx }}][due_type]" class="block-select" onchange="toggleDueHours(this, {{ idx }})">
+            <option value="has_due_date" {% if due_type == 'has_due_date' %}selected{% endif %}>has a due date</option>
+            <option value="overdue" {% if due_type == 'overdue' %}selected{% endif %}>is overdue</option>
+            <option value="not_overdue" {% if due_type == 'not_overdue' %}selected{% endif %}>is not overdue</option>
+            <option value="within_hours" {% if due_type == 'within_hours' %}selected{% endif %}>is due within</option>
+        </select>
+        <input type="number" name="conditions[{{ idx }}][hours]" value="{{ condition.params.hours or 24 }}" class="block-input block-input-sm" style="{% if due_type != 'within_hours' %}display:none;{% endif %}">
+        <span class="block-label" style="{% if due_type != 'within_hours' %}display:none;{% endif %}">hours</span>
+        {% elif condition.type == 'staleness' %}
+        <span class="block-label">untouched for</span>
+        <input type="number" name="conditions[{{ idx }}][days]" value="{{ condition.params.days or 3 }}" class="block-input block-input-sm" min="1">
+        <span class="block-label">days</span>
+        {% endif %}
+    </div>
+    <button type="button" class="block-delete" onclick="this.closest('.rule-block').remove()">×</button>
+</div>

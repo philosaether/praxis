@@ -659,3 +659,255 @@
     text-decoration: underline;
   }
 }
+
+// -----------------------------------------------------------------------------
+// Rule Editor (Block-based)
+// -----------------------------------------------------------------------------
+
+.rule-edit {
+  padding: $spacing-lg;
+}
+
+.rule-name-input {
+  width: 100%;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: $text-primary;
+  padding: $spacing-sm 0;
+  transition: border-color $transition-base;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: $accent;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+
+  label {
+    min-width: 80px;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .property-input {
+    flex: 1;
+    padding: $spacing-sm;
+    background: $bg-tertiary;
+    border: 1px solid $border-subtle;
+    border-radius: $radius-md;
+    color: $text-primary;
+    font-size: $font-size-base;
+
+    &:focus {
+      outline: none;
+      border-color: $accent;
+    }
+  }
+
+  .property-input-sm {
+    flex: 0;
+    width: 80px;
+  }
+
+  .property-hint {
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+}
+
+.rule-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-base;
+    font-weight: 600;
+  }
+}
+
+.block-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-height: 40px;
+}
+
+.rule-block {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  transition: background $transition-base, box-shadow $transition-base;
+
+  &.condition-block {
+    background: rgba(#5b8def, 0.15);
+    border: 1px solid rgba(#5b8def, 0.3);
+  }
+
+  &.effect-block {
+    background: rgba(#9b59b6, 0.15);
+    border: 1px solid rgba(#9b59b6, 0.3);
+  }
+
+  &.block-ghost {
+    opacity: 0.4;
+  }
+
+  &:hover {
+    box-shadow: $shadow-sm;
+  }
+}
+
+.block-drag-handle {
+  cursor: grab;
+  color: $text-muted;
+  font-size: $font-size-sm;
+  padding: 0 $spacing-xs;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.block-type-select {
+  background: $bg-secondary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+  min-width: 120px;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.block-select {
+  background: $bg-secondary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.block-fields {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.block-input {
+  background: $bg-secondary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+
+  &.block-input-sm {
+    width: 60px;
+  }
+}
+
+.block-label {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+.block-delete {
+  background: none;
+  border: none;
+  color: $text-muted;
+  font-size: $font-size-lg;
+  cursor: pointer;
+  padding: 0 $spacing-xs;
+  line-height: 1;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $error;
+  }
+}
+
+.day-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: $font-size-sm;
+  color: $text-secondary;
+  cursor: pointer;
+
+  input {
+    margin: 0;
+  }
+}
+
+.rule-yaml-section {
+  margin-top: $spacing-lg;
+}
+
+.yaml-editor {
+  width: 100%;
+  min-height: 200px;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  color: $text-primary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  font-family: monospace;
+  font-size: $font-size-sm;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.rule-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-xl;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-subtle;
+}
+
+.rule-edit-actions-right {
+  display: flex;
+  gap: $spacing-sm;
+}

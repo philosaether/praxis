@@ -1458,6 +1458,129 @@ async def rule_detail(request: Request, rule_id: str):
     )
 
 
+@app.get("/rules/{rule_id}/edit", response_class=HTMLResponse)
+async def rule_edit(request: Request, rule_id: str):
+    """HTMX partial: rule edit mode with block editor."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/rules/{rule_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Rule not found</div>", status_code=404)
+        data = response.json()
+        rule = data.get("rule")
+
+        # Get YAML representation for toggle view
+        yaml_response = await client.get(f"/api/rules/export/{rule_id}")
+        rule_yaml = yaml_response.text if yaml_response.status_code == 200 else ""
+
+    return templates.TemplateResponse(
+        request,
+        "partials/rule_edit.html",
+        {"rule": rule, "rule_yaml": rule_yaml}
+    )
+
+
+@app.post("/rules/{rule_id}", response_class=HTMLResponse)
+async def rule_save(request: Request, rule_id: str):
+    """Save rule edits and return view mode."""
+    form_data = await request.form()
+
+    # Check if we're in YAML mode
+    yaml_content = form_data.get("yaml_content")
+
+    if yaml_content:
+        # YAML mode: parse and update via API
+        async with api_client(request) as client:
+            response = await client.put(
+                f"/api/rules/{rule_id}/yaml",
+                content=yaml_content,
+                headers={"Content-Type": "text/plain"}
+            )
+            if response.status_code != 200:
+                error = response.json().get("error", "Failed to save rule")
+                return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
+            data = response.json()
+            rule = data.get("rule")
+    else:
+        # Block mode: build rule data from form
+        rule_data = {
+            "name": form_data.get("name", ""),
+            "description": form_data.get("description", ""),
+            "priority": int(form_data.get("priority", 0)),
+            "conditions": [],
+            "effects": [],
+        }
+
+        # Parse conditions from form (conditions[0][type], conditions[0][start], etc.)
+        condition_indices = set()
+        for key in form_data.keys():
+            if key.startswith("conditions["):
+                idx = key.split("[")[1].split("]")[0]
+                condition_indices.add(int(idx))
+
+        for idx in sorted(condition_indices):
+            cond_type = form_data.get(f"conditions[{idx}][type]")
+            if not cond_type:
+                continue
+
+            condition = {"type": cond_type, "params": {}}
+
+            if cond_type == "time_window":
+                condition["params"]["start"] = form_data.get(f"conditions[{idx}][start]", "08:00")
+                condition["params"]["end"] = form_data.get(f"conditions[{idx}][end]", "17:00")
+            elif cond_type == "day_of_week":
+                days = form_data.getlist(f"conditions[{idx}][days][]")
+                condition["params"]["days"] = days
+            elif cond_type in ("tag_match", "tag_missing"):
+                condition["params"]["tag"] = form_data.get(f"conditions[{idx}][tag]", "")
+            elif cond_type == "due_date_proximity":
+                condition["params"]["due_type"] = form_data.get(f"conditions[{idx}][due_type]", "has_due_date")
+                hours = form_data.get(f"conditions[{idx}][hours]")
+                if hours:
+                    condition["params"]["hours"] = int(hours)
+            elif cond_type == "staleness":
+                days = form_data.get(f"conditions[{idx}][days]")
+                if days:
+                    condition["params"]["days"] = int(days)
+
+            rule_data["conditions"].append(condition)
+
+        # Parse effects from form
+        effect_indices = set()
+        for key in form_data.keys():
+            if key.startswith("effects["):
+                idx = key.split("[")[1].split("]")[0]
+                effect_indices.add(int(idx))
+
+        for idx in sorted(effect_indices):
+            target = form_data.get(f"effects[{idx}][target]")
+            operator = form_data.get(f"effects[{idx}][operator]")
+            value = form_data.get(f"effects[{idx}][value]", "")
+
+            if target and operator:
+                rule_data["effects"].append({
+                    "target": target,
+                    "operator": operator,
+                    "value": value,
+                })
+
+        async with api_client(request) as client:
+            response = await client.put(f"/api/rules/{rule_id}", json=rule_data)
+            if response.status_code != 200:
+                error = response.json().get("error", "Failed to save rule")
+                return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
+            data = response.json()
+            rule = data.get("rule")
+
+    # Return view mode with trigger to refresh list
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/rule_view.html",
+        {"rule": rule}
+    )
+    html_response.headers["HX-Trigger"] = "ruleUpdated"
+    return html_response
+
+
 @app.post("/rules/{rule_id}/toggle", response_class=HTMLResponse)
 async def toggle_rule_web(request: Request, rule_id: str):
     """Toggle a rule's enabled state."""

@@ -963,6 +963,234 @@ a:hover {
   text-decoration: underline;
 }
 
+.rule-edit {
+  padding: 1rem;
+}
+
+.rule-name-input {
+  width: 100%;
+  font-size: 1.25rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: #1b1c1a;
+  padding: 0.5rem 0;
+  transition: border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rule-name-input:focus {
+  outline: none;
+  border-bottom-color: #735c00;
+}
+.rule-name-input::placeholder {
+  color: #7a7976;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.property-row label {
+  min-width: 80px;
+  font-size: 0.85rem;
+  color: #4a4a48;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.property-row .property-input {
+  flex: 1;
+  padding: 0.5rem;
+  background: #ebe8e2;
+  border: 1px solid rgba(208, 197, 175, 0.4);
+  border-radius: 0.5rem;
+  color: #1b1c1a;
+  font-size: 1rem;
+}
+.property-row .property-input:focus {
+  outline: none;
+  border-color: #735c00;
+}
+.property-row .property-input-sm {
+  flex: 0;
+  width: 80px;
+}
+.property-row .property-hint {
+  font-size: 0.85rem;
+  color: #7a7976;
+}
+
+.rule-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.rule-section-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 40px;
+}
+
+.rule-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rule-block.condition-block {
+  background: rgba(91, 141, 239, 0.15);
+  border: 1px solid rgba(91, 141, 239, 0.3);
+}
+.rule-block.effect-block {
+  background: rgba(155, 89, 182, 0.15);
+  border: 1px solid rgba(155, 89, 182, 0.3);
+}
+.rule-block.block-ghost {
+  opacity: 0.4;
+}
+.rule-block:hover {
+  box-shadow: 0 2px 8px rgba(77, 70, 53, 0.06);
+}
+
+.block-drag-handle {
+  cursor: grab;
+  color: #7a7976;
+  font-size: 0.85rem;
+  padding: 0 0.25rem;
+  user-select: none;
+}
+.block-drag-handle:active {
+  cursor: grabbing;
+}
+
+.block-type-select {
+  background: #f5f3ef;
+  color: #1b1c1a;
+  border: 1px solid #d0c5af;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  min-width: 120px;
+}
+.block-type-select:focus {
+  outline: none;
+  border-color: #735c00;
+}
+
+.block-select {
+  background: #f5f3ef;
+  color: #1b1c1a;
+  border: 1px solid #d0c5af;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+.block-select:focus {
+  outline: none;
+  border-color: #735c00;
+}
+
+.block-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.block-input {
+  background: #f5f3ef;
+  color: #1b1c1a;
+  border: 1px solid #d0c5af;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+.block-input:focus {
+  outline: none;
+  border-color: #735c00;
+}
+.block-input.block-input-sm {
+  width: 60px;
+}
+
+.block-label {
+  font-size: 0.85rem;
+  color: #4a4a48;
+}
+
+.block-delete {
+  background: none;
+  border: none;
+  color: #7a7976;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+  transition: color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.block-delete:hover {
+  color: #8c0d27;
+}
+
+.day-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: #4a4a48;
+  cursor: pointer;
+}
+.day-check input {
+  margin: 0;
+}
+
+.rule-yaml-section {
+  margin-top: 1rem;
+}
+
+.yaml-editor {
+  width: 100%;
+  min-height: 200px;
+  padding: 0.75rem;
+  background: #ebe8e2;
+  color: #1b1c1a;
+  border: 1px solid #d0c5af;
+  border-radius: 0.5rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+.yaml-editor:focus {
+  outline: none;
+  border-color: #735c00;
+}
+
+.rule-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+
+.rule-edit-actions-right {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .priority-list {
   flex: 1;
   overflow-y: auto;
