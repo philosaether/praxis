@@ -1330,3 +1330,64 @@ async def filter_tag_options(request: Request, selected: str | None = None):
         "partials/components/filter_tag_options.html",
         {"user_tags": data.get("tags", []), "selected": selected}
     )
+
+
+# -----------------------------------------------------------------------------
+# Routes: Rules
+# -----------------------------------------------------------------------------
+
+@app.get("/rules", response_class=HTMLResponse)
+async def rules_page(request: Request):
+    """Rules view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        return await rules_list_partial(request)
+
+    async with api_client(request) as client:
+        response = await client.get("/api/rules")
+        data = response.json() if response.status_code == 200 else {}
+        rules = data.get("rules", [])
+
+    list_html = templates.get_template("partials/rules_list.html").render(rules=rules)
+    return await render_full_page(request, mode="rules", initial_list_html=list_html)
+
+
+@app.get("/rules/list", response_class=HTMLResponse)
+async def rules_list_partial(request: Request):
+    """HTMX partial: list of rules."""
+    async with api_client(request) as client:
+        response = await client.get("/api/rules")
+        data = response.json() if response.status_code == 200 else {}
+        rules = data.get("rules", [])
+
+    return templates.TemplateResponse(
+        request,
+        "partials/rules_list.html",
+        {"rules": rules}
+    )
+
+
+@app.get("/rules/{rule_id}", response_class=HTMLResponse)
+async def rule_detail(request: Request, rule_id: str):
+    """HTMX partial: rule detail view."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/rules/{rule_id}")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Rule not found</div>", status_code=404)
+        data = response.json()
+        rule = data.get("rule")
+
+    return templates.TemplateResponse(
+        request,
+        "partials/rule_view.html",
+        {"rule": rule}
+    )
+
+
+@app.post("/rules/{rule_id}/toggle", response_class=HTMLResponse)
+async def toggle_rule_web(request: Request, rule_id: str):
+    """Toggle a rule's enabled state."""
+    async with api_client(request) as client:
+        response = await client.post(f"/api/rules/{rule_id}/toggle")
+        if response.status_code != 200:
+            return HTMLResponse("<div class='error'>Failed to toggle rule</div>")
+    return HTMLResponse("")

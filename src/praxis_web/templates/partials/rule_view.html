@@ -1,0 +1,50 @@
+<div class="detail-view rule-view">
+    <div class="detail-header">
+        <h2>{{ rule.name }}</h2>
+        {% if rule.is_system %}
+        <span class="rule-badge system">System Rule</span>
+        {% endif %}
+    </div>
+
+    {% if rule.description %}
+    <p class="rule-description">{{ rule.description }}</p>
+    {% endif %}
+
+    <div class="rule-section">
+        <h3>Conditions</h3>
+        <p class="text-muted">All conditions must match for the rule to apply</p>
+        <ul class="rule-conditions">
+            {% for condition in rule.conditions %}
+            <li>
+                <strong>{{ condition.type }}</strong>
+                {% if condition.params %}
+                <span class="condition-params">{{ condition.params }}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="rule-section">
+        <h3>Effects</h3>
+        <ul class="rule-effects">
+            {% for effect in rule.effects %}
+            <li>
+                <strong>{{ effect.target }}</strong>:
+                {% if effect.formula %}
+                <code>{{ effect.formula }}</code>
+                {% else %}
+                {{ effect.operator }} {{ effect.value }}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="rule-meta">
+        <span class="text-muted">Priority: {{ rule.priority }}</span>
+        {% if not rule.is_system %}
+        <span class="text-muted">Status: {% if rule.enabled %}Enabled{% else %}Disabled{% endif %}</span>
+        {% endif %}
+    </div>
+</div>

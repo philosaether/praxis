@@ -248,7 +248,7 @@ async def list_tasks_endpoint(
     task_tags_map = get_tags_for_tasks(task_ids) if task_ids else {}
 
     # Rank tasks by (importance + urgency) × aptness
-    scored_tasks = rank_tasks(tasks, graph, rules=rules, task_tags_map=task_tags_map)
+    scored_tasks = rank_tasks(tasks, graph, rules, task_tags_map)
 
     # Serialize with score included
     serialized = []
@@ -380,7 +380,7 @@ async def toggle_task(
     entity_id = user.entity_id if user else None
     rules = _get_active_rules(entity_id)
     task_tags_map = get_tags_for_tasks([task_id])
-    scored_tasks = rank_tasks([task], graph, rules=rules, task_tags_map=task_tags_map)
+    scored_tasks = rank_tasks([task], graph, rules, task_tags_map)
     if scored_tasks:
         st = scored_tasks[0]
         task_data["score"] = round(st.score, 2)

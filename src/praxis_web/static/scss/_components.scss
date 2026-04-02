@@ -414,3 +414,151 @@
     }
   }
 }
+
+// -----------------------------------------------------------------------------
+// Rules
+// -----------------------------------------------------------------------------
+
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: background $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.selected {
+    background: $accent-glow;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+
+.rule-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.rule-description {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-top: 2px;
+}
+
+.rule-badge {
+  font-size: $font-size-xs;
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+  background: $bg-tertiary;
+  color: $text-muted;
+
+  &.system {
+    background: $accent-glow;
+    color: $accent;
+  }
+}
+
+.rule-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-slider {
+      background: $accent;
+
+      &::before {
+        transform: translateX(16px);
+      }
+    }
+  }
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: $bg-tertiary;
+  border-radius: 20px;
+  transition: background $transition-base;
+
+  &::before {
+    content: "";
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform $transition-base;
+  }
+}
+
+.rule-view {
+  padding: $spacing-lg;
+}
+
+.rule-section {
+  margin-top: $spacing-lg;
+
+  h3 {
+    font-size: $font-size-base;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+.rule-conditions,
+.rule-effects {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $border-subtle;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    code {
+      background: $bg-tertiary;
+      padding: 2px 6px;
+      border-radius: $radius-sm;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+.rule-meta {
+  margin-top: $spacing-lg;
+  display: flex;
+  gap: $spacing-lg;
+  font-size: $font-size-sm;
+}

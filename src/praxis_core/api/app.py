@@ -22,6 +22,7 @@ from praxis_core.api.auth_endpoints import router as auth_router
 from praxis_core.api.invite_endpoints import router as invite_router
 from praxis_core.api.friends_endpoints import router as friends_router
 from praxis_core.api.tag_endpoints import router as tag_router
+from praxis_core.api.rule_endpoints import router as rule_router
 
 
 # ---------------------------------------------------------------------
@@ -53,6 +54,7 @@ app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
 app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
+app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
 
 
 # ---------------------------------------------------------------------

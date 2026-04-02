@@ -43,6 +43,15 @@
                 title="Friends">
             <span class="mode-nav-icon mode-nav-icon--friends"></span>
         </button>
+        <button class="mode-nav-btn {% if default_mode == 'rules' %}active{% endif %}"
+                id="rules-nav-btn"
+                hx-get="/rules/list"
+                hx-target="#item-list"
+                hx-push-url="/rules"
+                onclick="setMode('rules')"
+                title="Rules">
+            <span class="mode-nav-icon mode-nav-icon--rules"></span>
+        </button>
     </nav>
 
     <!-- Left Pane -->
@@ -264,6 +273,7 @@
         document.getElementById('tasks-nav-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
         document.getElementById('friends-nav-btn').classList.toggle('active', mode === 'friends');
+        document.getElementById('rules-nav-btn').classList.toggle('active', mode === 'rules');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
@@ -287,6 +297,9 @@
         } else if (mode === 'friends') {
             // Friends mode: left-pane only, clear detail pane
             document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
+        } else if (mode === 'rules') {
+            // Rules mode: show rules help in detail pane
+            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Rules</h3><p>Rules control how tasks are prioritized based on time, tags, and due dates</p></div>';
         } else {
             // Clear detail pane for tasks/inbox mode
             document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
