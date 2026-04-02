@@ -1,0 +1,21 @@
+{# Tag chip component - displays a single tag with optional remove button #}
+{# Expects: tag (with id, name, color), removable (bool), task_id or priority_id #}
+
+<span class="tag-chip"
+      {% if tag.color %}style="--tag-color: {{ tag.color }}"{% endif %}
+      data-tag-id="{{ tag.id }}">
+    {{ tag.name }}
+    {% if removable %}
+    <button type="button"
+            class="tag-remove"
+            {% if task_id %}
+            hx-delete="/tasks/{{ task_id }}/tags/{{ tag.id }}"
+            hx-target="#task-tags-{{ task_id }}"
+            {% elif priority_id %}
+            hx-delete="/priorities/{{ priority_id }}/tags/{{ tag.id }}"
+            hx-target="#priority-tags-{{ priority_id }}"
+            {% endif %}
+            hx-swap="innerHTML"
+            title="Remove tag">×</button>
+    {% endif %}
+</span>

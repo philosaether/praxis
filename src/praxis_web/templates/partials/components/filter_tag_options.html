@@ -1,0 +1,4 @@
+<option value="">All</option>
+{% for t in user_tags %}
+<option value="{{ t.name }}" {% if t.name == selected %}selected{% endif %}>{{ t.name }}</option>
+{% endfor %}

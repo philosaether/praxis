@@ -1,0 +1,29 @@
+{# Tag suggestions dropdown - returned by /tags/search #}
+{# Expects: tags (list), query (search term), task_id or priority_id #}
+
+{% if tags %}
+    {% for tag in tags %}
+    <div class="tag-suggestion"
+         onclick="selectTagSuggestion(this, '{{ tag.name }}')"
+         data-tag-name="{{ tag.name }}"
+         {% if tag.color %}data-tag-color="{{ tag.color }}"{% endif %}>
+        <span class="tag-chip-mini"
+              {% if tag.color %}style="--tag-color: {{ tag.color }}"{% endif %}>
+            {{ tag.name }}
+        </span>
+    </div>
+    {% endfor %}
+{% endif %}
+
+{% if query and query|length > 0 %}
+    {# Option to create new tag if query doesn't match existing #}
+    {% set exact_match = tags|selectattr('name', 'equalto', query)|list %}
+    {% if not exact_match %}
+    <div class="tag-suggestion tag-create"
+         onclick="selectTagSuggestion(this, '{{ query }}')"
+         data-tag-name="{{ query }}">
+        <span class="create-label">Create:</span>
+        <span class="tag-chip-mini">{{ query }}</span>
+    </div>
+    {% endif %}
+{% endif %}

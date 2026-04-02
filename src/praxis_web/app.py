@@ -276,6 +276,10 @@ async def render_full_page(
         priorities_response = await client.get("/api/priorities")
         priorities_data = priorities_response.json()
 
+        # Fetch user's tags for filter dropdown
+        tags_response = await client.get("/api/tags")
+        tags_data = tags_response.json() if tags_response.status_code == 200 else {"tags": []}
+
         # Fetch tasks for task modes (needed for default list if no initial_list_html)
         tasks_data = {"tasks": []}
         if mode in ["tasks", "inbox"] and not initial_list_html:
@@ -293,6 +297,7 @@ async def render_full_page(
             "tasks": tasks_data.get("tasks", []),
             "priorities": priorities_data["priorities"],
             "priority_types": priorities_data["priority_types"],
+            "user_tags": tags_data.get("tags", []),
             "default_mode": mode,
             "initial_list_html": initial_list_html,
             "initial_detail_html": initial_detail_html,
@@ -307,11 +312,17 @@ async def home_page(request: Request):
 
 
 @app.get("/tasks", response_class=HTMLResponse)
-async def tasks_page(request: Request):
+async def tasks_page(
+    request: Request,
+    priority: str | None = None,
+    status: str | None = None,
+    tag: str | None = None,
+    q: str | None = None,
+):
     """Tasks queue view - full page or HTMX partial."""
     if is_htmx_request(request):
-        # Return just the task list partial
-        return await tasks_list_partial(request)
+        # Return just the task list partial with filters
+        return await tasks_list_partial(request, priority=priority, status=status, tag=tag, q=q)
     return await render_full_page(request, mode="tasks")
 
 
@@ -777,6 +788,8 @@ async def tasks_list_partial(
     request: Request,
     priority: str | None = None,
     status: str | None = None,
+    tag: str | None = None,
+    q: str | None = None,
 ):
     """HTMX partial: filtered list of tasks."""
     async with api_client(request) as client:
@@ -785,13 +798,23 @@ async def tasks_list_partial(
             params["priority"] = priority
         if status:
             params["status"] = status
+        if tag:
+            params["tag"] = tag
+        if q:
+            params["q"] = q
         response = await client.get("/api/tasks", params=params)
         data = response.json()
 
     return templates.TemplateResponse(
         request,
         "partials/task_rows.html",
-        {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
+        {
+            "tasks": data["tasks"],
+            "priorities": data.get("priorities", []),
+            "current_tag": tag,
+            "current_status": status,
+            "current_search": q,
+        }
     )
 
 
@@ -1160,3 +1183,150 @@ async def share_priority(request: Request, priority_id: str):
             content=json.dumps({"success": True}),
             media_type="application/json"
         )
+
+
+# -----------------------------------------------------------------------------
+# Routes: Tags
+# -----------------------------------------------------------------------------
+
+@app.get("/tags/search", response_class=HTMLResponse)
+async def tag_search(request: Request, q: str = ""):
+    """Search tags for autocomplete. Returns HTML suggestions."""
+    async with api_client(request) as client:
+        response = await client.get("/api/tags/search", params={"q": q})
+        data = response.json()
+        tags = data.get("tags", [])
+
+    return templates.TemplateResponse(
+        request,
+        "partials/components/tag_suggestions.html",
+        {"tags": tags, "query": q}
+    )
+
+
+@app.get("/tasks/{task_id}/tags", response_class=HTMLResponse)
+async def get_task_tags(request: Request, task_id: str):
+    """Get tags HTML for a task."""
+    async with api_client(request) as client:
+        response = await client.get(f"/api/tags/tasks/{task_id}")
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/components/task_tags_list.html",
+        {"tags": data.get("tags", []), "task_id": task_id, "removable": True}
+    )
+
+
+@app.post("/tasks/{task_id}/tags", response_class=HTMLResponse)
+async def add_task_tag(request: Request, task_id: str):
+    """Add a tag to a task. Creates the tag if it doesn't exist."""
+    form_data = await request.form()
+    name = form_data.get("name", "").strip()
+
+    if not name:
+        return HTMLResponse(content="", status_code=400)
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/tags/tasks/{task_id}",
+            data={"name": name}
+        )
+        data = response.json()
+
+    # Return updated tags list with trigger to refresh filter dropdown
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/components/task_tags_list.html",
+        {"tags": data.get("tags", []), "task_id": task_id, "removable": True}
+    )
+    html_response.headers["HX-Trigger"] = "tagCreated"
+    return html_response
+
+
+@app.delete("/tasks/{task_id}/tags/{tag_id}", response_class=HTMLResponse)
+async def remove_task_tag(request: Request, task_id: str, tag_id: str):
+    """Remove a tag from a task."""
+    async with api_client(request) as client:
+        response = await client.delete(f"/api/tags/tasks/{task_id}/{tag_id}")
+        data = response.json()
+
+    # Return updated tags list
+    return templates.TemplateResponse(
+        request,
+        "partials/components/task_tags_list.html",
+        {"tags": data.get("tags", []), "task_id": task_id, "removable": True}
+    )
+
+
+@app.post("/priorities/{priority_id}/tags", response_class=HTMLResponse)
+async def add_priority_tag(request: Request, priority_id: str):
+    """Add a tag to a priority."""
+    form_data = await request.form()
+    name = form_data.get("name", "").strip()
+
+    if not name:
+        return HTMLResponse(content="", status_code=400)
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/tags/priorities/{priority_id}",
+            data={"name": name}
+        )
+        data = response.json()
+
+    # Return updated tags list with trigger to refresh filter dropdown
+    html_response = templates.TemplateResponse(
+        request,
+        "partials/components/priority_tags_list.html",
+        {"tags": data.get("tags", []), "priority_id": priority_id, "removable": True}
+    )
+    html_response.headers["HX-Trigger"] = "tagCreated"
+    return html_response
+
+
+@app.delete("/priorities/{priority_id}/tags/{tag_id}", response_class=HTMLResponse)
+async def remove_priority_tag(request: Request, priority_id: str, tag_id: str):
+    """Remove a tag from a priority."""
+    async with api_client(request) as client:
+        response = await client.delete(f"/api/tags/priorities/{priority_id}/{tag_id}")
+        data = response.json()
+
+    # Return updated tags list
+    return templates.TemplateResponse(
+        request,
+        "partials/components/priority_tags_list.html",
+        {"tags": data.get("tags", []), "priority_id": priority_id, "removable": True}
+    )
+
+
+# -----------------------------------------------------------------------------
+# Filter Options (for dynamic dropdown refresh)
+# -----------------------------------------------------------------------------
+
+@app.get("/filters/priorities", response_class=HTMLResponse)
+async def filter_priority_options(request: Request, selected: str | None = None):
+    """Return priority filter options for dropdown refresh."""
+    async with api_client(request) as client:
+        response = await client.get("/api/priorities")
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/components/filter_priority_options.html",
+        {"priorities": data.get("priorities", []), "selected": selected}
+    )
+
+
+@app.get("/filters/tags", response_class=HTMLResponse)
+async def filter_tag_options(request: Request, selected: str | None = None):
+    """Return tag filter options for dropdown refresh."""
+    async with api_client(request) as client:
+        response = await client.get("/api/tags")
+        data = response.json()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/components/filter_tag_options.html",
+        {"user_tags": data.get("tags", []), "selected": selected}
+    )
