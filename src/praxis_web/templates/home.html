@@ -43,6 +43,15 @@
                 title="Friends">
             <span class="mode-nav-icon mode-nav-icon--friends"></span>
         </button>
+        <button class="mode-nav-btn {% if default_mode == 'rules' %}active{% endif %}"
+                id="rules-nav-btn"
+                hx-get="/rules/list"
+                hx-target="#item-list"
+                hx-push-url="/rules"
+                onclick="setMode('rules')"
+                title="Rules">
+            <span class="mode-nav-icon mode-nav-icon--rules"></span>
+        </button>
     </nav>
 
     <!-- Left Pane -->
@@ -173,6 +182,16 @@
                     Active only
                 </label>
             </div>
+
+            <!-- Rules toolbar (shown for rules mode) -->
+            <div id="rule-filters" class="filter-group" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %}">
+                <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+                    Import
+                </button>
+                <a class="btn btn-secondary btn-sm" href="/rules/export" download="praxis-rules.yml">
+                    Export
+                </a>
+            </div>
         </div>
 
         <!-- Add New Item Bar -->
@@ -196,6 +215,21 @@
             <div id="add-friend-bar" style="display: {% if default_mode == 'friends' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm" onclick="openInviteModal()">
                     + Invite Friend
+                </button>
+            </div>
+            <div id="add-rule-bar" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %};">
+                <button class="btn btn-primary btn-sm"
+                        hx-get="/rules/new"
+                        hx-target="#detail-pane"
+                        hx-swap="innerHTML">
+                    + New Rule
+                </button>
+                <button class="btn btn-secondary btn-sm"
+                        hx-post="/rules/restore-defaults"
+                        hx-target="#item-list"
+                        hx-swap="innerHTML"
+                        hx-confirm="Replace all your rules with defaults? This cannot be undone.">
+                    Restore Defaults
                 </button>
             </div>
         </div>
@@ -239,6 +273,9 @@
 <!-- Confirmation Modal -->
 {% include "partials/confirm_modal.html" %}
 
+<!-- Import Rules Modal -->
+{% include "partials/import_rules_modal.html" %}
+
 <!-- Tree Context Menu -->
 <div class="tree-context-menu" id="tree-context-menu">
     <button class="tree-context-menu-item" onclick="handleTreeMenuAddChild()">
@@ -264,9 +301,11 @@
         document.getElementById('tasks-nav-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
         document.getElementById('friends-nav-btn').classList.toggle('active', mode === 'friends');
+        document.getElementById('rules-nav-btn').classList.toggle('active', mode === 'rules');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
+        document.getElementById('rule-filters').style.display = mode === 'rules' ? 'flex' : 'none';
         // Hide task filters in inbox mode (all inbox tasks have no priority)
         document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
 
@@ -274,6 +313,7 @@
         document.getElementById('add-task-bar').style.display = (mode === 'tasks' || mode === 'inbox') ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
         document.getElementById('add-friend-bar').style.display = mode === 'friends' ? 'flex' : 'none';
+        document.getElementById('add-rule-bar').style.display = mode === 'rules' ? 'flex' : 'none';
 
         // Update FAB color based on mode
         const fab = document.getElementById('fab-button');
@@ -287,6 +327,9 @@
         } else if (mode === 'friends') {
             // Friends mode: left-pane only, clear detail pane
             document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
+        } else if (mode === 'rules') {
+            // Rules mode: show rules help in detail pane
+            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Rules</h3><p>Rules control how tasks are prioritized based on time, tags, and due dates</p></div>';
         } else {
             // Clear detail pane for tasks/inbox mode
             document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
@@ -456,7 +499,7 @@
 
     window.selectRow = function(element) {
         // Remove selected class from all rows
-        document.querySelectorAll('.task-row.selected, .priority-row.selected')
+        document.querySelectorAll('.task-row.selected, .priority-row.selected, .rule-row.selected')
             .forEach(el => el.classList.remove('selected'));
         // Add selected class to clicked row
         element.classList.add('selected');
@@ -493,6 +536,15 @@
         if (window.currentMode === 'priorities' && priorityId) {
             addPriorityToTree(priorityId, parentId);
         }
+    });
+
+    // Listen for rule creation/update to refresh the list
+    document.body.addEventListener('ruleCreated', function(event) {
+        htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
+    });
+
+    document.body.addEventListener('ruleUpdated', function(event) {
+        htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
     });
 
     // Add a newly created priority to the tree without collapsing existing nodes
@@ -928,6 +980,176 @@
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = originalText; }, 1500);
     };
+
+    // -------------------------------------------------------------------------
+    // Import Rules Modal
+    // -------------------------------------------------------------------------
+
+    let importYamlContent = null;
+    let importParsedRules = [];
+
+    window.openImportModal = function() {
+        document.getElementById('import-modal-backdrop').classList.add('open');
+        resetImportModal();
+    };
+
+    window.closeImportModal = function() {
+        document.getElementById('import-modal-backdrop').classList.remove('open');
+        resetImportModal();
+    };
+
+    function resetImportModal() {
+        importYamlContent = null;
+        importParsedRules = [];
+        document.getElementById('import-step-upload').style.display = 'block';
+        document.getElementById('import-step-select').style.display = 'none';
+        document.getElementById('import-error').style.display = 'none';
+        document.getElementById('import-submit-btn').disabled = true;
+        document.getElementById('import-file-input').value = '';
+    }
+
+    window.handleImportFile = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        processImportFile(file);
+    };
+
+    function processImportFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            previewImportRules(content);
+        };
+        reader.onerror = function() {
+            showImportError('Failed to read file');
+        };
+        reader.readAsText(file);
+    }
+
+    async function previewImportRules(yamlContent) {
+        try {
+            const response = await fetch('/rules/import/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: yamlContent
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showImportError(data.error || 'Failed to parse rules');
+                return;
+            }
+
+            importYamlContent = yamlContent;
+            importParsedRules = data.rules;
+            showImportSelection(data.rules);
+        } catch (err) {
+            showImportError('Failed to preview rules: ' + err.message);
+        }
+    }
+
+    function showImportError(message) {
+        const errorDiv = document.getElementById('import-error');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+
+    function showImportSelection(rules) {
+        document.getElementById('import-step-upload').style.display = 'none';
+        document.getElementById('import-step-select').style.display = 'block';
+
+        const listDiv = document.getElementById('import-rules-list');
+        listDiv.innerHTML = rules.map((rule, i) => `
+            <label class="import-rule-item">
+                <input type="checkbox" value="${i}" checked onchange="updateImportButton()">
+                <span class="import-rule-name">${rule.name}</span>
+                <span class="import-rule-meta">${rule.conditions_count} conditions, ${rule.effects_count} effects</span>
+            </label>
+        `).join('');
+
+        updateImportButton();
+    }
+
+    window.selectAllImportRules = function(selectAll) {
+        document.querySelectorAll('#import-rules-list input[type="checkbox"]').forEach(cb => {
+            cb.checked = selectAll;
+        });
+        updateImportButton();
+    };
+
+    function updateImportButton() {
+        const checked = document.querySelectorAll('#import-rules-list input[type="checkbox"]:checked');
+        const btn = document.getElementById('import-submit-btn');
+        btn.disabled = checked.length === 0;
+        btn.textContent = checked.length === 1
+            ? 'Import 1 Rule'
+            : `Import ${checked.length} Rules`;
+    }
+
+    window.submitImport = async function() {
+        const checked = document.querySelectorAll('#import-rules-list input[type="checkbox"]:checked');
+        const selectedIndices = Array.from(checked).map(cb => parseInt(cb.value));
+
+        if (selectedIndices.length === 0) return;
+
+        const btn = document.getElementById('import-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Importing...';
+
+        try {
+            const response = await fetch('/rules/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    yaml_content: importYamlContent,
+                    selected_indices: selectedIndices
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showImportError(data.error || 'Failed to import rules');
+                btn.disabled = false;
+                btn.textContent = 'Import Selected';
+                return;
+            }
+
+            closeImportModal();
+            // Refresh the rules list
+            htmx.ajax('GET', '/rules/list', { target: '#item-list', swap: 'innerHTML' });
+        } catch (err) {
+            showImportError('Failed to import: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Import Selected';
+        }
+    };
+
+    // Drag and drop support
+    const dropZone = document.getElementById('import-drop-zone');
+    if (dropZone) {
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', function() {
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processImportFile(file);
+        });
+    }
+
+    // Close import modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImportModal();
+        }
+    });
 
     // -------------------------------------------------------------------------
     // Task Search and Filters

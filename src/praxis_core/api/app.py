@@ -4,6 +4,7 @@ FastAPI application for Praxis Core API.
 Run with: uvicorn praxis_core.api.app:app --reload
 """
 
+from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI
 import markdown
@@ -13,7 +14,7 @@ from praxis_core.model import (
     Goal,
     Practice,
 )
-from praxis_core.persistence import get_connection, PriorityGraph
+from praxis_core.persistence import get_connection, PriorityGraph, ensure_default_rules
 
 from praxis_core.api.priority_endpoints import router as priority_router
 from praxis_core.api.task_endpoints import router as task_router
@@ -21,13 +22,31 @@ from praxis_core.api.auth_endpoints import router as auth_router
 from praxis_core.api.invite_endpoints import router as invite_router
 from praxis_core.api.friends_endpoints import router as friends_router
 from praxis_core.api.tag_endpoints import router as tag_router
+from praxis_core.api.rule_endpoints import router as rule_router
+
+
+# ---------------------------------------------------------------------
+# App Lifespan
+# ---------------------------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle app startup and shutdown."""
+    # Startup: seed default rules
+    ensure_default_rules()
+    yield
+    # Shutdown: nothing to clean up
 
 
 # ---------------------------------------------------------------------
 # App Setup
 # ---------------------------------------------------------------------
 
-app = FastAPI(title="Praxis Core API", description="Cue-based task management")
+app = FastAPI(
+    title="Praxis Core API",
+    description="Cue-based task management",
+    lifespan=lifespan,
+)
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(priority_router, prefix="/api/priorities", tags=["priorities"])
@@ -35,6 +54,7 @@ app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
 app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
+app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
 
 
 # ---------------------------------------------------------------------

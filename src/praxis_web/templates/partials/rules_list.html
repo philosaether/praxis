@@ -1,0 +1,31 @@
+{% if rules %}
+<div class="rule-list">
+    {% for rule in rules %}
+    <div class="rule-row {% if not rule.enabled %}disabled{% endif %}"
+         id="rule-row-{{ rule.id }}"
+         hx-get="/rules/{{ rule.id }}"
+         hx-target="#detail-pane"
+         hx-push-url="/rules/{{ rule.id }}"
+         onclick="selectRow(this)">
+        <div class="rule-row-content">
+            <div class="rule-name">{{ rule.name }}</div>
+            <div class="rule-description">{{ rule.description or '' }}</div>
+        </div>
+        <div class="rule-row-actions">
+            <label class="rule-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox"
+                       {% if rule.enabled %}checked{% endif %}
+                       hx-post="/rules/{{ rule.id }}/toggle"
+                       hx-swap="none">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-list">
+    <p>No rules yet</p>
+    <p class="text-muted">Click "Restore Defaults" to add the default rules</p>
+</div>
+{% endif %}
