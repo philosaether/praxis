@@ -1,0 +1,16 @@
+practice:
+  name: Biweekly shopping
+  description: Bringing home the bacon (literally)
+  actions:
+  - on:
+      schedule:
+        interval:
+          cadence:
+            frequency: 14d
+            beginning: 2026-04-03
+            at: 08:00
+      collate:
+        target: children
+        as:
+          name: "Shopping for {{today}}"
+
