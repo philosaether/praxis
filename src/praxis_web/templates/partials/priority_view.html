@@ -76,7 +76,46 @@
             </div>
             {% endif %}
         {% elif priority.priority_type == 'practice' %}
-            {# Practice-specific fields hidden until task generation is implemented #}
+            <!-- Trigger Configuration -->
+            <div class="trigger-section">
+                <div class="property-row">
+                    <label>Trigger</label>
+                    <div class="property-display">
+                        {% if priority.trigger_config %}
+                        <span class="trigger-status configured">Configured</span>
+                        {% else %}
+                        <span class="trigger-status not-configured">Not configured</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if priority.last_triggered_at %}
+                <div class="property-row">
+                    <label>Last Triggered</label>
+                    <div class="property-display">{{ priority.last_triggered_at }}</div>
+                </div>
+                {% endif %}
+                {% if priority.is_owner %}
+                <div class="trigger-actions">
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            hx-get="/priorities/{{ priority.id }}/trigger/edit"
+                            hx-target="#trigger-editor-container"
+                            hx-swap="innerHTML">
+                        {% if priority.trigger_config %}Edit Trigger{% else %}Configure Trigger{% endif %}
+                    </button>
+                    {% if priority.trigger_config %}
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            hx-post="/api/practices/{{ priority.id }}/fire-trigger"
+                            hx-swap="none"
+                            hx-on::after-request="handleTriggerFired(event)">
+                        Fire Now
+                    </button>
+                    {% endif %}
+                </div>
+                <div id="trigger-editor-container"></div>
+                {% endif %}
+            </div>
         {% endif %}
 
         <!-- Notes (rendered) -->

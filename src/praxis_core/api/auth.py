@@ -82,3 +82,13 @@ async def require_admin(user: User = Depends(get_current_user)) -> User:
             detail="Admin access required",
         )
     return user
+
+
+async def get_current_user_from_request(request: Request) -> User | None:
+    """
+    Get the current user from request state (set by middleware).
+
+    Use this for non-FastAPI-dependency contexts where you have
+    direct access to the request object.
+    """
+    return getattr(request.state, "user", None)

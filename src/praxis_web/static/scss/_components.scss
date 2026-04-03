@@ -1014,3 +1014,139 @@
   color: $text-muted;
   line-height: 1.4;
 }
+
+// -----------------------------------------------------------------------------
+// Trigger Section (Practice detail view)
+// -----------------------------------------------------------------------------
+
+.trigger-section {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-subtle;
+}
+
+.trigger-status {
+  display: inline-block;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: 500;
+
+  &.configured {
+    background: rgba($accent, 0.15);
+    color: $accent;
+  }
+
+  &.not-configured {
+    background: $bg-tertiary;
+    color: $text-muted;
+  }
+}
+
+.trigger-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.trigger-editor {
+  margin-top: $spacing-lg;
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+
+  h4 {
+    margin: 0 0 $spacing-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $text-primary;
+
+    &:not(:first-child) {
+      margin-top: $spacing-lg;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid $border-subtle;
+    margin: $spacing-lg 0;
+  }
+
+  .form-group {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-xs;
+      font-size: $font-size-sm;
+      font-weight: 500;
+      color: $text-secondary;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      background: $bg-primary;
+      border: 1px solid $border-subtle;
+      border-radius: $radius-md;
+      color: $text-primary;
+      font-size: $font-size-base;
+      font-family: $font-family-body;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+        box-shadow: 0 0 0 2px $accent-glow;
+      }
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-hint {
+      display: block;
+      margin-top: $spacing-xs;
+      font-size: $font-size-xs;
+      color: $text-muted;
+
+      code {
+        background: $bg-tertiary;
+        padding: 0.1em 0.3em;
+        border-radius: $radius-sm;
+        font-family: $font-family-mono;
+      }
+    }
+  }
+
+  .checkbox-group {
+    label {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      cursor: pointer;
+      font-weight: normal;
+      color: $text-primary;
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid $border-subtle;
+  }
+}

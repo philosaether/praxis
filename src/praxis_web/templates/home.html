@@ -806,6 +806,29 @@
         confirmModalCallback = null;
     };
 
+    // Handle trigger fired response
+    window.handleTriggerFired = function(event) {
+        const xhr = event.detail.xhr;
+        if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.success && data.tasks_created > 0) {
+                // Show success message
+                alert(`Created ${data.tasks_created} task(s) from trigger`);
+                // Refresh the priority view to show updated last_triggered_at
+                const priorityId = event.target.closest('.detail-view')?.querySelector('[hx-get*="/priorities/"]')?.getAttribute('hx-get')?.match(/priorities\/([^/]+)/)?.[1];
+                if (priorityId) {
+                    htmx.ajax('GET', `/priorities/${priorityId}`, {target: '#detail-pane', swap: 'innerHTML'});
+                }
+            } else if (!data.success) {
+                alert(`Trigger failed: ${data.error || 'Unknown error'}`);
+            } else {
+                alert('Trigger fired but no tasks were created (conditions may not be met)');
+            }
+        } else {
+            alert('Failed to fire trigger');
+        }
+    };
+
     // Handle confirm button click
     document.getElementById('confirm-modal-action').addEventListener('click', function() {
         if (confirmModalCallback) {
