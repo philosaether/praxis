@@ -46,10 +46,9 @@ CREATE TABLE IF NOT EXISTS priorities (
     due_date TEXT,
     progress TEXT,
 
-    -- Practice
-    rhythm_frequency TEXT,
-    rhythm_constraints TEXT,
-    generation_prompt TEXT,
+    -- Practice trigger fields
+    trigger_config TEXT,       -- JSON: PracticeTrigger configuration
+    last_triggered_at TEXT,    -- datetime: when trigger last fired
 
     -- Metadata
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -150,12 +149,15 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
             )
 
         case PriorityType.PRACTICE:
+            # Handle trigger fields (may not exist in older schemas)
+            trigger_config = row["trigger_config"] if "trigger_config" in keys else None
+            last_triggered_at = _parse_datetime(row["last_triggered_at"]) if "last_triggered_at" in keys else None
+
             return Practice(
                 **common_kwargs,
                 priority_type=priority_type,
-                rhythm_frequency=row["rhythm_frequency"],
-                rhythm_constraints=row["rhythm_constraints"],
-                generation_prompt=row["generation_prompt"],
+                trigger_config=trigger_config,
+                last_triggered_at=last_triggered_at,
             )
 
         case PriorityType.INITIATIVE:
@@ -185,9 +187,8 @@ def priority_to_row_values(priority: Priority) -> tuple:
     complete_when = None
     due_date = None
     progress = None
-    rhythm_frequency = None
-    rhythm_constraints = None
-    generation_prompt = None
+    trigger_config = None
+    last_triggered_at = None
 
     # Extract type-specific fields based on actual type
     if isinstance(priority, Value):
@@ -200,9 +201,8 @@ def priority_to_row_values(priority: Priority) -> tuple:
         progress = priority.progress
 
     elif isinstance(priority, Practice):
-        rhythm_frequency = priority.rhythm_frequency
-        rhythm_constraints = priority.rhythm_constraints
-        generation_prompt = priority.generation_prompt
+        trigger_config = priority.trigger_config
+        last_triggered_at = priority.last_triggered_at.isoformat() if priority.last_triggered_at else None
 
     now = datetime.now().isoformat()
     return (
@@ -222,9 +222,8 @@ def priority_to_row_values(priority: Priority) -> tuple:
         complete_when,
         due_date,
         progress,
-        rhythm_frequency,
-        rhythm_constraints,
-        generation_prompt,
+        trigger_config,
+        last_triggered_at,
         priority.created_at.isoformat() if priority.created_at else now,
         priority.updated_at.isoformat() if priority.updated_at else now,
     )
@@ -318,9 +317,9 @@ class PriorityGraph:
                     auto_assign_owner, auto_assign_creator,
                     success_looks_like, obsolete_when,
                     complete_when, due_date, progress,
-                    rhythm_frequency, rhythm_constraints, generation_prompt,
+                    trigger_config, last_triggered_at,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -337,9 +336,8 @@ class PriorityGraph:
                     complete_when = excluded.complete_when,
                     due_date = excluded.due_date,
                     progress = excluded.progress,
-                    rhythm_frequency = excluded.rhythm_frequency,
-                    rhythm_constraints = excluded.rhythm_constraints,
-                    generation_prompt = excluded.generation_prompt,
+                    trigger_config = excluded.trigger_config,
+                    last_triggered_at = excluded.last_triggered_at,
                     updated_at = CURRENT_TIMESTAMP
             """, values)
 

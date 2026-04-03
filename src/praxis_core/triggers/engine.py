@@ -1,10 +1,11 @@
 """
-Trigger execution engine.
+Trigger execution engine for Practice-based triggers.
 
 Handles:
-- Evaluating trigger conditions (reuses Rules engine)
+- Evaluating trigger conditions
 - Expanding template variables ({{date}}, {{practice.name}}, etc.)
 - Executing trigger actions (create_task, collate_tasks)
+- Determining when scheduled triggers should fire
 """
 
 import re
@@ -12,13 +13,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
-from praxis_core.model.rules import RuleCondition
-from praxis_core.model.triggers import (
-    Trigger,
+from praxis_core.model.practice_triggers import (
+    PracticeTrigger,
     TriggerEvent,
     TriggerEventType,
-    TriggerAction,
-    TriggerActionType,
     TaskTemplate,
     CollateConfig,
 )
@@ -34,12 +32,12 @@ class TriggerContext:
     now: datetime
     entity_id: str | None = None
 
+    # Practice data (trigger is part of this Practice)
+    practice: dict | None = None
+
     # Event data (populated based on event type)
     event_priority: dict | None = None  # For priority_completed
     event_task: dict | None = None  # For task_completed
-
-    # Practice data (if trigger is attached to a practice)
-    practice: dict | None = None
 
     def get_template_variables(self) -> dict[str, Any]:
         """Get variables available for template expansion."""
@@ -197,71 +195,67 @@ def parse_due_date_offset(offset: str | None, now: datetime) -> datetime | None:
 
 
 # -----------------------------------------------------------------------------
-# Condition Evaluation (reuse from Rules engine)
+# Condition Evaluation
 # -----------------------------------------------------------------------------
 
-def evaluate_condition(condition: RuleCondition, ctx: TriggerContext) -> bool:
+def evaluate_condition(condition: dict, ctx: TriggerContext) -> bool:
     """
     Evaluate a single condition.
 
-    Note: This is a simplified version for triggers. For task-based conditions,
-    we defer to the Rules engine. Triggers mainly use time-based conditions.
+    Conditions are stored as dicts with 'type' and 'params' keys.
     """
-    from praxis_core.model.rules import ConditionType
+    cond_type = condition.get("type", "")
+    params = condition.get("params", {})
 
-    params = condition.params
+    if cond_type == "time_window":
+        start_str = params.get("start", "00:00")
+        end_str = params.get("end", "23:59")
+        try:
+            start_h, start_m = map(int, start_str.split(":"))
+            end_h, end_m = map(int, end_str.split(":"))
+            start_minutes = start_h * 60 + start_m
+            end_minutes = end_h * 60 + end_m
+            now_minutes = ctx.now.hour * 60 + ctx.now.minute
 
-    match condition.type:
-        case ConditionType.TIME_WINDOW:
-            start_str = params.get("start", "00:00")
-            end_str = params.get("end", "23:59")
-            try:
-                start_h, start_m = map(int, start_str.split(":"))
-                end_h, end_m = map(int, end_str.split(":"))
-                start_minutes = start_h * 60 + start_m
-                end_minutes = end_h * 60 + end_m
-                now_minutes = ctx.now.hour * 60 + ctx.now.minute
+            # Handle overnight windows (e.g., 22:00 to 06:00)
+            if start_minutes <= end_minutes:
+                return start_minutes <= now_minutes <= end_minutes
+            else:
+                return now_minutes >= start_minutes or now_minutes <= end_minutes
+        except (ValueError, AttributeError):
+            return False
 
-                # Handle overnight windows (e.g., 22:00 to 06:00)
-                if start_minutes <= end_minutes:
-                    return start_minutes <= now_minutes <= end_minutes
-                else:
-                    return now_minutes >= start_minutes or now_minutes <= end_minutes
-            except (ValueError, AttributeError):
-                return False
+    if cond_type == "day_of_week":
+        days = params.get("days", [])
+        current_day = ctx.now.strftime("%A").lower()
+        return current_day in [d.lower() for d in days]
 
-        case ConditionType.DAY_OF_WEEK:
-            days = params.get("days", [])
-            current_day = ctx.now.strftime("%A").lower()
-            return current_day in [d.lower() for d in days]
+    if cond_type == "tag_match":
+        # For triggers, tag conditions apply to the event task if present
+        if ctx.event_task:
+            task_tags = set(t.lower() for t in ctx.event_task.get("tags", []))
+            tag = params.get("tag", "").lower()
+            operator = params.get("operator", "has")
+            if operator == "has":
+                return tag in task_tags
+            else:  # missing
+                return tag not in task_tags
+        return True  # No task context, condition passes
 
-        case ConditionType.TAG_MATCH:
-            # For triggers, tag conditions apply to the event task if present
-            if ctx.event_task:
-                task_tags = set(t.lower() for t in ctx.event_task.get("tags", []))
-                tag = params.get("tag", "").lower()
-                operator = params.get("operator", "has")
-                if operator == "has":
-                    return tag in task_tags
-                else:  # missing
-                    return tag not in task_tags
-            return True  # No task context, condition passes
+    if cond_type == "priority_match":
+        # For triggers, priority conditions apply to the event priority
+        if ctx.event_priority:
+            if "priority_id" in params:
+                return ctx.event_priority.get("id") == params["priority_id"]
+            if "priority_type" in params:
+                return ctx.event_priority.get("priority_type") == params["priority_type"]
+        return True  # No priority context, condition passes
 
-        case ConditionType.PRIORITY_MATCH:
-            # For triggers, priority conditions apply to the event priority
-            if ctx.event_priority:
-                if "priority_id" in params:
-                    return ctx.event_priority.get("id") == params["priority_id"]
-                if "priority_type" in params:
-                    return ctx.event_priority.get("priority_type") == params["priority_type"]
-            return True  # No priority context, condition passes
-
-        case _:
-            # Other conditions not typically used in triggers
-            return True
+    # Unknown condition type - pass by default
+    return True
 
 
-def evaluate_conditions(conditions: list[RuleCondition], ctx: TriggerContext) -> bool:
+def evaluate_conditions(conditions: list[dict], ctx: TriggerContext) -> bool:
     """Evaluate all conditions (AND logic). All must pass."""
     for condition in conditions:
         if not evaluate_condition(condition, ctx):
@@ -281,9 +275,9 @@ class ExecutionResult:
     error_message: str | None = None
 
 
-def execute_create_task(
+def _execute_create_task(
     template: TaskTemplate,
-    trigger: Trigger,
+    practice_id: str | None,
     ctx: TriggerContext,
 ) -> dict:
     """
@@ -299,8 +293,8 @@ def execute_create_task(
     # Parse due date
     due_date = parse_due_date_offset(template.due_date_offset, ctx.now)
 
-    # Determine priority_id
-    priority_id = template.priority_id or trigger.practice_id
+    # Determine priority_id (template override or Practice itself)
+    priority_id = template.priority_id or practice_id
 
     return {
         "name": name,
@@ -309,12 +303,13 @@ def execute_create_task(
         "priority_id": priority_id,
         "entity_id": ctx.entity_id,
         "tags": template.tags,
+        "assign_to_creator": template.assign_to_creator,
     }
 
 
-def execute_collate_tasks(
+def _execute_collate_tasks(
     config: CollateConfig,
-    trigger: Trigger,
+    practice_id: str | None,
     ctx: TriggerContext,
 ) -> dict:
     """
@@ -328,21 +323,31 @@ def execute_collate_tasks(
     return {
         "batch_name": batch_name,
         "source_tag": config.source_tag,
-        "source_priority_id": config.source_priority_id or trigger.practice_id,
+        "source_priority_id": config.source_priority_id or practice_id,
         "include_completed": config.include_completed,
         "mark_source_done": config.mark_source_done,
         "entity_id": ctx.entity_id,
     }
 
 
-def execute_trigger(trigger: Trigger, ctx: TriggerContext) -> ExecutionResult:
+def execute_practice_trigger(
+    trigger: PracticeTrigger,
+    practice_id: str | None,
+    ctx: TriggerContext,
+) -> ExecutionResult:
     """
-    Execute a trigger's actions.
+    Execute a Practice trigger's actions.
 
     Note: This doesn't actually create tasks - it returns the parameters
-    needed to create them. The actual persistence is handled by the scheduler
-    which has access to the persistence layer.
+    needed to create them. The actual persistence is handled by the caller.
     """
+    # Check if trigger is enabled
+    if not trigger.enabled:
+        return ExecutionResult(
+            success=False,
+            error_message="Trigger is disabled",
+        )
+
     # Check conditions first
     if not evaluate_conditions(trigger.conditions, ctx):
         return ExecutionResult(
@@ -352,23 +357,21 @@ def execute_trigger(trigger: Trigger, ctx: TriggerContext) -> ExecutionResult:
 
     actions_taken = []
 
-    for action in trigger.actions:
-        match action.type:
-            case TriggerActionType.CREATE_TASK:
-                if action.task_template:
-                    params = execute_create_task(action.task_template, trigger, ctx)
-                    actions_taken.append({
-                        "type": "create_task",
-                        "params": params,
-                    })
+    # Execute create_task action
+    if trigger.task_template:
+        params = _execute_create_task(trigger.task_template, practice_id, ctx)
+        actions_taken.append({
+            "type": "create_task",
+            "params": params,
+        })
 
-            case TriggerActionType.COLLATE_TASKS:
-                if action.collate_config:
-                    params = execute_collate_tasks(action.collate_config, trigger, ctx)
-                    actions_taken.append({
-                        "type": "collate_tasks",
-                        "params": params,
-                    })
+    # Execute collate_tasks action
+    if trigger.collate_config:
+        params = _execute_collate_tasks(trigger.collate_config, practice_id, ctx)
+        actions_taken.append({
+            "type": "collate_tasks",
+            "params": params,
+        })
 
     return ExecutionResult(
         success=True,
@@ -380,12 +383,26 @@ def execute_trigger(trigger: Trigger, ctx: TriggerContext) -> ExecutionResult:
 # Schedule Checking
 # -----------------------------------------------------------------------------
 
-def should_trigger_fire(trigger: Trigger, now: datetime) -> bool:
+def should_practice_trigger_fire(
+    trigger: PracticeTrigger,
+    last_triggered_at: datetime | None,
+    now: datetime,
+) -> bool:
     """
-    Check if a scheduled trigger should fire based on its schedule and last_fired_at.
+    Check if a Practice's scheduled trigger should fire.
 
-    This is used by the scheduler to determine which triggers are due.
+    Uses the fire-at-first-opportunity pattern:
+    - Fire at first opportunity after scheduled time
+    - Only fire once per interval (daily, weekly, etc.)
+
+    Args:
+        trigger: The PracticeTrigger configuration
+        last_triggered_at: When the Practice's trigger last fired
+        now: Current time
     """
+    if not trigger.enabled:
+        return False
+
     if trigger.event.type != TriggerEventType.SCHEDULE:
         return False
 
@@ -416,22 +433,20 @@ def should_trigger_fire(trigger: Trigger, now: datetime) -> bool:
     if interval == "weekdays" and now.weekday() >= 5:
         return False
 
-    # Check if we've already fired today (or at this interval)
-    if trigger.last_fired_at:
-        last_fired = trigger.last_fired_at
-
+    # Check if we've already fired at this interval
+    if last_triggered_at:
         if interval == "daily" or interval == "weekdays":
             # Should fire once per day
-            if last_fired.date() >= now.date():
+            if last_triggered_at.date() >= now.date():
                 return False
         elif interval == "weekly":
             # Should fire once per week
-            days_since = (now.date() - last_fired.date()).days
+            days_since = (now.date() - last_triggered_at.date()).days
             if days_since < 7:
                 return False
         elif interval == "2x_daily":
             # Should fire twice per day - check if at least 8 hours since last fire
-            hours_since = (now - last_fired).total_seconds() / 3600
+            hours_since = (now - last_triggered_at).total_seconds() / 3600
             if hours_since < 8:
                 return False
 

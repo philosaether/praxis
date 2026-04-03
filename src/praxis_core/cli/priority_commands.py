@@ -127,12 +127,10 @@ def priority_show(
             rprint(f"[bold]Due:[/bold] {p.due_date.strftime('%Y-%m-%d')}")
 
     elif isinstance(p, Practice):
-        if p.rhythm_frequency:
-            rprint(f"\n[bold]Rhythm:[/bold] {p.rhythm_frequency}")
-        if p.rhythm_constraints:
-            rprint(f"[bold]Constraints:[/bold] {p.rhythm_constraints}")
-        if p.generation_prompt:
-            rprint(f"[bold]Generation prompt:[/bold]\n{p.generation_prompt}")
+        if p.trigger_config:
+            rprint(f"\n[bold]Trigger:[/bold] configured")
+        if p.last_triggered_at:
+            rprint(f"[bold]Last triggered:[/bold] {p.last_triggered_at.strftime('%Y-%m-%d %H:%M')}")
 
     # Ancestry
     parent_ids = graph.parents.get(p.id, set())
