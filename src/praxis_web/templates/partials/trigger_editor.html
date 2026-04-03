@@ -53,9 +53,9 @@
                    name="task_name"
                    id="trigger-task-name"
                    class="form-control"
-                   placeholder="e.g., {{practice.name}} for {{date}}"
-                   value="{{ trigger.task_name if trigger and trigger.task_name else (priority.name ~ ' for {{date}}') }}">
-            <small class="form-hint">Variables: <code>{{date}}</code>, <code>{{practice.name}}</code>, <code>{{day_of_week}}</code></small>
+                   placeholder="e.g., {{'{{practice.name}}'}} for {{'{{date}}'}}"
+                   value="{{ trigger.task_name if trigger and trigger.task_name else (priority.name ~ ' for ' ~ '{{date}}') }}">
+            <small class="form-hint">Variables: <code>{{'{{date}}'}}</code>, <code>{{'{{practice.name}}'}}</code>, <code>{{'{{day_of_week}}'}}</code></small>
         </div>
 
         <!-- Due Date Offset -->
