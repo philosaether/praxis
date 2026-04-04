@@ -193,9 +193,7 @@
 
         <!-- Metadata -->
         <div class="property-meta">
-            <span class="meta-item permalink" onclick="copyPermalink('{{ priority.id }}')" title="Click to copy permalink">
-                /priorities/{{ priority.id }}
-            </span>
+            <span class="meta-item">{{ priority.id }}</span>
             {% if priority.created_at %}
             <span class="meta-item">Created {{ priority.created_at }}</span>
             {% endif %}
@@ -220,15 +218,6 @@ function updateCharCount(textarea, counterId, maxLength) {
     } else {
         wrapper.classList.remove('limit');
     }
-}
-
-function copyPermalink(priorityId) {
-    const url = window.location.origin + '/priorities/' + priorityId;
-    navigator.clipboard.writeText(url).then(() => {
-        const el = document.querySelector('.permalink');
-        el.classList.add('copied');
-        setTimeout(() => el.classList.remove('copied'), 1500);
-    });
 }
 
 function toggleYamlMode(event) {

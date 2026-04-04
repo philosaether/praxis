@@ -802,28 +802,6 @@ textarea.property-input {
 }
 
 // =============================================================================
-// Permalink (click to copy)
-// =============================================================================
-
-.permalink {
-  cursor: pointer;
-  font-family: $font-family-mono;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $radius-sm;
-  transition: background $transition-base, color $transition-base;
-
-  &:hover {
-    background: $bg-tertiary;
-    color: $accent;
-  }
-
-  &.copied {
-    background: rgba($success, 0.15);
-    color: $success;
-  }
-}
-
-// =============================================================================
 // Detail Header (badges above title)
 // =============================================================================
 
@@ -919,7 +897,3 @@ textarea.property-input {
   }
 }
 
-// Parent picker styling
-.parent-picker {
-  // Badge text is already included in option text via template
-}
