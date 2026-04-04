@@ -30,8 +30,8 @@ class Priority:
     substatus: str | None = None  # Extension field (e.g., draft, backlog, abandoned)
 
     entity_id: str | None = None  # ULID of owning entity
-    agent_context: str | None = None
-    notes: str | None = None
+    agent_context: str | None = None  # Scaffolding for AI integration
+    description: str | None = None
 
     # Importance ranking (only meaningful on root priorities)
     # Lower rank = higher importance (rank 1 is most important)
@@ -52,8 +52,6 @@ class Value(Priority):
     """A guiding principle (telos). Direction to travel, never completes."""
 
     priority_type: PriorityType = PriorityType.VALUE
-    success_looks_like: str | None = None  # What living this value looks like
-    obsolete_when: str | None = None       # When this value no longer applies
 
 
 @dataclass
@@ -72,10 +70,11 @@ class Practice(Priority):
 
     priority_type: PriorityType = PriorityType.PRACTICE
 
-    # Trigger configuration (JSON string containing PracticeTrigger)
-    # Includes: event (schedule/task_completed/priority_completed),
-    # task_template, collate_config, conditions
+    # v1 trigger configuration (deprecated, use actions_config)
     trigger_config: str | None = None
+
+    # v2 actions configuration (JSON string containing DSL v2 actions array)
+    actions_config: str | None = None
 
     # Tracking for fire-at-first-opportunity pattern
     last_triggered_at: datetime | None = None

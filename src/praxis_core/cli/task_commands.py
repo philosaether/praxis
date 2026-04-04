@@ -125,8 +125,8 @@ def _display_task(task: Task) -> None:
         rprint(f"[dim]{task.priority_name}[/dim]")
     if task.current_subtask:
         rprint(f"[cyan]→ {task.current_subtask.title}[/cyan]")
-    if task.notes:
-        rprint(f"\n{task.notes}")
+    if task.description:
+        rprint(f"\n{task.description}")
     if task.due_date:
         rprint(f"\n[yellow]Due: {task.due_date.strftime('%Y-%m-%d')}[/yellow]")
     rprint()

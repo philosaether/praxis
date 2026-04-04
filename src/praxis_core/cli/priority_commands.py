@@ -112,13 +112,7 @@ def priority_show(
         rprint(f"\n[bold]Context:[/bold]\n{p.agent_context}")
 
     # Type-specific fields
-    if isinstance(p, Value):
-        if p.success_looks_like:
-            rprint(f"\n[bold]Success looks like:[/bold]\n{p.success_looks_like}")
-        if p.obsolete_when:
-            rprint(f"\n[bold]Obsolete when:[/bold]\n{p.obsolete_when}")
-
-    elif isinstance(p, Goal):
+    if isinstance(p, Goal):
         if p.complete_when:
             rprint(f"\n[bold]Complete when:[/bold]\n{p.complete_when}")
         if p.progress:

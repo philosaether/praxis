@@ -118,9 +118,6 @@ async def create_priority_full(
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = "on",
     auto_assign_creator: Annotated[str | None, Form()] = None,
-    # Value fields
-    success_looks_like: Annotated[str | None, Form()] = None,
-    obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -140,17 +137,14 @@ async def create_priority_full(
     # Set common fields
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
 
     # Set task assignment settings (checkboxes: "on" if checked, None if not)
     priority.auto_assign_owner = auto_assign_owner == "on"
     priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Set type-specific fields
-    if isinstance(priority, Value):
-        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -298,7 +292,7 @@ async def get_priority_for_edit(
     shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
 
     priority_data = _serialize_priority(priority, current_entity_id=entity_id, shares=shares)
-    priority_data["notes_raw"] = priority.notes or ""
+    priority_data["notes_raw"] = priority.description or ""
 
     return {
         "priority": priority_data,
@@ -317,9 +311,6 @@ async def update_priority(
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Value fields
-    success_looks_like: Annotated[str | None, Form()] = None,
-    obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -343,13 +334,10 @@ async def update_priority(
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
-    if isinstance(priority, Value):
-        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -421,7 +409,7 @@ async def change_priority_type(
     # Copy common fields
     new_priority.status = old_priority.status
     new_priority.agent_context = old_priority.agent_context
-    new_priority.notes = old_priority.notes
+    new_priority.description = old_priority.description
     new_priority.rank = old_priority.rank
     new_priority.created_at = old_priority.created_at
     new_priority.updated_at = now
@@ -444,9 +432,6 @@ async def update_priority_properties(
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = None,
     auto_assign_creator: Annotated[str | None, Form()] = None,
-    # Value fields
-    success_looks_like: Annotated[str | None, Form()] = None,
-    obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -474,7 +459,7 @@ async def update_priority_properties(
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
     # Update task assignment settings (checkboxes: "on" if checked, None if not)
@@ -482,10 +467,7 @@ async def update_priority_properties(
     priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Update type-specific fields
-    if isinstance(priority, Value):
-        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -534,7 +516,7 @@ async def update_priority_properties(
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id)
-    priority_data["notes_raw"] = priority.notes or ""
+    priority_data["notes_raw"] = priority.description or ""
 
     return {
         "priority": priority_data,
@@ -560,7 +542,7 @@ async def update_priority_notes(
     if not priority:
         return JSONResponse({"error": "Priority not found"}, status_code=404)
 
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
     graph.save_priority(priority)
 
@@ -571,7 +553,7 @@ async def update_priority_notes(
         "item_type": "priority",
         "item_id": priority.id,
         "notes": priority_data.get("notes", ""),
-        "notes_raw": priority.notes or "",
+        "notes_raw": priority.description or "",
     }
 
 

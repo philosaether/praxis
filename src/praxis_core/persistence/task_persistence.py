@@ -19,10 +19,9 @@ CREATE TABLE IF NOT EXISTS tasks (
     entity_id TEXT REFERENCES entities(id),
     assigned_to INTEGER REFERENCES users(id),
     created_by INTEGER REFERENCES users(id),
-    user_id INTEGER REFERENCES users(id),  -- deprecated, use entity_id
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued',
-    notes TEXT,
+    description TEXT,
     due_date TEXT,
     priority_id TEXT REFERENCES priorities(id),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -41,7 +40,6 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_entity ON tasks(entity_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);  -- deprecated
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 
 -- Tags (user-scoped labels for tasks and priorities)
@@ -117,7 +115,7 @@ def _migrate_to_ulid(conn: sqlite3.Connection) -> None:
 
     # Read existing tasks
     old_tasks = conn.execute("""
-        SELECT id, user_id, name, status, notes, due_date, priority_id, created_at
+        SELECT id, user_id, name, status, description, due_date, priority_id, created_at
         FROM tasks
     """).fetchall()
 
@@ -200,38 +198,32 @@ def _migrate_to_ulid(conn: sqlite3.Connection) -> None:
 
 def create_task(
     name: str,
-    notes: str | None = None,
+    notes: str | None = None,  # Deprecated parameter name, use description
     due_date: datetime | None = None,
     priority_id: str | None = None,
     entity_id: str | None = None,
     assigned_to: int | None = None,
     created_by: int | None = None,
-    user_id: int | None = None,  # deprecated, use entity_id
+    description: str | None = None,
 ) -> Task:
     """Create a new task."""
     ensure_schema()
     task_id = str(ULID())
     now = datetime.now()
 
-    # If entity_id not provided but user_id is, look up user's entity
-    if entity_id is None and user_id is not None:
-        with get_connection() as conn:
-            row = conn.execute(
-                "SELECT entity_id FROM users WHERE id = ?", (user_id,)
-            ).fetchone()
-            if row:
-                entity_id = row["entity_id"]
+    # Support both 'notes' (deprecated) and 'description' parameters
+    desc = description or notes
 
     with get_connection() as conn:
         due_str = due_date.isoformat() if due_date else None
         conn.execute(
             """
-            INSERT INTO tasks (id, entity_id, assigned_to, created_by, user_id,
-                             name, notes, due_date, priority_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tasks (id, entity_id, assigned_to, created_by,
+                             name, description, due_date, priority_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (task_id, entity_id, assigned_to, created_by, user_id,
-             name, notes, due_str, priority_id, now.isoformat()),
+            (task_id, entity_id, assigned_to, created_by,
+             name, desc, due_str, priority_id, now.isoformat()),
         )
         return Task(
             id=task_id,
@@ -240,7 +232,7 @@ def create_task(
             entity_id=entity_id,
             assigned_to=assigned_to,
             created_by=created_by,
-            notes=notes,
+            description=desc,
             due_date=due_date,
             priority_id=priority_id,
             created_at=now,
@@ -346,10 +338,10 @@ def list_tasks(
             query += f" AND tg.name IN ({placeholders})"
             params.extend(tag_names)
 
-        # Search filter (LIKE on name and notes)
+        # Search filter (LIKE on name and description)
         if search_query:
             search_pattern = f"%{search_query}%"
-            query += " AND (t.name LIKE ? OR t.notes LIKE ?)"
+            query += " AND (t.name LIKE ? OR t.description LIKE ?)"
             params.extend([search_pattern, search_pattern])
 
         # Sort: active tasks first (by created_at), then done tasks
@@ -381,13 +373,18 @@ def update_task_status(task_id: str, status: TaskStatus) -> None:
 def update_task(
     task_id: str,
     name: str | None = None,
-    notes: str | None = None,
+    description: str | None = None,
     status: TaskStatus | None = None,
     due_date: datetime | None = None,
     priority_id: str | None = None,
+    notes: str | None = None,  # Deprecated, use description
 ) -> Task | None:
     """Update task fields. Returns updated task or None if not found."""
     ensure_schema()
+
+    # Support both 'notes' (deprecated) and 'description' parameters
+    desc = description if description is not None else notes
+
     with get_connection() as conn:
         updates = []
         params = []
@@ -395,9 +392,9 @@ def update_task(
         if name is not None:
             updates.append("name = ?")
             params.append(name)
-        if notes is not None:
-            updates.append("notes = ?")
-            params.append(notes if notes else None)
+        if desc is not None:
+            updates.append("description = ?")
+            params.append(desc if desc else None)
         if status is not None:
             updates.append("status = ?")
             params.append(status.value)
@@ -456,6 +453,9 @@ def _row_to_task(row: sqlite3.Row) -> Task:
     assigned_to = row["assigned_to"] if "assigned_to" in keys else None
     created_by = row["created_by"] if "created_by" in keys else None
 
+    # Handle description (was 'notes' in older schemas)
+    description = row["description"] if "description" in keys else (row["notes"] if "notes" in keys else None)
+
     return Task(
         id=row["id"],
         name=row["name"],
@@ -463,7 +463,7 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         entity_id=entity_id,
         assigned_to=assigned_to,
         created_by=created_by,
-        notes=row["notes"],
+        description=description,
         due_date=due_date,
         created_at=created_at,
         priority_id=row["priority_id"] if "priority_id" in keys else None,

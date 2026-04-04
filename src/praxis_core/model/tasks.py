@@ -42,7 +42,7 @@ class Task:
     created_by: int | None = None  # user_id of creator
 
     # Content
-    notes: str | None = None
+    description: str | None = None
     due_date: datetime | None = None
     created_at: datetime | None = None
 

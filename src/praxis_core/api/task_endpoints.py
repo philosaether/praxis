@@ -303,7 +303,7 @@ async def get_task_for_edit(
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     task_data = _serialize_task(task, render_markdown=False, current_user=user, graph=graph)
-    task_data["notes_raw"] = task.notes or ""
+    task_data["notes_raw"] = task.description or ""
 
     return {
         "task": task_data,
@@ -456,7 +456,7 @@ async def update_task_properties(
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     task_data = _serialize_task(task, render_markdown=True, current_user=user, graph=graph)
-    task_data["notes_raw"] = task.notes or ""
+    task_data["notes_raw"] = task.description or ""
 
     return {
         "task": task_data,
@@ -493,14 +493,14 @@ async def update_task_notes(
 
     task = get_task(task_id)
     task_data = _serialize_task(task, render_markdown=True, current_user=user, graph=graph)
-    task_data["notes_raw"] = task.notes or ""
+    task_data["notes_raw"] = task.description or ""
 
     return {
         "task": task_data,
         "item_type": "task",
         "item_id": task.id,
         "notes": task_data.get("notes", ""),
-        "notes_raw": task.notes or "",
+        "notes_raw": task.description or "",
     }
 
 

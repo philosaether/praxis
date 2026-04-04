@@ -126,13 +126,13 @@ def serialize_priority(
 
     Args:
         p: Priority object
-        render_markdown: Whether to render notes as markdown
+        render_markdown: Whether to render description as markdown
         current_entity_id: Current user's entity_id for ownership check
         shares: List of share dicts from graph.get_shares() for share indicators
     """
-    notes = p.notes
-    if render_markdown and notes:
-        notes = render_md(notes)
+    description = p.description
+    if render_markdown and description:
+        description = render_md(description)
 
     data = {
         "id": p.id,
@@ -142,7 +142,7 @@ def serialize_priority(
         "substatus": p.substatus,
         "entity_id": p.entity_id,
         "agent_context": p.agent_context,
-        "notes": notes,
+        "notes": description,  # Keep JSON key as 'notes' for frontend compatibility
         "rank": p.rank,
         "auto_assign_owner": p.auto_assign_owner,
         "auto_assign_creator": p.auto_assign_creator,
@@ -164,16 +164,15 @@ def serialize_priority(
             data["shares"] = []
 
     # Add type-specific fields
-    if isinstance(p, Value):
-        data["success_looks_like"] = p.success_looks_like
-        data["obsolete_when"] = p.obsolete_when
-    elif isinstance(p, Goal):
+    if isinstance(p, Goal):
         data["complete_when"] = p.complete_when
         data["progress"] = p.progress
         data["due_date"] = fmt_date(p.due_date)
     elif isinstance(p, Practice):
         data["trigger_config"] = p.trigger_config
+        data["actions_config"] = p.actions_config
         data["last_triggered_at"] = fmt_date(p.last_triggered_at)
+    # Value and Initiative have no type-specific fields
 
     return data
 
@@ -191,15 +190,15 @@ def serialize_task(
     - can_toggle: User can toggle done/undone
     - can_delete: User can delete the task
     """
-    notes = t.notes
-    if render_markdown and notes:
-        notes = render_md(notes)
+    description = t.description
+    if render_markdown and description:
+        description = render_md(description)
 
     data = {
         "id": t.id,
         "name": t.name,
         "status": t.status.value,
-        "notes": notes,
+        "notes": description,  # Keep JSON key as 'notes' for frontend compatibility
         "due_date": fmt_date(t.due_date),
         "created_at": fmt_datetime(t.created_at),
         "priority_id": t.priority_id,

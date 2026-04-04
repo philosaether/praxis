@@ -1927,3 +1927,19 @@ async def delete_rule_web(request: Request, rule_id: str):
         if response.status_code != 200:
             return HTMLResponse("<div class='error'>Failed to delete rule</div>")
     return HTMLResponse("")
+
+
+# -----------------------------------------------------------------------------
+# Trigger Routes (proxy to API)
+# -----------------------------------------------------------------------------
+
+@app.post("/api/practices/check-triggers")
+async def check_triggers_proxy(request: Request):
+    """Proxy trigger check to API backend."""
+    async with api_client(request) as client:
+        response = await client.post("/api/practices/check-triggers")
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
+        )
