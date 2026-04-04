@@ -16,6 +16,7 @@ from praxis_core.model import (
     User,
 )
 from praxis_core.api.auth import get_current_user_optional
+from praxis_core.triggers import on_priority_status_changed
 
 
 router = APIRouter()
@@ -124,10 +125,6 @@ async def create_priority_full(
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    # Practice fields
-    rhythm_frequency: Annotated[str | None, Form()] = None,
-    rhythm_constraints: Annotated[str | None, Form()] = None,
-    generation_prompt: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Create a priority with all fields (form-first flow)."""
@@ -161,10 +158,7 @@ async def create_priority_full(
                 priority.due_date = datetime.fromisoformat(due_date)
             except ValueError:
                 priority.due_date = None
-    elif isinstance(priority, Practice):
-        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
+    # Practice: trigger_config is set separately via trigger UI, not in create form
 
     graph.add(priority)
 
@@ -330,10 +324,6 @@ async def update_priority(
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    # Practice fields
-    rhythm_frequency: Annotated[str | None, Form()] = None,
-    rhythm_constraints: Annotated[str | None, Form()] = None,
-    generation_prompt: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
@@ -345,6 +335,9 @@ async def update_priority(
 
     if not priority:
         return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    # Track old status for event trigger
+    old_status = priority.status
 
     # Update fields
     priority.name = name.strip()
@@ -366,12 +359,24 @@ async def update_priority(
                 priority.due_date = None
         else:
             priority.due_date = None
-    elif isinstance(priority, Practice):
-        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
+    # Practice: trigger_config is set separately via trigger UI
 
     graph.save_priority(priority)
+
+    # Fire event trigger if status changed
+    if priority.status != old_status and entity_id:
+        priority_data = {
+            "id": priority.id,
+            "name": priority.name,
+            "priority_type": priority.priority_type.value,
+        }
+        on_priority_status_changed(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            new_status=priority.status.value,
+            priority_data=priority_data,
+            created_by=user.id if user else None,
+        )
 
     # Handle parent link changes
     current_parents = graph.parents.get(priority_id, set())
@@ -446,10 +451,6 @@ async def update_priority_properties(
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    # Practice fields
-    rhythm_frequency: Annotated[str | None, Form()] = None,
-    rhythm_constraints: Annotated[str | None, Form()] = None,
-    generation_prompt: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
@@ -465,6 +466,9 @@ async def update_priority_properties(
     # Validate name
     if not name.strip():
         return JSONResponse({"error": "Name is required"}, status_code=400)
+
+    # Track old status for event trigger
+    old_status = priority.status
 
     # Update common fields
     priority.name = name.strip()
@@ -491,12 +495,24 @@ async def update_priority_properties(
                 priority.due_date = None
         else:
             priority.due_date = None
-    elif isinstance(priority, Practice):
-        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
+    # Practice: trigger_config is set separately via trigger UI
 
     graph.save_priority(priority)
+
+    # Fire event trigger if status changed
+    if priority.status != old_status and entity_id:
+        priority_data = {
+            "id": priority.id,
+            "name": priority.name,
+            "priority_type": priority.priority_type.value,
+        }
+        on_priority_status_changed(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            new_status=priority.status.value,
+            priority_data=priority_data,
+            created_by=user.id if user else None,
+        )
 
     # Handle parent link changes
     current_parents = graph.parents.get(priority_id, set())

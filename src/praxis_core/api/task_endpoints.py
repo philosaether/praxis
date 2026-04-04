@@ -19,6 +19,7 @@ from praxis_core.persistence import (
 )
 from praxis_core.prioritization import rank_tasks
 from praxis_core.api.auth import get_current_user, get_current_user_optional
+from praxis_core.triggers import on_task_completed
 
 
 def _get_active_rules(entity_id: str | None):
@@ -372,6 +373,22 @@ async def toggle_task(
 
     new_status = TaskStatus.QUEUED if task.status == TaskStatus.DONE else TaskStatus.DONE
     update_task_status(task_id, new_status)
+
+    # Fire event triggers if task was marked done
+    if new_status == TaskStatus.DONE and task.entity_id:
+        task_data_for_trigger = {
+            "id": task.id,
+            "name": task.name,
+            "priority_id": task.priority_id,
+            "entity_id": task.entity_id,
+            "tags": [],  # TODO: Load tags if needed
+        }
+        on_task_completed(
+            task_id=task.id,
+            entity_id=task.entity_id,
+            task_data=task_data_for_trigger,
+            created_by=user.id if user else None,
+        )
 
     task = get_task(task_id)
     task_data = _serialize_task(task, current_user=user, graph=graph)

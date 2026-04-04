@@ -1,0 +1,22 @@
+practice:
+  name: Technical Interview Prep
+  description: Build technical interview capacity twice as quickly
+  actions:
+    - on:
+        schedule:
+          interval: weekdays
+        create:
+          - task:
+              name: "Practice Leetcode"
+              notes: "Choose a medium from one of the following categories: Arrays & Hashmaps, Two Pointers, ..."
+              due: end_of_day
+              tags:
+                - code
+                - deep_work
+          - task:
+              name: "Practice Leetcode"
+              notes: "Choose a medium from one of the following categories: Arrays & Hashmaps, Two Pointers, ..."
+              due: end_of_day
+              tags:
+                - code
+                - deep_work

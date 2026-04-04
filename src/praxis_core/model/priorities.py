@@ -68,12 +68,17 @@ class Goal(Priority):
 
 @dataclass
 class Practice(Priority):
-    """A recurring activity (ethea). Generates task instances on a rhythm."""
+    """A recurring activity (ethea). Generates task instances via triggers."""
 
     priority_type: PriorityType = PriorityType.PRACTICE
-    rhythm_frequency: str | None = None   # e.g., "daily", "weekly", "2x daily"
-    rhythm_constraints: str | None = None # e.g., "morning only", "not after 9pm"
-    generation_prompt: str | None = None  # how agent generates specific tasks
+
+    # Trigger configuration (JSON string containing PracticeTrigger)
+    # Includes: event (schedule/task_completed/priority_completed),
+    # task_template, collate_config, conditions
+    trigger_config: str | None = None
+
+    # Tracking for fire-at-first-opportunity pattern
+    last_triggered_at: datetime | None = None
 
 
 @dataclass

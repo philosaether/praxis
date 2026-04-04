@@ -23,6 +23,7 @@ from praxis_core.api.invite_endpoints import router as invite_router
 from praxis_core.api.friends_endpoints import router as friends_router
 from praxis_core.api.tag_endpoints import router as tag_router
 from praxis_core.api.rule_endpoints import router as rule_router
+from praxis_core.api.trigger_endpoints import router as trigger_router
 
 
 # ---------------------------------------------------------------------
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI):
     # Startup: seed default rules
     ensure_default_rules()
     yield
-    # Shutdown: nothing to clean up
+    # Shutdown: nothing to clean up currently
 
 
 # ---------------------------------------------------------------------
@@ -55,6 +56,7 @@ app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
 app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
 app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
+app.include_router(trigger_router, prefix="/api", tags=["triggers"])
 
 
 # ---------------------------------------------------------------------
@@ -170,9 +172,8 @@ def serialize_priority(
         data["progress"] = p.progress
         data["due_date"] = fmt_date(p.due_date)
     elif isinstance(p, Practice):
-        data["rhythm_frequency"] = p.rhythm_frequency
-        data["rhythm_constraints"] = p.rhythm_constraints
-        data["generation_prompt"] = p.generation_prompt
+        data["trigger_config"] = p.trigger_config
+        data["last_triggered_at"] = fmt_date(p.last_triggered_at)
 
     return data
 
