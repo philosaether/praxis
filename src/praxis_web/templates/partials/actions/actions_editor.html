@@ -1,0 +1,187 @@
+{# Actions editor container for Practice priorities #}
+{# Expects: priority (dict with id, actions_config), actions (list of rendered action dicts), editable (bool) #}
+
+<div class="actions-editor-container" id="actions-editor-{{ priority.id }}">
+    <!-- Mode toggle -->
+    {% if editable %}
+    <div class="actions-mode-toggle">
+        <button type="button"
+                class="mode-btn active"
+                data-mode="visual"
+                onclick="setActionsMode('{{ priority.id }}', 'visual')">
+            Visual
+        </button>
+        <button type="button"
+                class="mode-btn"
+                data-mode="yaml"
+                onclick="setActionsMode('{{ priority.id }}', 'yaml')">
+            YAML
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Visual mode: Sentences -->
+    <div class="actions-visual-mode" id="actions-visual-{{ priority.id }}">
+        {% if actions and actions|length > 0 %}
+        <div class="actions-list" id="actions-list-{{ priority.id }}">
+            {% for action in actions %}
+            {% with idx=loop.index0 %}
+            {% include "partials/actions/action_sentence.html" %}
+            {% endwith %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-hint">No actions configured. Add an action to automate task creation.</p>
+        {% endif %}
+
+        {% if editable %}
+        <button type="button"
+                class="btn btn-sm btn-secondary add-action-btn"
+                hx-get="/priorities/{{ priority.id }}/actions/wizard"
+                hx-target="#action-wizard-container"
+                hx-swap="innerHTML">
+            + Add Action
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- YAML mode: Textarea -->
+    {% if editable %}
+    <div class="actions-yaml-mode" id="actions-yaml-{{ priority.id }}" style="display: none;">
+        <textarea id="actions-yaml-editor-{{ priority.id }}"
+                  class="property-input yaml-editor"
+                  rows="12"
+                  placeholder="actions:
+  - on:
+      schedule:
+        interval: weekdays
+    create:
+      - task:
+          name: My Task
+          due: end_of_day">{{ actions_yaml or '' }}</textarea>
+
+        <div class="yaml-actions">
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    onclick="saveActionsYaml('{{ priority.id }}')">
+                Save YAML
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-secondary"
+                    onclick="validateActionsYaml('{{ priority.id }}')">
+                Validate
+            </button>
+            <span id="yaml-status-{{ priority.id }}" class="yaml-status"></span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Wizard modal container -->
+    <div id="action-wizard-container"></div>
+</div>
+
+<script>
+function setActionsMode(priorityId, mode) {
+    const container = document.getElementById('actions-editor-' + priorityId);
+    const visualPane = document.getElementById('actions-visual-' + priorityId);
+    const yamlPane = document.getElementById('actions-yaml-' + priorityId);
+    const buttons = container.querySelectorAll('.mode-btn');
+
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+
+    if (mode === 'visual') {
+        visualPane.style.display = 'block';
+        yamlPane.style.display = 'none';
+    } else {
+        visualPane.style.display = 'none';
+        yamlPane.style.display = 'block';
+        // Load current YAML if not already loaded
+        loadActionsYaml(priorityId);
+    }
+}
+
+function loadActionsYaml(priorityId) {
+    fetch('/priorities/' + priorityId + '/actions/yaml')
+        .then(r => r.text())
+        .then(yaml => {
+            document.getElementById('actions-yaml-editor-' + priorityId).value = yaml;
+        });
+}
+
+function saveActionsYaml(priorityId) {
+    const yaml = document.getElementById('actions-yaml-editor-' + priorityId).value;
+    const status = document.getElementById('yaml-status-' + priorityId);
+
+    fetch('/priorities/' + priorityId + '/actions/yaml', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'yaml=' + encodeURIComponent(yaml)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            status.textContent = 'Saved!';
+            status.className = 'yaml-status success';
+            // Refresh visual mode
+            htmx.ajax('GET', '/priorities/' + priorityId + '/actions', {
+                target: '#actions-editor-' + priorityId,
+                swap: 'outerHTML'
+            });
+        } else {
+            status.textContent = data.error || 'Error saving';
+            status.className = 'yaml-status error';
+        }
+    })
+    .catch(err => {
+        status.textContent = 'Error: ' + err.message;
+        status.className = 'yaml-status error';
+    });
+}
+
+function validateActionsYaml(priorityId) {
+    const yaml = document.getElementById('actions-yaml-editor-' + priorityId).value;
+    const status = document.getElementById('yaml-status-' + priorityId);
+
+    fetch('/priorities/' + priorityId + '/actions/validate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'yaml=' + encodeURIComponent(yaml)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.valid) {
+            status.textContent = 'Valid! ' + data.action_count + ' action(s)';
+            status.className = 'yaml-status success';
+        } else {
+            status.textContent = data.error || 'Invalid YAML';
+            status.className = 'yaml-status error';
+        }
+    });
+}
+
+function editActionPart(priorityId, actionIdx, partType) {
+    // Phase 3 enhancement: Open inline editor for the part
+    console.log('Edit action', actionIdx, 'part', partType);
+    // For now, switch to YAML mode for editing
+    setActionsMode(priorityId, 'yaml');
+}
+
+function removeAction(priorityId, actionIdx) {
+    if (!confirm('Remove this action?')) return;
+
+    fetch('/priorities/' + priorityId + '/actions/' + actionIdx, {
+        method: 'DELETE'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            htmx.ajax('GET', '/priorities/' + priorityId + '/actions', {
+                target: '#actions-editor-' + priorityId,
+                swap: 'outerHTML'
+            });
+        }
+    });
+}
+</script>

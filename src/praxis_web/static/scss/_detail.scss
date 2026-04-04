@@ -31,6 +31,53 @@
   line-height: $line-height-tight;
 }
 
+// Inline header row: [#1] [VALUE] Priority Name
+.detail-title-row {
+  display: flex;
+  align-items: flex-start; // Align to top for multi-line titles
+  gap: $spacing-sm;
+  font-family: $font-family-display;
+  font-size: $font-size-xl;
+  font-weight: 600;
+  margin: 0 0 $spacing-lg 0;
+  color: $text-primary;
+  line-height: $line-height-tight;
+  flex-wrap: wrap;
+
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.5rem;
+    background: $accent;
+    border-radius: $radius-sm;
+    font-size: $font-size-base;
+    font-weight: 700;
+    color: white;
+    font-family: $font-family-body;
+    flex-shrink: 0;
+    // Align with first line baseline
+    margin-top: 0.15em;
+  }
+
+  .type-badge {
+    flex-shrink: 0;
+    // Align with first line baseline
+    margin-top: .45em;
+  }
+
+  .title-text {
+    flex: 1;
+  }
+
+  .status-badge {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-top: 0.15em;
+  }
+}
+
 .detail-priority {
   margin-bottom: $spacing-xl;
 
@@ -618,13 +665,8 @@ textarea.property-input {
 // Nested View (Parent Context)
 // =============================================================================
 
-.nested-view {
-  // When viewing a priority with a parent, we show the context
-}
-
 .parent-header {
-  margin-bottom: $spacing-md;
-  padding-bottom: $spacing-sm;
+  padding-bottom: $spacing-md;
 
   .parent-link {
     display: inline-flex;
@@ -648,19 +690,24 @@ textarea.property-input {
   }
 }
 
-// Indented card when has parent
-.properties-section.indented {
-  margin-left: $spacing-lg;
+// Indented content wrapper when has parent
+.priority-content.indented {
+  margin-left: $spacing-2xl;
   position: relative;
 
+  // Arrow indicator in margin
   &::before {
-    content: '';
+    content: '↳';
     position: absolute;
-    left: -$spacing-md;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: $border-subtle;
+    left: -$spacing-2xl;
+    // top: $spacing-xl;
+    color: $text-muted;
+    font-size: 1.2em;
+  }
+
+  // Remove type-specific border when indented
+  .properties-section {
+    border-left: none !important;
   }
 }
 
@@ -668,42 +715,23 @@ textarea.property-input {
 // Subpriorities Section
 // =============================================================================
 
-.subpriorities-section {
-  background: $bg-secondary;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  margin-top: $spacing-xl;
-  box-shadow: $shadow-sm;
+// Children list (simple, no section header)
+.children-list {
+  list-style: none;
+  margin: $spacing-lg 0 0 0;
+  padding: 0;
+}
 
-  .section-label {
-    font-family: $font-family-body;
-    font-size: $font-size-sm;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: $text-secondary;
-    margin: 0 0 $spacing-md 0;
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-  }
+.child-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm 0;
 
   .indent-arrow {
     color: $text-muted;
     font-size: 1.1em;
   }
-}
-
-.subpriorities-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.subpriority-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm 0;
 
   &.status-dormant {
     opacity: 0.6;
@@ -712,12 +740,12 @@ textarea.property-input {
   &.status-completed {
     opacity: 0.5;
 
-    .subpriority-link {
+    .child-link {
       text-decoration: line-through;
     }
   }
 
-  .subpriority-link {
+  .child-link {
     color: $text-primary;
     text-decoration: none;
     transition: color $transition-base;

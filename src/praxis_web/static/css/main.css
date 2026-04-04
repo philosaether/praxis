@@ -477,6 +477,11 @@ a:hover {
   font-size: 0.65rem;
   letter-spacing: 0.06em;
 }
+.type-badge.large {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
 
 .priority-badge {
   display: inline-block;
@@ -1809,6 +1814,46 @@ a:hover {
   line-height: 1.3;
 }
 
+.detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: #1b1c1a;
+  line-height: 1.3;
+  flex-wrap: wrap;
+}
+.detail-title-row .rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.5rem;
+  background: #735c00;
+  border-radius: 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  flex-shrink: 0;
+  margin-top: 0.15em;
+}
+.detail-title-row .type-badge {
+  flex-shrink: 0;
+  margin-top: 0.45em;
+}
+.detail-title-row .title-text {
+  flex: 1;
+}
+.detail-title-row .status-badge {
+  font-size: 0.85rem;
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-top: 0.15em;
+}
+
 .detail-priority {
   margin-bottom: 1.5rem;
 }
@@ -2323,8 +2368,7 @@ textarea.property-input {
 }
 
 .parent-header {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
 }
 .parent-header .parent-link {
   display: inline-flex;
@@ -2344,73 +2388,55 @@ textarea.property-input {
   font-size: 1rem;
 }
 
-.properties-section.indented {
-  margin-left: 1rem;
+.priority-content.indented {
+  margin-left: 2rem;
   position: relative;
 }
-.properties-section.indented::before {
-  content: "";
+.priority-content.indented::before {
+  content: "↳";
   position: absolute;
-  left: -0.75rem;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(208, 197, 175, 0.4);
-}
-
-.subpriorities-section {
-  background: #f5f3ef;
-  border-radius: 1rem;
-  padding: 1rem;
-  margin-top: 1.5rem;
-  box-shadow: 0 2px 8px rgba(77, 70, 53, 0.06);
-}
-.subpriorities-section .section-label {
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #4a4a48;
-  margin: 0 0 0.75rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.subpriorities-section .indent-arrow {
+  left: -2rem;
   color: #7a7976;
-  font-size: 1.1em;
+  font-size: 1.2em;
+}
+.priority-content.indented .properties-section {
+  border-left: none !important;
 }
 
-.subpriorities-list {
+.children-list {
   list-style: none;
-  margin: 0;
+  margin: 1rem 0 0 0;
   padding: 0;
 }
 
-.subpriority-item {
+.child-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0;
 }
-.subpriority-item.status-dormant {
+.child-item .indent-arrow {
+  color: #7a7976;
+  font-size: 1.1em;
+}
+.child-item.status-dormant {
   opacity: 0.6;
 }
-.subpriority-item.status-completed {
+.child-item.status-completed {
   opacity: 0.5;
 }
-.subpriority-item.status-completed .subpriority-link {
+.child-item.status-completed .child-link {
   text-decoration: line-through;
 }
-.subpriority-item .subpriority-link {
+.child-item .child-link {
   color: #1b1c1a;
   text-decoration: none;
   transition: color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.subpriority-item .subpriority-link:hover {
+.child-item .child-link:hover {
   color: #735c00;
 }
-.subpriority-item .status-indicator {
+.child-item .status-indicator {
   font-size: 0.75rem;
   color: #7a7976;
   margin-left: auto;

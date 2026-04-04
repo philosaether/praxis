@@ -106,6 +106,13 @@
     font-size: 0.65rem;
     letter-spacing: 0.06em;
   }
+
+  // Large variant for header use
+  &.large {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+  }
 }
 
 .priority-badge {

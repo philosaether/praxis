@@ -38,8 +38,10 @@ def migrate_priorities(conn: sqlite3.Connection) -> list[str]:
 
     changes = []
 
-    # DROP user_id
+    # DROP user_id (must drop index first)
     if "user_id" in columns:
+        print("  Dropping idx_priorities_user index...")
+        conn.execute("DROP INDEX IF EXISTS idx_priorities_user")
         print("  Dropping user_id...")
         conn.execute("ALTER TABLE priorities DROP COLUMN user_id")
         changes.append("priorities: dropped user_id")
@@ -79,8 +81,10 @@ def migrate_tasks(conn: sqlite3.Connection) -> list[str]:
 
     changes = []
 
-    # DROP user_id
+    # DROP user_id (must drop index first)
     if "user_id" in columns:
+        print("  Dropping idx_tasks_user index...")
+        conn.execute("DROP INDEX IF EXISTS idx_tasks_user")
         print("  Dropping user_id...")
         conn.execute("ALTER TABLE tasks DROP COLUMN user_id")
         changes.append("tasks: dropped user_id")
