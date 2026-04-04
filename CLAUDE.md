@@ -56,3 +56,8 @@ When committing, remember to commit both:
 - Type hints throughout
 - Docstrings on public interfaces
 - Tests alongside implementation (when Phil's ready)
+
+## Related Repos
+
+- `~/Development/praxis-scratch/` — Archived code that might be useful later
+  - `sse-infrastructure/` — Server-Sent Events implementation (archived 2026-04-03 during triggers refactor). Could be useful for real-time collaboration or notifications.

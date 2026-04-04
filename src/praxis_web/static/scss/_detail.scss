@@ -613,3 +613,285 @@ textarea.property-input {
     }
   }
 }
+
+// =============================================================================
+// Nested View (Parent Context)
+// =============================================================================
+
+.nested-view {
+  // When viewing a priority with a parent, we show the context
+}
+
+.parent-header {
+  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-sm;
+
+  .parent-link {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    text-decoration: none;
+    color: $text-secondary;
+    transition: color $transition-base;
+
+    &:hover {
+      color: $accent;
+
+      .type-badge {
+        opacity: 0.9;
+      }
+    }
+
+    .parent-name {
+      font-size: $font-size-base;
+    }
+  }
+}
+
+// Indented card when has parent
+.properties-section.indented {
+  margin-left: $spacing-lg;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -$spacing-md;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: $border-subtle;
+  }
+}
+
+// =============================================================================
+// Subpriorities Section
+// =============================================================================
+
+.subpriorities-section {
+  background: $bg-secondary;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-top: $spacing-xl;
+  box-shadow: $shadow-sm;
+
+  .section-label {
+    font-family: $font-family-body;
+    font-size: $font-size-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $text-secondary;
+    margin: 0 0 $spacing-md 0;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .indent-arrow {
+    color: $text-muted;
+    font-size: 1.1em;
+  }
+}
+
+.subpriorities-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.subpriority-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm 0;
+
+  &.status-dormant {
+    opacity: 0.6;
+  }
+
+  &.status-completed {
+    opacity: 0.5;
+
+    .subpriority-link {
+      text-decoration: line-through;
+    }
+  }
+
+  .subpriority-link {
+    color: $text-primary;
+    text-decoration: none;
+    transition: color $transition-base;
+
+    &:hover {
+      color: $accent;
+    }
+  }
+
+  .status-indicator {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin-left: auto;
+  }
+}
+
+// =============================================================================
+// Description Section
+// =============================================================================
+
+.description-section {
+  margin-bottom: $spacing-lg;
+  padding-bottom: $spacing-md;
+}
+
+// =============================================================================
+// Actions Display (Practice)
+// =============================================================================
+
+.actions-display-section {
+  margin-bottom: $spacing-lg;
+
+  label {
+    display: block;
+    font-family: $font-family-body;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: $spacing-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .actions-sentences {
+    background: $bg-tertiary;
+    border-radius: $radius-md;
+    padding: $spacing-md;
+  }
+
+  .action-summary {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    margin: 0;
+  }
+}
+
+// =============================================================================
+// Permalink (click to copy)
+// =============================================================================
+
+.permalink {
+  cursor: pointer;
+  font-family: $font-family-mono;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  transition: background $transition-base, color $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+    color: $accent;
+  }
+
+  &.copied {
+    background: rgba($success, 0.15);
+    color: $success;
+  }
+}
+
+// =============================================================================
+// Detail Header (badges above title)
+// =============================================================================
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+// =============================================================================
+// Edit Mode Enhancements
+// =============================================================================
+
+.edit-header-row {
+  display: flex;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  .property-row.compact {
+    flex: 1;
+    margin-bottom: 0;
+  }
+}
+
+.nav-separator {
+  color: $text-muted;
+  margin: 0 $spacing-xs;
+}
+
+// Character counter
+.char-counter {
+  float: right;
+  font-size: $font-size-xs;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  color: $text-muted;
+
+  &.warning {
+    color: $warning;
+  }
+
+  &.limit {
+    color: $error;
+  }
+}
+
+// Description input
+.description-input {
+  min-height: 120px;
+}
+
+// Label action link (e.g., "edit as code")
+.label-action {
+  float: right;
+  font-size: $font-size-xs;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  color: $accent;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Type-specific fields container
+.type-specific-fields {
+  padding-top: $spacing-md;
+  margin-top: $spacing-md;
+  border-top: 1px solid $border-subtle;
+}
+
+// Actions editor placeholder
+.actions-editor {
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+
+  &.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+
+    .empty-hint {
+      color: $text-muted;
+      font-size: $font-size-sm;
+      margin: 0;
+    }
+  }
+}
+
+// Parent picker styling
+.parent-picker {
+  // Badge text is already included in option text via template
+}

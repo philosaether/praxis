@@ -979,6 +979,298 @@ async def priority_trigger_delete(request: Request, priority_id: str):
 
 
 # -----------------------------------------------------------------------------
+# Routes: Practice Actions (DSL v2)
+# -----------------------------------------------------------------------------
+
+@app.get("/priorities/{priority_id}/actions", response_class=HTMLResponse)
+async def priority_actions_editor(request: Request, priority_id: str):
+    """HTMX partial: Actions editor for a Practice."""
+    from praxis_core.persistence import get_connection, PriorityGraph
+    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_web.helpers.action_renderer import render_actions_from_config, actions_to_yaml
+
+    user = await get_current_user_from_request(request)
+    if not user:
+        return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+
+    priority = graph.get(priority_id)
+    if not priority:
+        return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
+
+    actions = render_actions_from_config(priority.actions_config)
+    actions_yaml = actions_to_yaml(priority.actions_config)
+    editable = priority.entity_id == user.entity_id
+
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/actions_editor.html",
+        {
+            "priority": {"id": priority_id, "actions_config": priority.actions_config},
+            "actions": actions,
+            "actions_yaml": actions_yaml,
+            "editable": editable,
+        }
+    )
+
+
+@app.get("/priorities/{priority_id}/actions/wizard", response_class=HTMLResponse)
+async def priority_actions_wizard(
+    request: Request,
+    priority_id: str,
+    step: int = 1,
+    trigger_type: str | None = None,
+    action_type: str | None = None,
+    weekly_day: str | None = None,
+    cadence_days: int | None = None,
+):
+    """HTMX partial: Actions wizard modal."""
+    # Accumulate wizard data from query params
+    wizard_data = {
+        "trigger_type": trigger_type or "weekdays",
+        "action_type": action_type or "create_task",
+        "weekly_day": weekly_day or "sunday",
+        "cadence_days": cadence_days or 14,
+    }
+
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/action_wizard_modal.html",
+        {
+            "priority_id": priority_id,
+            "step": step,
+            "wizard_data": wizard_data,
+        }
+    )
+
+
+@app.post("/priorities/{priority_id}/actions", response_class=HTMLResponse)
+async def priority_actions_create(
+    request: Request,
+    priority_id: str,
+    trigger_type: str = Form("weekdays"),
+    action_type: str = Form("create_task"),
+    weekly_day: str = Form("sunday"),
+    cadence_days: int = Form(14),
+    task_name: str = Form(""),
+    task_notes: str = Form(""),
+    task_due: str = Form("end_of_day"),
+    task_tags: str = Form(""),
+    collate_target: str = Form("children"),
+    batch_name: str = Form(""),
+    batch_due: str = Form(""),
+):
+    """Create a new action from wizard data."""
+    from praxis_core.persistence import get_connection, PriorityGraph
+    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_core.triggers.models_v2 import (
+        PracticeConfig, PracticeAction, ActionTrigger, Schedule, Cadence,
+        CreateAction, CollateAction, TaskTemplate, CollateTarget
+    )
+    from praxis_web.helpers.action_renderer import render_actions_from_config, actions_to_yaml
+    import json
+    from datetime import datetime, date
+
+    user = await get_current_user_from_request(request)
+    if not user:
+        return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+
+    priority = graph.get(priority_id)
+    if not priority:
+        return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
+
+    if priority.entity_id != user.entity_id:
+        return HTMLResponse(content="<div class='error'>Permission denied</div>", status_code=403)
+
+    # Parse existing config or create new
+    if priority.actions_config:
+        try:
+            config = PracticeConfig.from_json(priority.actions_config)
+        except:
+            config = PracticeConfig(name=priority.name)
+    else:
+        config = PracticeConfig(name=priority.name)
+
+    # Build schedule based on trigger type
+    if trigger_type == "custom":
+        schedule = Schedule(
+            interval=Cadence(
+                frequency=f"{cadence_days}d",
+                beginning=date.today().isoformat(),
+            )
+        )
+    elif trigger_type == "weekly":
+        schedule = Schedule(interval="weekly", day=weekly_day)
+    else:
+        schedule = Schedule(interval=trigger_type)
+
+    # Build action
+    trigger = ActionTrigger(schedule=schedule)
+
+    if action_type == "create_task":
+        tags = [t.strip() for t in task_tags.split(",") if t.strip()]
+        create = CreateAction(items=[
+            TaskTemplate(
+                name=task_name.strip() or "Untitled task",
+                notes=task_notes.strip() if task_notes.strip() else None,
+                due=task_due if task_due else None,
+                tags=tags,
+            )
+        ])
+        action = PracticeAction(trigger=trigger, create=create)
+    else:  # collate
+        collate = CollateAction(
+            target=CollateTarget(shorthand=collate_target),
+            as_template=TaskTemplate(
+                name=batch_name.strip() or "Batch task",
+                due=batch_due if batch_due else None,
+            )
+        )
+        action = PracticeAction(trigger=trigger, collate=collate)
+
+    # Add to config and save
+    config.actions.append(action)
+    priority.actions_config = config.to_json()
+    priority.updated_at = datetime.now()
+    graph.save_priority(priority)
+
+    # Return updated editor
+    actions = render_actions_from_config(priority.actions_config)
+    actions_yaml = actions_to_yaml(priority.actions_config)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/actions_editor.html",
+        {
+            "priority": {"id": priority_id, "actions_config": priority.actions_config},
+            "actions": actions,
+            "actions_yaml": actions_yaml,
+            "editable": True,
+        }
+    )
+
+
+@app.delete("/priorities/{priority_id}/actions/{action_idx}")
+async def priority_actions_delete(request: Request, priority_id: str, action_idx: int):
+    """Delete an action by index."""
+    from praxis_core.persistence import get_connection, PriorityGraph
+    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_core.triggers.models_v2 import PracticeConfig
+    from datetime import datetime
+
+    user = await get_current_user_from_request(request)
+    if not user:
+        return {"success": False, "error": "Authentication required"}
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+
+    priority = graph.get(priority_id)
+    if not priority:
+        return {"success": False, "error": "Priority not found"}
+
+    if priority.entity_id != user.entity_id:
+        return {"success": False, "error": "Permission denied"}
+
+    if not priority.actions_config:
+        return {"success": False, "error": "No actions to delete"}
+
+    try:
+        config = PracticeConfig.from_json(priority.actions_config)
+        if 0 <= action_idx < len(config.actions):
+            config.actions.pop(action_idx)
+            priority.actions_config = config.to_json() if config.actions else None
+            priority.updated_at = datetime.now()
+            graph.save_priority(priority)
+            return {"success": True}
+        else:
+            return {"success": False, "error": "Invalid action index"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/priorities/{priority_id}/actions/yaml")
+async def priority_actions_yaml_get(request: Request, priority_id: str):
+    """Get actions as YAML text."""
+    from praxis_core.persistence import get_connection, PriorityGraph
+    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_web.helpers.action_renderer import actions_to_yaml
+
+    user = await get_current_user_from_request(request)
+    if not user:
+        return Response(content="# Error: Authentication required", media_type="text/plain")
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+
+    priority = graph.get(priority_id)
+    if not priority:
+        return Response(content="# Error: Priority not found", media_type="text/plain")
+
+    yaml_content = actions_to_yaml(priority.actions_config)
+    return Response(content=yaml_content, media_type="text/plain")
+
+
+@app.post("/priorities/{priority_id}/actions/yaml")
+async def priority_actions_yaml_save(
+    request: Request,
+    priority_id: str,
+    yaml: str = Form(...),
+):
+    """Save actions from YAML text."""
+    from praxis_core.persistence import get_connection, PriorityGraph
+    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_web.helpers.action_renderer import yaml_to_actions_config
+    from datetime import datetime
+
+    user = await get_current_user_from_request(request)
+    if not user:
+        return {"success": False, "error": "Authentication required"}
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+
+    priority = graph.get(priority_id)
+    if not priority:
+        return {"success": False, "error": "Priority not found"}
+
+    if priority.entity_id != user.entity_id:
+        return {"success": False, "error": "Permission denied"}
+
+    try:
+        actions_config = yaml_to_actions_config(yaml, priority.name)
+        priority.actions_config = actions_config
+        priority.updated_at = datetime.now()
+        graph.save_priority(priority)
+        return {"success": True}
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/priorities/{priority_id}/actions/validate")
+async def priority_actions_yaml_validate(
+    request: Request,
+    priority_id: str,
+    yaml: str = Form(...),
+):
+    """Validate YAML without saving."""
+    from praxis_web.helpers.action_renderer import yaml_to_actions_config
+    from praxis_core.triggers.models_v2 import PracticeConfig
+
+    try:
+        actions_config = yaml_to_actions_config(yaml, "test")
+        config = PracticeConfig.from_json(actions_config)
+        return {"valid": True, "action_count": len(config.actions)}
+    except ValueError as e:
+        return {"valid": False, "error": str(e)}
+
+
+# -----------------------------------------------------------------------------
 # Routes: HTMX Partials - Tasks
 # -----------------------------------------------------------------------------
 

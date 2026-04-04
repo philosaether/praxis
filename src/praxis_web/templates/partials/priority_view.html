@@ -1,7 +1,7 @@
 {# Priority view mode - read-only display #}
-{# Expects: priority, priorities, children, tasks, from_task #}
+{# Expects: priority, priorities, parents, children, tasks, from_task #}
 
-<div class="detail-view">
+<div class="detail-view {% if parents and parents|length > 0 %}nested-view{% endif %}">
     <!-- Back link -->
     <div class="detail-nav">
         {% if from_task %}
@@ -10,7 +10,7 @@
            hx-target="#detail-pane"
            hx-swap="innerHTML"
            class="back-link">
-            ← Back to Task
+            &larr; Back to Task
         </a>
         {% else %}
         <a href="#"
@@ -19,43 +19,37 @@
            hx-swap="innerHTML"
            hx-push-url="/priorities"
            class="back-link">
-            ← Back to Tree
+            &larr; Back to Tree
         </a>
         {% endif %}
     </div>
 
-    <div class="properties-section priority-properties {{ priority.priority_type }}-properties">
-        <!-- Title -->
-        <h2 class="detail-title">{{ priority.name }}</h2>
+    <!-- Parent Context Header -->
+    {% if parents and parents|length > 0 %}
+    {% with parent=parents[0] %}
+    {% include "partials/components/priority_parent_header.html" %}
+    {% endwith %}
+    {% endif %}
 
-        <!-- Type pill -->
-        <div class="detail-priority">
+    <!-- Main Priority Card -->
+    <div class="properties-section priority-properties {{ priority.priority_type }}-properties {% if parents and parents|length > 0 %}indented{% endif %}">
+        <!-- Header: Type Badge + Title -->
+        <div class="detail-header">
             <span class="type-badge {{ priority.priority_type }}">{{ priority.priority_type|upper }}</span>
             {% if priority.status and priority.status != 'active' %}
             <span class="status-badge {{ priority.status }}">{{ priority.status }}</span>
             {% endif %}
         </div>
+        <h2 class="detail-title">{{ priority.name }}</h2>
 
-        <!-- Parent (if any) -->
-        {% if parents and parents|length > 0 %}
-        <div class="property-row">
-            <label>Parent</label>
-            <div class="property-display">
-                {% for p in parents %}
-                <a href="#"
-                   class="priority-link"
-                   hx-get="/priorities/{{ p.id }}"
-                   hx-target="#detail-pane"
-                   hx-swap="innerHTML">
-                    {{ p.name }}
-                </a>
-                {% endfor %}
-            </div>
+        <!-- Description (formerly notes) -->
+        {% if priority.notes %}
+        <div class="description-section">
+            <div class="property-display markdown-content">{{ priority.notes|safe }}</div>
         </div>
         {% endif %}
 
-        <!-- Type-specific fields (read-only) -->
-        {# Values have no type-specific fields - just notes #}
+        <!-- Type-specific fields -->
         {% if priority.priority_type == 'goal' %}
             {% if priority.complete_when %}
             <div class="property-row">
@@ -76,7 +70,21 @@
             </div>
             {% endif %}
         {% elif priority.priority_type == 'practice' %}
-            <!-- Trigger Configuration -->
+            <!-- Actions Section (DSL v2) -->
+            {% if priority.actions_config %}
+            <div class="actions-display-section">
+                <label>Actions</label>
+                <div class="actions-sentences" id="actions-display"
+                     hx-get="/priorities/{{ priority.id }}/actions"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="action-summary">Loading actions...</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Legacy Trigger Section (v1 - shown if no actions_config) -->
+            {% if not priority.actions_config %}
             <div class="trigger-section">
                 <div class="property-row">
                     <label>Trigger</label>
@@ -116,17 +124,10 @@
                 <div id="trigger-editor-container"></div>
                 {% endif %}
             </div>
+            {% endif %}
         {% endif %}
 
-        <!-- Notes (rendered) -->
-        {% if priority.notes %}
-        <div class="property-row">
-            <label>Notes</label>
-            <div class="property-display markdown-content">{{ priority.notes|safe }}</div>
-        </div>
-        {% endif %}
-
-        <!-- Actions -->
+        <!-- Actions Bar -->
         <div class="property-actions">
             <div class="actions-left">
                 {% if priority.is_owner %}
@@ -168,43 +169,30 @@
         </div>
         {% endif %}
 
-        <!-- Metadata -->
+        <!-- Metadata Footer -->
         <div class="property-meta">
-            <span class="meta-item">{{ priority.id }}</span>
+            <span class="meta-item permalink" onclick="copyPermalink('{{ priority.id }}')" title="Click to copy permalink">
+                /priorities/{{ priority.id }}
+            </span>
             {% if priority.created_at %}
-            <span class="meta-item">Created: {{ priority.created_at }}</span>
+            <span class="meta-item">Created {{ priority.created_at }}</span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Children -->
-    {% if children %}
-    <div class="related-section">
-        <h3>Children</h3>
-        <ul class="links-list">
-            {% for child in children %}
-            <li>
-                <span class="badge-wrapper">
-                    <span class="type-badge {{ child.priority_type }} small">{{ child.priority_type|upper }}</span>
-                </span>
-                <a href="#"
-                   hx-get="/priorities/{{ child.id }}"
-                   hx-target="#detail-pane"
-                   hx-swap="innerHTML">
-                    {{ child.name }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
+    <!-- Subpriorities Section -->
+    {% include "partials/components/subpriorities_list.html" %}
 
-    <!-- Associated Tasks -->
+    <!-- Associated Tasks Section -->
     <div id="priority-tasks-panel" class="associated-tasks-section">
         <div class="section-header">
             <div class="section-title">
-                <h3>Tasks</h3>
-                <span class="task-count">{{ tasks|length if tasks else 0 }}</span>
+                <h3>
+                    <span class="indent-arrow">&#8627;</span>
+                    Tasks
+                </h3>
+                {% set active_count = tasks|selectattr('status', 'ne', 'done')|list|length if tasks else 0 %}
+                <span class="task-count">({{ active_count }} active)</span>
             </div>
             <button type="button"
                     class="btn btn-sm btn-secondary"
@@ -222,7 +210,9 @@
                    hx-swap="innerHTML">
                     {{ task.name }}
                 </a>
-                <span class="task-status {{ task.status }}">{{ task.status }}</span>
+                {% if task.status == 'done' %}
+                <span class="task-status done">done</span>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>
@@ -231,3 +221,14 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+function copyPermalink(priorityId) {
+    const url = window.location.origin + '/priorities/' + priorityId;
+    navigator.clipboard.writeText(url).then(() => {
+        const el = document.querySelector('.permalink');
+        el.classList.add('copied');
+        setTimeout(() => el.classList.remove('copied'), 1500);
+    });
+}
+</script>
