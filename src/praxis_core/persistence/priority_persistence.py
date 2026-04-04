@@ -41,10 +41,9 @@ CREATE TABLE IF NOT EXISTS priorities (
     due_date TEXT,
     progress TEXT,
 
-    -- Practice trigger fields
-    trigger_config TEXT,       -- JSON: v1 PracticeTrigger (deprecated, use actions_config)
+    -- Practice fields
     actions_config TEXT,       -- JSON: v2 DSL actions array
-    last_triggered_at TEXT,    -- datetime: when trigger last fired
+    last_triggered_at TEXT,    -- datetime: managed by trigger system, not edit form
 
     -- Metadata
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -145,15 +144,13 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
             )
 
         case PriorityType.PRACTICE:
-            # Handle trigger fields (may not exist in older schemas)
-            trigger_config = row["trigger_config"] if "trigger_config" in keys else None
+            # Handle practice fields (may not exist in older schemas)
             actions_config = row["actions_config"] if "actions_config" in keys else None
             last_triggered_at = _parse_datetime(row["last_triggered_at"]) if "last_triggered_at" in keys else None
 
             return Practice(
                 **common_kwargs,
                 priority_type=priority_type,
-                trigger_config=trigger_config,
                 actions_config=actions_config,
                 last_triggered_at=last_triggered_at,
             )
@@ -182,9 +179,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
     complete_when = None
     due_date = None
     progress = None
-    trigger_config = None
     actions_config = None
-    last_triggered_at = None
 
     # Extract type-specific fields based on actual type
     if isinstance(priority, Goal):
@@ -193,9 +188,8 @@ def priority_to_row_values(priority: Priority) -> tuple:
         progress = priority.progress
 
     elif isinstance(priority, Practice):
-        trigger_config = priority.trigger_config
         actions_config = priority.actions_config
-        last_triggered_at = priority.last_triggered_at.isoformat() if priority.last_triggered_at else None
+        # Note: last_triggered_at is NOT included here - it's managed by trigger system
 
     now = datetime.now().isoformat()
     return (
@@ -213,9 +207,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         complete_when,
         due_date,
         progress,
-        trigger_config,
         actions_config,
-        last_triggered_at,
         priority.created_at.isoformat() if priority.created_at else now,
         priority.updated_at.isoformat() if priority.updated_at else now,
     )
@@ -308,9 +300,9 @@ class PriorityGraph:
                     agent_context, description, rank,
                     auto_assign_owner, auto_assign_creator,
                     complete_when, due_date, progress,
-                    trigger_config, actions_config, last_triggered_at,
+                    actions_config,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -325,9 +317,7 @@ class PriorityGraph:
                     complete_when = excluded.complete_when,
                     due_date = excluded.due_date,
                     progress = excluded.progress,
-                    trigger_config = excluded.trigger_config,
                     actions_config = excluded.actions_config,
-                    last_triggered_at = excluded.last_triggered_at,
                     updated_at = CURRENT_TIMESTAMP
             """, values)
 

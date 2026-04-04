@@ -71,6 +71,21 @@ def migrate_priorities(conn: sqlite3.Connection) -> list[str]:
         conn.execute("ALTER TABLE priorities ADD COLUMN actions_config TEXT")
         changes.append("priorities: added actions_config")
 
+    # ADD last_triggered_at (for Practice schedule tracking)
+    columns = get_column_names(conn, "priorities")  # Refresh
+    if "last_triggered_at" not in columns:
+        print("  Adding last_triggered_at...")
+        conn.execute("ALTER TABLE priorities ADD COLUMN last_triggered_at TEXT")
+        changes.append("priorities: added last_triggered_at")
+
+    # DROP legacy rhythm/generation fields
+    columns = get_column_names(conn, "priorities")  # Refresh
+    for col in ["rhythm_frequency", "rhythm_constraints", "generation_prompt", "success_criteria"]:
+        if col in columns:
+            print(f"  Dropping {col}...")
+            conn.execute(f"ALTER TABLE priorities DROP COLUMN {col}")
+            changes.append(f"priorities: dropped {col}")
+
     return changes
 
 
