@@ -1,0 +1,12 @@
+{# Tag selector widget - simple comma-separated input #}
+{# Params: name (field name), selected (list of tag strings or comma-string), placeholder #}
+
+{% set placeholder = placeholder if placeholder is defined else "e.g., deep_work, research" %}
+{% set value = selected|join(", ") if selected is iterable and selected is not string else (selected or "") %}
+
+<input type="text"
+       name="{{ name }}"
+       class="property-input tag-select-input"
+       value="{{ value }}"
+       placeholder="{{ placeholder }}">
+<span class="field-hint">Comma-separated</span>

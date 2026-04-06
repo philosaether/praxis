@@ -1,5 +1,7 @@
-{# Multi-step wizard modal for creating new actions #}
-{# Expects: priority_id, step (1-4), wizard_data (dict with accumulated choices) #}
+{# Action Wizard - DAG-based multi-step wizard #}
+{# Expects: priority_id, practice_name, page (string), wizard_data (dict), priorities (list for selectors) #}
+
+{% set page = page or "start" %}
 
 <div class="modal-backdrop open" onclick="closeActionWizard(event)">
     <div class="modal wizard-modal" onclick="event.stopPropagation()">
@@ -8,91 +10,21 @@
             <button type="button" class="modal-close" onclick="closeActionWizard()">&times;</button>
         </div>
 
-        <!-- Step indicators -->
-        <div class="wizard-steps">
-            <div class="wizard-step {% if step == 1 %}active{% elif step > 1 %}completed{% endif %}">
-                <span class="step-number">1</span>
-                <span class="step-label">When</span>
-            </div>
-            <div class="wizard-step {% if step == 2 %}active{% elif step > 2 %}completed{% endif %}">
-                <span class="step-number">2</span>
-                <span class="step-label">What</span>
-            </div>
-            <div class="wizard-step {% if step == 3 %}active{% elif step > 3 %}completed{% endif %}">
-                <span class="step-number">3</span>
-                <span class="step-label">Details</span>
-            </div>
+        <!-- Progress indicator -->
+        <div class="wizard-progress">
+            <div class="wizard-progress-bar" style="width: {{ progress_pct or 20 }}%;"></div>
         </div>
 
         <div class="modal-body">
-            {% if step == 1 %}
-            <!-- Step 1: When should this happen? -->
+            {% if page == "start" %}
+            {# ========== START PAGE ========== #}
             <div class="wizard-step-content">
-                <h4>When should this happen?</h4>
+                <h4>What do you want to do?</h4>
 
                 <div class="wizard-options">
                     <label class="wizard-option">
-                        <input type="radio" name="trigger_type" value="weekdays" checked>
-                        <div class="option-content">
-                            <strong>On weekdays</strong>
-                            <span>Monday through Friday</span>
-                        </div>
-                    </label>
-
-                    <label class="wizard-option">
-                        <input type="radio" name="trigger_type" value="daily">
-                        <div class="option-content">
-                            <strong>Daily</strong>
-                            <span>Every day including weekends</span>
-                        </div>
-                    </label>
-
-                    <label class="wizard-option">
-                        <input type="radio" name="trigger_type" value="weekly">
-                        <div class="option-content">
-                            <strong>Weekly</strong>
-                            <span>Once per week on a specific day</span>
-                        </div>
-                    </label>
-
-                    <label class="wizard-option">
-                        <input type="radio" name="trigger_type" value="custom">
-                        <div class="option-content">
-                            <strong>Custom cadence</strong>
-                            <span>Every X days/weeks</span>
-                        </div>
-                    </label>
-                </div>
-
-                <!-- Weekly day picker (shown when weekly selected) -->
-                <div id="weekly-day-picker" class="wizard-sub-options" style="display: none;">
-                    <label>Which day?</label>
-                    <select name="weekly_day" class="property-input">
-                        <option value="monday">Monday</option>
-                        <option value="tuesday">Tuesday</option>
-                        <option value="wednesday">Wednesday</option>
-                        <option value="thursday">Thursday</option>
-                        <option value="friday">Friday</option>
-                        <option value="saturday">Saturday</option>
-                        <option value="sunday" selected>Sunday</option>
-                    </select>
-                </div>
-
-                <!-- Custom cadence (shown when custom selected) -->
-                <div id="custom-cadence" class="wizard-sub-options" style="display: none;">
-                    <label>Every how many days?</label>
-                    <input type="number" name="cadence_days" value="14" min="1" max="365" class="property-input">
-                </div>
-            </div>
-
-            {% elif step == 2 %}
-            <!-- Step 2: What should happen? -->
-            <div class="wizard-step-content">
-                <h4>What should happen?</h4>
-
-                <div class="wizard-options">
-                    <label class="wizard-option">
-                        <input type="radio" name="action_type" value="create_task" checked>
+                        <input type="radio" name="action_type" value="create"
+                               {% if wizard_data.action_type == "create" or not wizard_data.action_type %}checked{% endif %}>
                         <div class="option-content">
                             <strong>Create a task</strong>
                             <span>Generate a new task with specified properties</span>
@@ -109,10 +41,133 @@
                 </div>
             </div>
 
-            {% elif step == 3 %}
-            <!-- Step 3: Details -->
+            {% elif page == "collation" %}
+            {# ========== COLLATION PAGE ========== #}
             <div class="wizard-step-content">
-                {% if wizard_data.action_type == 'create_task' %}
+                <h4>Which tasks should we collect?</h4>
+
+                <div class="collation-options">
+                    <label class="collation-option">
+                        <input type="checkbox" name="collate_under_practice" value="1"
+                               {% if wizard_data.collate_under_practice %}checked{% endif %}
+                               onchange="toggleCollationDetail(this, 'practice')">
+                        <span class="collation-label" id="collation-label-practice">
+                            {% if wizard_data.collate_under_practice %}
+                            Tasks under {{ practice_name }}
+                            {% else %}
+                            Tasks under this Practice
+                            {% endif %}
+                        </span>
+                    </label>
+
+                    <label class="collation-option">
+                        <input type="checkbox" name="collate_under_priority" value="1"
+                               {% if wizard_data.collate_under_priority %}checked{% endif %}
+                               onchange="toggleCollationDetail(this, 'priority')">
+                        <span class="collation-label" id="collation-label-priority">
+                            Tasks under a different priority
+                        </span>
+                        <div class="collation-detail" id="collation-detail-priority"
+                             {% if not wizard_data.collate_under_priority %}style="display: none;"{% endif %}>
+                            {% with name="collate_priority_id", selected=wizard_data.collate_priority_id %}
+                            {% include "partials/widgets/priority_select.html" %}
+                            {% endwith %}
+                        </div>
+                    </label>
+
+                    <label class="collation-option">
+                        <input type="checkbox" name="collate_with_tag" value="1"
+                               {% if wizard_data.collate_with_tag %}checked{% endif %}
+                               onchange="toggleCollationDetail(this, 'tag')">
+                        <span class="collation-label" id="collation-label-tag">
+                            Tasks with a specific tag
+                        </span>
+                        <div class="collation-detail" id="collation-detail-tag"
+                             {% if not wizard_data.collate_with_tag %}style="display: none;"{% endif %}>
+                            <input type="text" name="collate_tag" class="property-input"
+                                   placeholder="tag name" value="{{ wizard_data.collate_tag or '' }}">
+                        </div>
+                    </label>
+
+                    <label class="collation-option">
+                        <input type="checkbox" name="collate_due_day" value="1"
+                               {% if wizard_data.collate_due_day %}checked{% endif %}
+                               onchange="toggleCollationDetail(this, 'due')">
+                        <span class="collation-label" id="collation-label-due">
+                            Tasks due a specific day
+                        </span>
+                        <div class="collation-detail" id="collation-detail-due"
+                             {% if not wizard_data.collate_due_day %}style="display: none;"{% endif %}>
+                            {% with name="collate_due_value", selected=wizard_data.collate_due_value, include_none=false %}
+                            {% include "partials/widgets/due_select.html" %}
+                            {% endwith %}
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {% elif page == "trigger" %}
+            {# ========== TRIGGER SELECTION PAGE ========== #}
+            <div class="wizard-step-content">
+                <h4>When should your {% if wizard_data.action_type == "collate" %}tasks be collected{% else %}task be created{% endif %}?</h4>
+
+                <div class="wizard-options">
+                    <label class="wizard-option">
+                        <input type="radio" name="trigger_type" value="schedule"
+                               {% if wizard_data.trigger_type == "schedule" or not wizard_data.trigger_type %}checked{% endif %}>
+                        <div class="option-content">
+                            <strong>On a schedule</strong>
+                            <span>Every weekday, Monday/Wednesday/Friday, every two weeks...</span>
+                        </div>
+                    </label>
+
+                    <label class="wizard-option">
+                        <input type="radio" name="trigger_type" value="event">
+                        <div class="option-content">
+                            <strong>In response to an event</strong>
+                            <span>When you finish a task, complete a goal...</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {% elif page == "schedule" %}
+            {# ========== SCHEDULE BUILDING PAGE ========== #}
+            <div class="wizard-step-content">
+                <h4>Set your schedule</h4>
+
+                {% with prefix="schedule_", schedule=wizard_data.schedule %}
+                {% include "partials/widgets/schedule_builder.html" %}
+                {% endwith %}
+            </div>
+
+            {% elif page == "event" %}
+            {# ========== EVENT SELECTION PAGE ========== #}
+            <div class="wizard-step-content">
+                <h4>Which event triggers this action?</h4>
+
+                {% with prefix="event_", event=wizard_data.event, practice_name=practice_name %}
+                {% include "partials/widgets/event_builder.html" %}
+                {% endwith %}
+            </div>
+
+            {% elif page == "details" %}
+            {# ========== TASK/BATCH DETAILS PAGE ========== #}
+            <div class="wizard-step-content">
+                {% if wizard_data.action_type == "collate" %}
+                <h4>Batch details</h4>
+
+                <div class="property-row">
+                    <label for="task_name">Batch task name</label>
+                    <input type="text"
+                           id="task_name"
+                           name="task_name"
+                           class="property-input"
+                           placeholder="e.g., Weekly errands"
+                           value="{{ wizard_data.task_name or '' }}"
+                           required>
+                </div>
+                {% else %}
                 <h4>Task details</h4>
 
                 <div class="property-row">
@@ -122,102 +177,105 @@
                            name="task_name"
                            class="property-input"
                            placeholder="e.g., Practice Leetcode"
+                           value="{{ wizard_data.task_name or '' }}"
                            required>
                 </div>
+                {% endif %}
 
                 <div class="property-row">
-                    <label for="task_notes">Notes (optional)</label>
-                    <textarea id="task_notes"
-                              name="task_notes"
+                    <label for="task_description">Description (optional)</label>
+                    <textarea id="task_description"
+                              name="task_description"
                               rows="3"
                               class="property-input"
-                              placeholder="Instructions or context..."></textarea>
+                              placeholder="Instructions or context..."
+                              maxlength="800">{{ wizard_data.task_description or '' }}</textarea>
+                    <span class="field-hint">800 character limit</span>
                 </div>
 
                 <div class="property-row">
                     <label for="task_due">Due</label>
-                    <select id="task_due" name="task_due" class="property-input">
-                        <option value="end_of_day">End of day</option>
-                        <option value="+1d">Tomorrow</option>
-                        <option value="+2d">In 2 days</option>
-                        <option value="+7d">In 1 week</option>
-                        <option value="">No due date</option>
-                    </select>
+                    {% with name="task_due", selected=wizard_data.task_due %}
+                    {% include "partials/widgets/due_select.html" %}
+                    {% endwith %}
                 </div>
 
+                {% if wizard_data.action_type != "collate" %}
                 <div class="property-row">
-                    <label for="task_tags">Tags (comma-separated)</label>
-                    <input type="text"
-                           id="task_tags"
-                           name="task_tags"
-                           class="property-input"
-                           placeholder="e.g., deep_work, code">
-                </div>
-
-                {% elif wizard_data.action_type == 'collate' %}
-                <h4>Collation details</h4>
-
-                <div class="property-row">
-                    <label for="collate_target">Which tasks to batch?</label>
-                    <select id="collate_target" name="collate_target" class="property-input">
-                        <option value="children">Direct child tasks</option>
-                        <option value="descendants">All descendant tasks</option>
-                    </select>
-                </div>
-
-                <div class="property-row">
-                    <label for="batch_name">Batch task name</label>
-                    <input type="text"
-                           id="batch_name"
-                           name="batch_name"
-                           class="property-input"
-                           placeholder="e.g., Weekly errands"
-                           required>
-                </div>
-
-                <div class="property-row">
-                    <label for="batch_due">Due</label>
-                    <select id="batch_due" name="batch_due" class="property-input">
-                        <option value="end_of_day">End of day</option>
-                        <option value="end_of_week">End of week</option>
-                        <option value="">No due date</option>
-                    </select>
+                    <label for="task_tags">Tags</label>
+                    {% with name="task_tags", selected=wizard_data.task_tags %}
+                    {% include "partials/widgets/tag_select.html" %}
+                    {% endwith %}
                 </div>
                 {% endif %}
+            </div>
+
+            {% elif page == "confirm" %}
+            {# ========== CONFIRMATION PAGE ========== #}
+            <div class="wizard-step-content">
+                <h4>Review your action</h4>
+
+                <div class="action-preview">
+                    <p class="preview-sentence">{{ preview_sentence }}</p>
+                </div>
+
+                <div class="preview-details">
+                    {% if wizard_data.task_description %}
+                    <div class="preview-row">
+                        <label>Description:</label>
+                        <span>{{ wizard_data.task_description[:100] }}{% if wizard_data.task_description|length > 100 %}...{% endif %}</span>
+                    </div>
+                    {% endif %}
+                    {% if wizard_data.task_tags %}
+                    <div class="preview-row">
+                        <label>Tags:</label>
+                        <span>{{ wizard_data.task_tags }}</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
         </div>
 
         <div class="modal-footer">
-            {% if step > 1 %}
+            {# Hidden fields to carry state #}
+            <input type="hidden" name="action_type" value="{{ wizard_data.action_type or 'create' }}">
+            <input type="hidden" name="trigger_type" value="{{ wizard_data.trigger_type or 'schedule' }}">
+            {% for key, value in wizard_data.items() %}
+            {% if key not in ['action_type', 'trigger_type', 'schedule', 'event'] and value %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+            {% endfor %}
+
+            {% if page != "start" %}
             <button type="button"
                     class="btn btn-secondary"
-                    hx-get="/priorities/{{ priority_id }}/actions/wizard?step={{ step - 1 }}"
+                    hx-get="/priorities/{{ priority_id }}/actions/wizard?page={{ back_page }}"
                     hx-target="#action-wizard-container"
                     hx-swap="innerHTML"
-                    hx-include="[name^='trigger_'], [name^='action_'], [name^='task_'], [name^='collate_'], [name^='batch_'], [name^='weekly_'], [name^='cadence_']">
+                    hx-include="[name^='action_'], [name^='trigger_'], [name^='schedule_'], [name^='event_'], [name^='collate_'], [name^='task_']">
                 &larr; Back
             </button>
             {% endif %}
 
-            {% if step < 3 %}
-            <button type="button"
-                    class="btn btn-primary"
-                    hx-get="/priorities/{{ priority_id }}/actions/wizard?step={{ step + 1 }}"
-                    hx-target="#action-wizard-container"
-                    hx-swap="innerHTML"
-                    hx-include="[name^='trigger_'], [name^='action_'], [name^='task_'], [name^='collate_'], [name^='batch_'], [name^='weekly_'], [name^='cadence_']">
-                Next &rarr;
-            </button>
-            {% else %}
+            {% if page == "confirm" %}
             <button type="button"
                     class="btn btn-primary"
                     hx-post="/priorities/{{ priority_id }}/actions"
                     hx-target="#actions-editor-container"
                     hx-swap="innerHTML"
-                    hx-include="[name^='trigger_'], [name^='action_'], [name^='task_'], [name^='collate_'], [name^='batch_'], [name^='weekly_'], [name^='cadence_']"
+                    hx-include="[name^='action_'], [name^='trigger_'], [name^='schedule_'], [name^='event_'], [name^='collate_'], [name^='task_']"
                     hx-on::afterRequest="closeActionWizard()">
                 Create Action
+            </button>
+            {% else %}
+            <button type="button"
+                    class="btn btn-primary"
+                    hx-get="/priorities/{{ priority_id }}/actions/wizard?page={{ next_page }}"
+                    hx-target="#action-wizard-container"
+                    hx-swap="innerHTML"
+                    hx-include="[name^='action_'], [name^='trigger_'], [name^='schedule_'], [name^='event_'], [name^='collate_'], [name^='task_']">
+                Next &rarr;
             </button>
             {% endif %}
         </div>
@@ -225,23 +283,22 @@
 </div>
 
 <script>
-// Close function - must be defined first
 function closeActionWizard(event) {
     if (event && event.target !== event.currentTarget) return;
     document.getElementById('action-wizard-container').innerHTML = '';
 }
 
-// Show/hide sub-options based on trigger type (step 1 only)
-(function() {
-    var weeklyPicker = document.getElementById('weekly-day-picker');
-    var customCadence = document.getElementById('custom-cadence');
-    if (!weeklyPicker || !customCadence) return;
+function toggleCollationDetail(checkbox, type) {
+    var detail = document.getElementById('collation-detail-' + type);
+    var label = document.getElementById('collation-label-' + type);
 
-    document.querySelectorAll('input[name="trigger_type"]').forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            weeklyPicker.style.display = this.value === 'weekly' ? 'block' : 'none';
-            customCadence.style.display = this.value === 'custom' ? 'block' : 'none';
-        });
-    });
-})();
+    if (detail) {
+        detail.style.display = checkbox.checked ? 'block' : 'none';
+    }
+
+    // Update label text for practice
+    if (type === 'practice' && label) {
+        label.textContent = checkbox.checked ? 'Tasks under {{ practice_name }}' : 'Tasks under this Practice';
+    }
+}
 </script>

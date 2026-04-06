@@ -1,0 +1,249 @@
+{# Schedule builder - adaptive sentence widget #}
+{# Params: prefix (field name prefix, default "schedule_"), schedule (dict with current values) #}
+
+{% set prefix = prefix if prefix is defined else "schedule_" %}
+{% set schedule = schedule if schedule is defined else {} %}
+
+<div class="schedule-builder" id="schedule-builder">
+    <div class="sentence-builder">
+        <span class="sentence-static">Every</span>
+
+        <select name="{{ prefix }}interval"
+                id="{{ prefix }}interval"
+                class="sentence-dropdown"
+                onchange="updateScheduleUI(this.value)">
+            <optgroup label="Presets">
+                <option value="daily" {% if schedule.interval == "daily" %}selected{% endif %}>day</option>
+                <option value="weekdays" {% if schedule.interval == "weekdays" or not schedule.interval %}selected{% endif %}>weekday</option>
+            </optgroup>
+            <optgroup label="Weekly on">
+                <option value="monday" {% if schedule.interval == "monday" %}selected{% endif %}>Monday</option>
+                <option value="tuesday" {% if schedule.interval == "tuesday" %}selected{% endif %}>Tuesday</option>
+                <option value="wednesday" {% if schedule.interval == "wednesday" %}selected{% endif %}>Wednesday</option>
+                <option value="thursday" {% if schedule.interval == "thursday" %}selected{% endif %}>Thursday</option>
+                <option value="friday" {% if schedule.interval == "friday" %}selected{% endif %}>Friday</option>
+                <option value="saturday" {% if schedule.interval == "saturday" %}selected{% endif %}>Saturday</option>
+                <option value="sunday" {% if schedule.interval == "sunday" %}selected{% endif %}>Sunday</option>
+            </optgroup>
+            <optgroup label="Custom">
+                <option value="custom_days" {% if schedule.cadence_unit == "d" %}selected{% endif %}>N days...</option>
+                <option value="custom_weeks" {% if schedule.cadence_unit == "w" %}selected{% endif %}>N weeks...</option>
+            </optgroup>
+        </select>
+
+        {# Multi-day add button (shown for weekly days) #}
+        <button type="button"
+                class="sentence-add-btn"
+                id="add-day-btn"
+                onclick="addDaySlot()"
+                style="display: none;"
+                title="Add another day">+</button>
+    </div>
+
+    {# Multi-day chips container (hidden by default) #}
+    <div class="multi-day-container" id="multi-day-container" style="display: none;">
+        <div class="day-chips" id="day-chips">
+            {# Chips inserted by JS #}
+        </div>
+    </div>
+
+    {# Custom cadence fields (hidden by default) #}
+    <div class="custom-cadence-fields" id="custom-cadence-fields" style="display: none;">
+        <span class="sentence-static">Every</span>
+        <input type="number"
+               name="{{ prefix }}cadence_value"
+               id="{{ prefix }}cadence_value"
+               class="sentence-number-input"
+               value="{{ schedule.cadence_value or 2 }}"
+               min="1"
+               max="365">
+        <select name="{{ prefix }}cadence_unit"
+                id="{{ prefix }}cadence_unit"
+                class="sentence-dropdown sentence-dropdown-sm">
+            <option value="d" {% if schedule.cadence_unit == "d" %}selected{% endif %}>days</option>
+            <option value="w" {% if schedule.cadence_unit == "w" %}selected{% endif %}>weeks</option>
+        </select>
+        <span class="sentence-static" id="cadence-anchor-label">starting</span>
+        <input type="date"
+               name="{{ prefix }}cadence_anchor"
+               id="{{ prefix }}cadence_anchor"
+               class="sentence-date-input"
+               value="{{ schedule.cadence_anchor or '' }}">
+    </div>
+
+    {# Hidden field to store multi-day selections #}
+    <input type="hidden" name="{{ prefix }}days" id="{{ prefix }}days" value="{{ (schedule.days or [])|join(',') }}">
+
+    {# Optional time selector #}
+    <div class="schedule-time-option">
+        <label class="checkbox-label">
+            <input type="checkbox"
+                   id="schedule-has-time"
+                   name="{{ prefix }}has_time"
+                   {% if schedule.at %}checked{% endif %}
+                   onchange="toggleTimeInput(this.checked)">
+            <span>at a specific time</span>
+        </label>
+        <input type="time"
+               name="{{ prefix }}at"
+               id="{{ prefix }}at"
+               class="sentence-time-input"
+               value="{{ schedule.at or '09:00' }}"
+               {% if not schedule.at %}style="display: none;"{% endif %}>
+    </div>
+</div>
+
+<script>
+(function() {
+    var selectedDays = [];
+    var dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    var dayAbbrs = {'monday': 'Mo', 'tuesday': 'Tu', 'wednesday': 'We', 'thursday': 'Th', 'friday': 'Fr', 'saturday': 'Sa', 'sunday': 'Su'};
+
+    // Initialize from hidden field
+    var daysField = document.getElementById('{{ prefix }}days');
+    if (daysField.value) {
+        selectedDays = daysField.value.split(',').filter(function(d) { return d; });
+    }
+
+    window.updateScheduleUI = function(value) {
+        var addDayBtn = document.getElementById('add-day-btn');
+        var multiDayContainer = document.getElementById('multi-day-container');
+        var customFields = document.getElementById('custom-cadence-fields');
+        var intervalSelect = document.getElementById('{{ prefix }}interval');
+        var anchorLabel = document.getElementById('cadence-anchor-label');
+
+        // Hide all optional sections
+        addDayBtn.style.display = 'none';
+        multiDayContainer.style.display = 'none';
+        customFields.style.display = 'none';
+
+        if (dayNames.indexOf(value) !== -1) {
+            // Single day selected - show add button
+            addDayBtn.style.display = 'inline-block';
+            selectedDays = [value];
+            updateDaysField();
+        } else if (value === 'custom_days' || value === 'custom_weeks') {
+            // Custom cadence
+            customFields.style.display = 'flex';
+            var unitSelect = document.getElementById('{{ prefix }}cadence_unit');
+            unitSelect.value = value === 'custom_days' ? 'd' : 'w';
+            anchorLabel.textContent = value === 'custom_weeks' ? 'on' : 'starting';
+            selectedDays = [];
+            updateDaysField();
+        } else {
+            // Preset (daily, weekdays)
+            selectedDays = [];
+            updateDaysField();
+        }
+    };
+
+    window.addDaySlot = function() {
+        var intervalSelect = document.getElementById('{{ prefix }}interval');
+        var multiDayContainer = document.getElementById('multi-day-container');
+        var addDayBtn = document.getElementById('add-day-btn');
+
+        // Add current selection if not already in list
+        var currentDay = intervalSelect.value;
+        if (dayNames.indexOf(currentDay) !== -1 && selectedDays.indexOf(currentDay) === -1) {
+            selectedDays.push(currentDay);
+        }
+
+        // Show multi-day container, hide dropdown + add button
+        multiDayContainer.style.display = 'block';
+        intervalSelect.style.display = 'none';
+        addDayBtn.style.display = 'none';
+
+        renderDayChips();
+    };
+
+    function renderDayChips() {
+        var container = document.getElementById('day-chips');
+        container.innerHTML = '';
+
+        selectedDays.forEach(function(day) {
+            var chip = document.createElement('span');
+            chip.className = 'day-chip selected';
+            chip.innerHTML = dayAbbrs[day] + ' <button type="button" class="chip-remove" onclick="removeDay(\'' + day + '\')">&times;</button>';
+            container.appendChild(chip);
+        });
+
+        // Add "+" button to add more days
+        if (selectedDays.length < 7) {
+            var addChip = document.createElement('button');
+            addChip.type = 'button';
+            addChip.className = 'day-chip add-chip';
+            addChip.textContent = '+';
+            addChip.onclick = showDayPicker;
+            container.appendChild(addChip);
+        }
+
+        updateDaysField();
+    }
+
+    window.removeDay = function(day) {
+        selectedDays = selectedDays.filter(function(d) { return d !== day; });
+
+        if (selectedDays.length === 0) {
+            // Revert to dropdown mode
+            var intervalSelect = document.getElementById('{{ prefix }}interval');
+            var multiDayContainer = document.getElementById('multi-day-container');
+            intervalSelect.style.display = '';
+            intervalSelect.value = 'weekdays';
+            multiDayContainer.style.display = 'none';
+        } else if (selectedDays.length === 1) {
+            // Back to single day with add button
+            var intervalSelect = document.getElementById('{{ prefix }}interval');
+            var multiDayContainer = document.getElementById('multi-day-container');
+            var addDayBtn = document.getElementById('add-day-btn');
+            intervalSelect.style.display = '';
+            intervalSelect.value = selectedDays[0];
+            addDayBtn.style.display = 'inline-block';
+            multiDayContainer.style.display = 'none';
+        } else {
+            renderDayChips();
+        }
+
+        updateDaysField();
+    };
+
+    function showDayPicker() {
+        // Show a simple dropdown to pick another day
+        var available = dayNames.filter(function(d) { return selectedDays.indexOf(d) === -1; });
+        if (available.length === 0) return;
+
+        var select = document.createElement('select');
+        select.className = 'sentence-dropdown';
+        select.innerHTML = '<option value="">Add day...</option>' +
+            available.map(function(d) { return '<option value="' + d + '">' + d.charAt(0).toUpperCase() + d.slice(1) + '</option>'; }).join('');
+        select.onchange = function() {
+            if (this.value) {
+                selectedDays.push(this.value);
+                renderDayChips();
+            }
+        };
+
+        var container = document.getElementById('day-chips');
+        var addBtn = container.querySelector('.add-chip');
+        if (addBtn) {
+            container.replaceChild(select, addBtn);
+            select.focus();
+        }
+    }
+
+    function updateDaysField() {
+        var daysField = document.getElementById('{{ prefix }}days');
+        daysField.value = selectedDays.join(',');
+    }
+
+    window.toggleTimeInput = function(show) {
+        var timeInput = document.getElementById('{{ prefix }}at');
+        timeInput.style.display = show ? '' : 'none';
+    };
+
+    // Initialize UI based on current value
+    var intervalSelect = document.getElementById('{{ prefix }}interval');
+    if (intervalSelect) {
+        updateScheduleUI(intervalSelect.value);
+    }
+})();
+</script>

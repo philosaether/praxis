@@ -1,0 +1,37 @@
+{# Day of week picker widget #}
+{# Params: name (field name), selected (list of day names or single day), multi (bool, default false) #}
+
+{% set days = [
+    ("monday", "Mon"),
+    ("tuesday", "Tue"),
+    ("wednesday", "Wed"),
+    ("thursday", "Thu"),
+    ("friday", "Fri"),
+    ("saturday", "Sat"),
+    ("sunday", "Sun")
+] %}
+
+{% if multi %}
+{# Multi-select chip style #}
+<div class="day-picker-chips" data-name="{{ name }}">
+    {% for day_value, day_abbr in days %}
+    <label class="day-chip {% if day_value in (selected or []) %}selected{% endif %}">
+        <input type="checkbox"
+               name="{{ name }}"
+               value="{{ day_value }}"
+               {% if day_value in (selected or []) %}checked{% endif %}
+               onchange="this.parentElement.classList.toggle('selected', this.checked)">
+        <span>{{ day_abbr }}</span>
+    </label>
+    {% endfor %}
+</div>
+{% else %}
+{# Single select dropdown #}
+<select name="{{ name }}" class="property-input day-picker-select">
+    {% for day_value, day_abbr in days %}
+    <option value="{{ day_value }}" {% if day_value == selected %}selected{% endif %}>
+        {{ day_value|capitalize }}
+    </option>
+    {% endfor %}
+</select>
+{% endif %}

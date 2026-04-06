@@ -1642,6 +1642,249 @@ a:hover {
   color: #4a4a48;
 }
 
+.wizard-progress {
+  height: 4px;
+  background: #ebe8e2;
+}
+.wizard-progress .wizard-progress-bar {
+  height: 100%;
+  background: #d4af37;
+  transition: width 0.3s ease;
+}
+
+.sentence-builder {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.sentence-static {
+  color: #4a4a48;
+}
+
+.sentence-dropdown {
+  padding: 0.25rem 0.5rem;
+  background: #fbf9f5;
+  border: 1px solid #d0c5af;
+  border-radius: 0.25rem;
+  color: #1b1c1a;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.sentence-dropdown:focus {
+  outline: none;
+  border-color: #735c00;
+}
+
+.sentence-dropdown-sm {
+  min-width: 80px;
+}
+
+.sentence-number-input {
+  width: 60px;
+  padding: 0.25rem 0.5rem;
+  background: #fbf9f5;
+  border: 1px solid #d0c5af;
+  border-radius: 0.25rem;
+  color: #1b1c1a;
+  text-align: center;
+}
+
+.sentence-date-input,
+.sentence-time-input {
+  padding: 0.25rem 0.5rem;
+  background: #fbf9f5;
+  border: 1px solid #d0c5af;
+  border-radius: 0.25rem;
+  color: #1b1c1a;
+}
+
+.sentence-add-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: #ebe8e2;
+  border: 1px dashed #d0c5af;
+  border-radius: 0.25rem;
+  color: #7a7976;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.sentence-add-btn:hover {
+  background: #ebe8e2;
+  border-color: #735c00;
+  color: #735c00;
+}
+
+.multi-day-container {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #ebe8e2;
+  border: 1px solid #d0c5af;
+  border-radius: 0.25rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.day-chip input[type=checkbox] {
+  display: none;
+}
+.day-chip.selected {
+  background: #d4af37;
+  border-color: #d4af37;
+  color: white;
+}
+.day-chip .chip-remove {
+  padding: 0 2px;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.day-chip .chip-remove:hover {
+  opacity: 1;
+}
+.day-chip.add-chip {
+  background: transparent;
+  border-style: dashed;
+  color: #7a7976;
+}
+.day-chip.add-chip:hover {
+  border-color: #735c00;
+  color: #735c00;
+}
+
+.day-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.schedule-time-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+}
+.schedule-time-option .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+.schedule-time-option .checkbox-label input[type=checkbox] {
+  margin: 0;
+}
+
+.custom-cadence-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+}
+
+.event-filter-value {
+  margin-top: 0.5rem;
+}
+.event-filter-value > div {
+  padding: 0.5rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+}
+
+.collation-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.collation-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #ebe8e2;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.collation-option input[type=checkbox] {
+  margin-right: 0.5rem;
+}
+.collation-option .collation-label {
+  display: flex;
+  align-items: center;
+}
+.collation-option .collation-detail {
+  margin-left: 1.5rem;
+  padding: 0.5rem;
+  background: #f5f3ef;
+  border-radius: 0.25rem;
+}
+
+.action-preview {
+  padding: 1rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+  border-left: 3px solid #735c00;
+}
+.action-preview .preview-sentence {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1b1c1a;
+  line-height: 1.5;
+}
+
+.preview-details {
+  margin-top: 0.75rem;
+}
+.preview-details .preview-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.preview-details .preview-row label {
+  color: #7a7976;
+  font-size: 0.85rem;
+}
+.preview-details .preview-row span {
+  color: #4a4a48;
+  font-size: 0.85rem;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #7a7976;
+}
+
 .priority-list {
   flex: 1;
   overflow-y: auto;

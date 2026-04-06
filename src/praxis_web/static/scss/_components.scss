@@ -1428,3 +1428,275 @@
     color: $text-secondary;
   }
 }
+
+// Wizard progress bar
+.wizard-progress {
+  height: 4px;
+  background: $bg-tertiary;
+
+  .wizard-progress-bar {
+    height: 100%;
+    background: $accent-bright;
+    transition: width 0.3s ease;
+  }
+}
+
+// Schedule/Event sentence builder
+.sentence-builder {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+}
+
+.sentence-static {
+  color: $text-secondary;
+}
+
+.sentence-dropdown {
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  font-size: $font-size-base;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.sentence-dropdown-sm {
+  min-width: 80px;
+}
+
+.sentence-number-input {
+  width: 60px;
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  text-align: center;
+}
+
+.sentence-date-input,
+.sentence-time-input {
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+}
+
+.sentence-add-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: $bg-tertiary;
+  border: 1px dashed $border;
+  border-radius: $radius-sm;
+  color: $text-muted;
+  cursor: pointer;
+  font-size: $font-size-sm;
+
+  &:hover {
+    background: $bg-tertiary;
+    border-color: $accent;
+    color: $accent;
+  }
+}
+
+// Multi-day chips
+.multi-day-container {
+  margin-top: $spacing-sm;
+  padding: $spacing-sm;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-tertiary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    display: none;
+  }
+
+  &.selected {
+    background: $accent-bright;
+    border-color: $accent-bright;
+    color: white;
+  }
+
+  .chip-remove {
+    padding: 0 2px;
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    cursor: pointer;
+    font-size: $font-size-base;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &.add-chip {
+    background: transparent;
+    border-style: dashed;
+    color: $text-muted;
+
+    &:hover {
+      border-color: $accent;
+      color: $accent;
+    }
+  }
+}
+
+// Day picker chips (multi-select mode)
+.day-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+// Schedule time option
+.schedule-time-option {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  padding: $spacing-sm;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      margin: 0;
+    }
+  }
+}
+
+// Custom cadence fields
+.custom-cadence-fields {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+}
+
+// Event filter value inputs
+.event-filter-value {
+  margin-top: $spacing-sm;
+
+  > div {
+    padding: $spacing-sm;
+    background: $bg-secondary;
+    border-radius: $radius-md;
+  }
+}
+
+// Collation options
+.collation-options {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.collation-option {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    margin-right: $spacing-sm;
+  }
+
+  .collation-label {
+    display: flex;
+    align-items: center;
+  }
+
+  .collation-detail {
+    margin-left: $spacing-lg + $spacing-sm;
+    padding: $spacing-sm;
+    background: $bg-secondary;
+    border-radius: $radius-sm;
+  }
+}
+
+// Action preview
+.action-preview {
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  border-left: 3px solid $accent;
+
+  .preview-sentence {
+    margin: 0;
+    font-size: $font-size-lg;
+    color: $text-primary;
+    line-height: 1.5;
+  }
+}
+
+.preview-details {
+  margin-top: $spacing-md;
+
+  .preview-row {
+    display: flex;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+
+    label {
+      color: $text-muted;
+      font-size: $font-size-sm;
+    }
+
+    span {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+// Field hint
+.field-hint {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $text-muted;
+}
