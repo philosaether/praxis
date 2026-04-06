@@ -1452,6 +1452,11 @@ async def priority_actions_delete(request: Request, priority_id: str, action_idx
             priority.actions_config = config.to_json() if config.actions else None
             priority.updated_at = datetime.now()
             graph.save_priority(priority)
+
+            # Clear the API's graph cache so it reloads from DB
+            async with api_client(request) as client:
+                await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
+
             return {"success": True}
         else:
             return {"success": False, "error": "Invalid action index"}
