@@ -320,6 +320,7 @@ class PriorityGraph:
                     actions_config = excluded.actions_config,
                     updated_at = CURRENT_TIMESTAMP
             """, values)
+            conn.commit()
 
     def save_edge(self, child_id: str, parent_id: str) -> None:
         """Persist a parent-child edge to SQLite."""

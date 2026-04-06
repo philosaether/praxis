@@ -266,11 +266,12 @@
             {% if page == "confirm" %}
             <button type="button"
                     class="btn btn-primary"
+                    id="create-action-btn"
                     hx-post="/priorities/{{ priority_id }}/actions"
                     hx-target="#actions-editor-container"
                     hx-swap="innerHTML"
                     hx-include="[name^='action_'], [name^='trigger_'], [name^='schedule_'], [name^='event_'], [name^='collate_'], [name^='task_']"
-                    hx-on::afterRequest="closeActionWizard()">
+                    hx-on::after-request="closeActionWizard()">
                 Create Action
             </button>
             {% else %}
@@ -295,6 +296,18 @@ function closeActionWizard(event) {
     var container = document.getElementById('action-wizard-container');
     if (container) container.innerHTML = '';
 }
+
+// Also listen for htmx:afterRequest on the create button as a backup
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('create-action-btn');
+    if (btn) {
+        btn.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                closeActionWizard();
+            }
+        });
+    }
+});
 
 function toggleCollationDetail(checkbox, type) {
     var detail = document.getElementById('collation-detail-' + type);
