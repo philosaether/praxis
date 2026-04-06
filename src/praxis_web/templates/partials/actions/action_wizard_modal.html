@@ -238,11 +238,16 @@
         </div>
 
         <div class="modal-footer">
-            {# Hidden fields to carry state #}
+            {# Hidden fields to carry state - exclude fields that have visible controls on current page #}
             <input type="hidden" name="action_type" value="{{ wizard_data.action_type or 'create' }}">
             <input type="hidden" name="trigger_type" value="{{ wizard_data.trigger_type or 'schedule' }}">
+            {% set exclude_keys = ['action_type', 'trigger_type', 'schedule', 'event'] %}
+            {# On details page, don't duplicate task_* fields since they have visible controls #}
+            {% if page == 'details' %}
+            {% set exclude_keys = exclude_keys + ['task_name', 'task_description', 'task_due', 'task_tags'] %}
+            {% endif %}
             {% for key, value in wizard_data.items() %}
-            {% if key not in ['action_type', 'trigger_type', 'schedule', 'event'] and value %}
+            {% if key not in exclude_keys and value %}
             <input type="hidden" name="{{ key }}" value="{{ value }}">
             {% endif %}
             {% endfor %}
@@ -284,8 +289,11 @@
 
 <script>
 function closeActionWizard(event) {
-    if (event && event.target !== event.currentTarget) return;
-    document.getElementById('action-wizard-container').innerHTML = '';
+    // When called from backdrop click, check if click was on backdrop itself (not modal)
+    // When called from htmx afterRequest or close button, just close
+    if (event && event.type === 'click' && event.target !== event.currentTarget) return;
+    var container = document.getElementById('action-wizard-container');
+    if (container) container.innerHTML = '';
 }
 
 function toggleCollationDetail(checkbox, type) {
