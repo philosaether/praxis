@@ -271,7 +271,7 @@
                     hx-target="#actions-editor-container"
                     hx-swap="innerHTML"
                     hx-include="[name^='action_'], [name^='trigger_'], [name^='schedule_'], [name^='event_'], [name^='collate_'], [name^='task_']"
-                    hx-on::after-request="closeActionWizard()">
+                    hx-on::after-request="if(event.detail.successful) closeActionWizard()">
                 Create Action
             </button>
             {% else %}
