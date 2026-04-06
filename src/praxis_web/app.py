@@ -1143,8 +1143,8 @@ async def priority_actions_wizard(
     if page == "confirm":
         preview_sentence = _build_action_preview(wizard_data)
 
-    # Get all priorities for selectors
-    priorities = [p for p in graph.all_priorities() if p.id != priority_id]
+    # Get all priorities for selectors (from graph.nodes dict)
+    priorities = [p for p in graph.nodes.values() if p.id != priority_id]
 
     return templates.TemplateResponse(
         request,
