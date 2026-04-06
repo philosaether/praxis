@@ -1394,19 +1394,7 @@ async def priority_actions_create(request: Request, priority_id: str):
     priority.actions_config = config.to_json()
     priority.updated_at = datetime.now()
 
-    # Debug: print what we're saving
-    print(f"[ACTION CREATE] Saving priority {priority_id}", flush=True)
-    print(f"[ACTION CREATE] priority type: {type(priority).__name__}", flush=True)
-    print(f"[ACTION CREATE] actions_config (first 100): {priority.actions_config[:100] if priority.actions_config else None}", flush=True)
-
     graph.save_priority(priority)
-
-    # Debug: Verify it was saved
-    from praxis_core.persistence import get_connection as get_conn_check
-    check_conn = get_conn_check()
-    check_row = check_conn.execute('SELECT actions_config FROM priorities WHERE id = ?', (priority_id,)).fetchone()
-    print(f"[ACTION CREATE] DB value after save (first 100): {check_row['actions_config'][:100] if check_row['actions_config'] else None}", flush=True)
-    check_conn.close()
 
     # Clear the API's graph cache so it reloads from DB
     from praxis_core.api.app import clear_graph_cache

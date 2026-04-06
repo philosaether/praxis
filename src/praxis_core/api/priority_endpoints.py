@@ -477,7 +477,16 @@ async def update_priority_properties(
                 priority.due_date = None
         else:
             priority.due_date = None
-    # Practice: trigger_config is set separately via trigger UI
+
+    # For Practice priorities, preserve actions_config from DB (it's edited separately)
+    # This prevents the cached graph from overwriting changes made via the wizard
+    if isinstance(priority, Practice):
+        from praxis_core.persistence import get_connection
+        conn = get_connection()
+        row = conn.execute('SELECT actions_config FROM priorities WHERE id = ?', (priority_id,)).fetchone()
+        if row:
+            priority.actions_config = row['actions_config']
+        conn.close()
 
     graph.save_priority(priority)
 
