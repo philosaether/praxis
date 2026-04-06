@@ -1397,8 +1397,9 @@ async def priority_actions_create(request: Request, priority_id: str):
     graph.save_priority(priority)
 
     # Clear the API's graph cache so it reloads from DB
-    from praxis_core.api.app import clear_graph_cache
-    clear_graph_cache(user.entity_id)
+    # Must call the API endpoint since API runs in a separate process
+    async with api_client(request) as client:
+        await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
 
     # Return updated editor
     actions = render_actions_from_config(priority.actions_config)

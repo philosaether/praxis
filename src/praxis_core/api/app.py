@@ -59,6 +59,13 @@ app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
 app.include_router(trigger_router, prefix="/api", tags=["triggers"])
 
 
+@app.post("/api/cache/invalidate")
+async def invalidate_cache(entity_id: str | None = None):
+    """Invalidate cached graph for an entity (or all if entity_id is None)."""
+    clear_graph_cache(entity_id)
+    return {"success": True, "entity_id": entity_id}
+
+
 # ---------------------------------------------------------------------
 # Per-Entity Graph Cache
 # ---------------------------------------------------------------------
