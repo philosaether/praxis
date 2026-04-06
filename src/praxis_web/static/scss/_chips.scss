@@ -1,0 +1,239 @@
+// =============================================================================
+// Input Chips - Editable sentence fragments
+// =============================================================================
+@use 'sass:list';
+@use 'variables' as *;
+
+// -----------------------------------------------------------------------------
+// Chip Color Palette (pastel, semantic)
+// -----------------------------------------------------------------------------
+
+$chip-colors: (
+  interval: (#7c5cad, #ece0f5),   // Purple - cadence, frequency
+  day:      (#3d8c5c, #d8f0e3),   // Green - days of week
+  time:     (#b87333, #fde8d4),   // Orange/peach - time of day
+  priority: (#2a5082, #d6e5f5),   // Blue - priority references
+  tag:      (#6b5e4f, #e8e4dc),   // Warm gray - tags
+  due:      (#8a5a00, #fff3d6),   // Gold - due dates
+);
+
+// -----------------------------------------------------------------------------
+// Base Chip
+// -----------------------------------------------------------------------------
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.chip-trigger {
+  display: inline-block;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-md;
+  font-family: $font-family-body;
+  font-size: $font-size-base;
+  cursor: pointer;
+  transition: all $transition-fast;
+  border: 1px solid transparent;
+
+  // Default styling (can be overridden by variant)
+  background: $bg-tertiary;
+  color: $text-primary;
+
+  &:hover {
+    border-color: $border;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+    box-shadow: 0 0 0 2px $accent-glow;
+  }
+
+  // When popup is open
+  &[aria-expanded="true"] {
+    border-color: $accent;
+    box-shadow: 0 0 0 2px $accent-glow;
+  }
+}
+
+// Color variants
+@each $type, $colors in $chip-colors {
+  .chip-trigger--#{$type} {
+    background: list.nth($colors, 2);
+    color: list.nth($colors, 1);
+
+    &:hover {
+      border-color: list.nth($colors, 1);
+    }
+
+    &:focus,
+    &[aria-expanded="true"] {
+      border-color: list.nth($colors, 1);
+      box-shadow: 0 0 0 2px rgba(list.nth($colors, 1), 0.2);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Chip Add Button (for multi-value chips)
+// -----------------------------------------------------------------------------
+
+.chip-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px dashed $border;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $text-muted;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: $accent;
+    color: $accent;
+    background: $accent-glow;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Chip Popup (the edit UI container)
+// -----------------------------------------------------------------------------
+
+.chip-popup {
+  position: absolute;
+  top: calc(100% + $spacing-xs);
+  left: 0;
+  z-index: 100;
+  min-width: 200px;
+  padding: $spacing-md;
+  background: $bg-elevated;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-lg;
+
+  // Hidden by default
+  display: none;
+
+  &.open {
+    display: block;
+  }
+
+  // Arrow pointing up
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: $spacing-lg;
+    width: 10px;
+    height: 10px;
+    background: $bg-elevated;
+    border-left: 1px solid $border;
+    border-top: 1px solid $border;
+    transform: rotate(45deg);
+  }
+}
+
+// Popup positioning variants
+.chip-popup--right {
+  left: auto;
+  right: 0;
+
+  &::before {
+    left: auto;
+    right: $spacing-lg;
+  }
+}
+
+.chip-popup--center {
+  left: 50%;
+  transform: translateX(-50%);
+
+  &::before {
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Popup Content Helpers
+// -----------------------------------------------------------------------------
+
+.chip-popup__title {
+  margin: 0 0 $spacing-sm 0;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: $text-secondary;
+}
+
+.chip-popup__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.chip-popup__option {
+  padding: $spacing-xs $spacing-sm;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-md;
+  background: $bg-secondary;
+  color: $text-primary;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: $accent;
+    background: $accent-glow;
+  }
+
+  &.selected {
+    border-color: $accent;
+    background: $accent-glow;
+    color: $accent-dim;
+    font-weight: 500;
+  }
+}
+
+// For options that should look like chips themselves
+.chip-popup__option--chip {
+  @each $type, $colors in $chip-colors {
+    &.chip-popup__option--#{$type} {
+      background: list.nth($colors, 2);
+      color: list.nth($colors, 1);
+      border-color: transparent;
+
+      &:hover,
+      &.selected {
+        border-color: list.nth($colors, 1);
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Chip Sentence (container for inline chips)
+// -----------------------------------------------------------------------------
+
+.chip-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  font-family: $font-family-body;
+  font-size: $font-size-base;
+  color: $text-primary;
+  line-height: 2; // Extra line height for wrapped chips
+}
+
+.chip-sentence__text {
+  // Plain text between chips
+  color: $text-secondary;
+}

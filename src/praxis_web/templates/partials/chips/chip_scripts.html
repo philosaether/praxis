@@ -1,0 +1,94 @@
+{# Chip component JavaScript - include once in base template #}
+<script>
+(function() {
+  // Track currently open popup
+  let openPopup = null;
+  let openTrigger = null;
+
+  // Toggle a chip popup open/closed
+  window.toggleChipPopup = function(trigger) {
+    const chip = trigger.closest('.chip');
+    const popup = chip.querySelector('.chip-popup');
+    const isOpen = popup.classList.contains('open');
+
+    // Close any currently open popup first
+    closeAllChipPopups();
+
+    if (!isOpen) {
+      popup.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+      openPopup = popup;
+      openTrigger = trigger;
+
+      // Focus first focusable element in popup
+      const firstFocusable = popup.querySelector('button, input, select, [tabindex]:not([tabindex="-1"])');
+      if (firstFocusable) {
+        firstFocusable.focus();
+      }
+    }
+  };
+
+  // Close all open chip popups
+  window.closeAllChipPopups = function() {
+    if (openPopup) {
+      openPopup.classList.remove('open');
+    }
+    if (openTrigger) {
+      openTrigger.setAttribute('aria-expanded', 'false');
+    }
+    openPopup = null;
+    openTrigger = null;
+  };
+
+  // Update a chip's value and display
+  window.updateChip = function(chip, value, display) {
+    if (typeof chip === 'string') {
+      chip = document.querySelector(`.chip[data-chip="${chip}"]`);
+    }
+    if (!chip) return;
+
+    const input = chip.querySelector('input[type="hidden"]');
+    const textEl = chip.querySelector('.chip-trigger__text');
+
+    if (input) input.value = value;
+    if (textEl) textEl.textContent = display || value;
+
+    closeAllChipPopups();
+  };
+
+  // Select an option in a chip popup (for simple option lists)
+  window.selectChipOption = function(optionEl, value, display) {
+    const popup = optionEl.closest('.chip-popup');
+    const chip = optionEl.closest('.chip');
+
+    // Update selected state
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    optionEl.classList.add('selected');
+
+    // Update chip value
+    updateChip(chip, value, display || optionEl.textContent.trim());
+  };
+
+  // Close popup when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!openPopup) return;
+
+    const clickedInPopup = openPopup.contains(e.target);
+    const clickedOnTrigger = openTrigger && openTrigger.contains(e.target);
+
+    if (!clickedInPopup && !clickedOnTrigger) {
+      closeAllChipPopups();
+    }
+  });
+
+  // Close popup on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && openPopup) {
+      closeAllChipPopups();
+      if (openTrigger) openTrigger.focus();
+    }
+  });
+})();
+</script>

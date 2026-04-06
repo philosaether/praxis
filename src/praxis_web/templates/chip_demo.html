@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Chip Demo{% endblock %}
+
+{% block body %}
+<div class="demo-page">
+  <header class="demo-header">
+    <h1>Input Chip Components</h1>
+    <p>Editable sentence fragments for plain-English configuration</p>
+  </header>
+
+  <main class="demo-content">
+    <!-- Chip Color Variants -->
+    <section class="demo-section">
+      <h2>Color Variants</h2>
+      <p class="demo-description">Each chip type has a semantic color to help users understand what kind of value they're editing.</p>
+
+      <div class="demo-row">
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--interval" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">2 weeks</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Interval (purple)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--day" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">tuesday</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Day (green)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--time" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">morning</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Time (orange)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--priority" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">Keep in Touch</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Priority (blue)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--tag" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">errands</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Tag (gray)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--due" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">tomorrow</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Due (gold)</div>
+          </div>
+        </span>
+      </div>
+    </section>
+
+    <!-- Sentence Examples -->
+    <section class="demo-section">
+      <h2>Sentence Composition</h2>
+      <p class="demo-description">Chips form readable sentences. Click any chip to edit.</p>
+
+      <div class="demo-example">
+        <h3>Schedule Example</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval", value="2 weeks", variant="interval" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">How often?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'daily', 'day')">day</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'weekdays', 'weekday')">weekday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '1 week', '1 week')">1 week</button>
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, '2 weeks', '2 weeks')">2 weeks</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '1 month', '1 month')">1 month</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+
+          <span class="chip-sentence__text">on</span>
+
+          {% with name="day", value="tuesday", variant="day" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">Which day?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'monday')">monday</button>
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'tuesday')">tuesday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'wednesday')">wednesday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'thursday')">thursday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'friday')">friday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'saturday')">saturday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'sunday')">sunday</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+
+          <button type="button" class="chip-add" title="Add another day">+</button>
+
+          {% with name="time", value="morning", variant="time" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">What time?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'morning')">morning</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'afternoon')">afternoon</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'evening')">evening</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '9:00 am')">9:00 am</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '2:00 pm')">2:00 pm</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Task Creation Example</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Create a task under</span>
+          {% with name="priority", value="Keep in Touch", variant="priority" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">Which priority?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'Health')">Health</button>
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'Keep in Touch')">Keep in Touch</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'Career Growth')">Career Growth</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+
+          <span class="chip-sentence__text">due</span>
+
+          {% with name="due", value="end of day", variant="due" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">When is it due?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'end of day')">end of day</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'tomorrow')">tomorrow</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'end of week')">end of week</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'no due date')">no due date</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-value Example -->
+    <section class="demo-section">
+      <h2>Multi-value Chips</h2>
+      <p class="demo-description">Some chips can hold multiple values (e.g., multiple days or tags).</p>
+
+      <div class="demo-example">
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every week on</span>
+          {% with name="days", value="monday, wednesday, friday", variant="day" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">Select days</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option selected">Mon</button>
+                <button type="button" class="chip-popup__option">Tue</button>
+                <button type="button" class="chip-popup__option selected">Wed</button>
+                <button type="button" class="chip-popup__option">Thu</button>
+                <button type="button" class="chip-popup__option selected">Fri</button>
+                <button type="button" class="chip-popup__option">Sat</button>
+                <button type="button" class="chip-popup__option">Sun</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+          <button type="button" class="chip-add" title="Add another day">+</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<style>
+/* Demo page styles */
+.demo-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.demo-header {
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border, #d0c5af);
+}
+
+.demo-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 2rem;
+  color: #1b1c1a;
+}
+
+.demo-header p {
+  margin: 0;
+  color: #7a7976;
+}
+
+.demo-section {
+  margin-bottom: 3rem;
+}
+
+.demo-section h2 {
+  margin: 0 0 0.5rem 0;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 1.25rem;
+  color: #1b1c1a;
+}
+
+.demo-description {
+  margin: 0 0 1.5rem 0;
+  color: #7a7976;
+  font-size: 0.9rem;
+}
+
+.demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.demo-example {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+}
+
+.demo-example h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a4a48;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+</style>
+{% endblock %}

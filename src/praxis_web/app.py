@@ -57,6 +57,16 @@ def is_htmx_request(request: Request) -> bool:
 
 
 # -----------------------------------------------------------------------------
+# Dev/Demo Routes
+# -----------------------------------------------------------------------------
+
+@app.get("/demo/chips", response_class=HTMLResponse)
+async def chip_demo(request: Request):
+    """Demo page for chip components."""
+    return templates.TemplateResponse(request, "chip_demo.html", {})
+
+
+# -----------------------------------------------------------------------------
 # Auth Routes
 # -----------------------------------------------------------------------------
 

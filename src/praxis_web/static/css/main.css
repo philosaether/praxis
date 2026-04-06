@@ -1885,6 +1885,276 @@ a:hover {
   color: #7a7976;
 }
 
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.chip-trigger {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  background: #ebe8e2;
+  color: #1b1c1a;
+}
+.chip-trigger:hover {
+  border-color: #d0c5af;
+}
+.chip-trigger:focus {
+  outline: none;
+  border-color: #735c00;
+  box-shadow: 0 0 0 2px #f7e1a6;
+}
+.chip-trigger[aria-expanded=true] {
+  border-color: #735c00;
+  box-shadow: 0 0 0 2px #f7e1a6;
+}
+
+.chip-trigger--interval {
+  background: #ece0f5;
+  color: #7c5cad;
+}
+.chip-trigger--interval:hover {
+  border-color: #7c5cad;
+}
+.chip-trigger--interval:focus, .chip-trigger--interval[aria-expanded=true] {
+  border-color: #7c5cad;
+  box-shadow: 0 0 0 2px rgba(124, 92, 173, 0.2);
+}
+
+.chip-trigger--day {
+  background: #d8f0e3;
+  color: #3d8c5c;
+}
+.chip-trigger--day:hover {
+  border-color: #3d8c5c;
+}
+.chip-trigger--day:focus, .chip-trigger--day[aria-expanded=true] {
+  border-color: #3d8c5c;
+  box-shadow: 0 0 0 2px rgba(61, 140, 92, 0.2);
+}
+
+.chip-trigger--time {
+  background: #fde8d4;
+  color: #b87333;
+}
+.chip-trigger--time:hover {
+  border-color: #b87333;
+}
+.chip-trigger--time:focus, .chip-trigger--time[aria-expanded=true] {
+  border-color: #b87333;
+  box-shadow: 0 0 0 2px rgba(184, 115, 51, 0.2);
+}
+
+.chip-trigger--priority {
+  background: #d6e5f5;
+  color: #2a5082;
+}
+.chip-trigger--priority:hover {
+  border-color: #2a5082;
+}
+.chip-trigger--priority:focus, .chip-trigger--priority[aria-expanded=true] {
+  border-color: #2a5082;
+  box-shadow: 0 0 0 2px rgba(42, 80, 130, 0.2);
+}
+
+.chip-trigger--tag {
+  background: #e8e4dc;
+  color: #6b5e4f;
+}
+.chip-trigger--tag:hover {
+  border-color: #6b5e4f;
+}
+.chip-trigger--tag:focus, .chip-trigger--tag[aria-expanded=true] {
+  border-color: #6b5e4f;
+  box-shadow: 0 0 0 2px rgba(107, 94, 79, 0.2);
+}
+
+.chip-trigger--due {
+  background: #fff3d6;
+  color: #8a5a00;
+}
+.chip-trigger--due:hover {
+  border-color: #8a5a00;
+}
+.chip-trigger--due:focus, .chip-trigger--due[aria-expanded=true] {
+  border-color: #8a5a00;
+  box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
+}
+
+.chip-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px dashed #d0c5af;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #7a7976;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chip-add:hover {
+  border-color: #735c00;
+  color: #735c00;
+  background: #f7e1a6;
+}
+
+.chip-popup {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 100;
+  min-width: 200px;
+  padding: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #d0c5af;
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px rgba(77, 70, 53, 0.1);
+  display: none;
+}
+.chip-popup.open {
+  display: block;
+}
+.chip-popup::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 1rem;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid #d0c5af;
+  border-top: 1px solid #d0c5af;
+  transform: rotate(45deg);
+}
+
+.chip-popup--right {
+  left: auto;
+  right: 0;
+}
+.chip-popup--right::before {
+  left: auto;
+  right: 1rem;
+}
+
+.chip-popup--center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+.chip-popup--center::before {
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.chip-popup__title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a4a48;
+}
+
+.chip-popup__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.chip-popup__option {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(208, 197, 175, 0.4);
+  border-radius: 0.5rem;
+  background: #f5f3ef;
+  color: #1b1c1a;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chip-popup__option:hover {
+  border-color: #735c00;
+  background: #f7e1a6;
+}
+.chip-popup__option.selected {
+  border-color: #735c00;
+  background: #f7e1a6;
+  color: #5a4700;
+  font-weight: 500;
+}
+
+.chip-popup__option--chip.chip-popup__option--interval {
+  background: #ece0f5;
+  color: #7c5cad;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--interval:hover, .chip-popup__option--chip.chip-popup__option--interval.selected {
+  border-color: #7c5cad;
+}
+.chip-popup__option--chip.chip-popup__option--day {
+  background: #d8f0e3;
+  color: #3d8c5c;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--day:hover, .chip-popup__option--chip.chip-popup__option--day.selected {
+  border-color: #3d8c5c;
+}
+.chip-popup__option--chip.chip-popup__option--time {
+  background: #fde8d4;
+  color: #b87333;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--time:hover, .chip-popup__option--chip.chip-popup__option--time.selected {
+  border-color: #b87333;
+}
+.chip-popup__option--chip.chip-popup__option--priority {
+  background: #d6e5f5;
+  color: #2a5082;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--priority:hover, .chip-popup__option--chip.chip-popup__option--priority.selected {
+  border-color: #2a5082;
+}
+.chip-popup__option--chip.chip-popup__option--tag {
+  background: #e8e4dc;
+  color: #6b5e4f;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--tag:hover, .chip-popup__option--chip.chip-popup__option--tag.selected {
+  border-color: #6b5e4f;
+}
+.chip-popup__option--chip.chip-popup__option--due {
+  background: #fff3d6;
+  color: #8a5a00;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--due:hover, .chip-popup__option--chip.chip-popup__option--due.selected {
+  border-color: #8a5a00;
+}
+
+.chip-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  color: #1b1c1a;
+  line-height: 2;
+}
+
+.chip-sentence__text {
+  color: #4a4a48;
+}
+
 .priority-list {
   flex: 1;
   overflow-y: auto;
