@@ -142,23 +142,25 @@
             </div>
             {% elif priority.priority_type == 'practice' %}
             <div class="type-specific-fields practice-fields">
-                <!-- Actions Editor (Phase 3) -->
+                <!-- Actions Editor -->
                 <div class="property-row">
                     <label>
                         Actions
-                        <a href="#" class="label-action" onclick="toggleYamlMode(event)">edit as code</a>
+                        <a href="#" class="label-action" id="actions-mode-toggle" onclick="toggleActionsYamlMode(event, '{{ priority.id }}')">edit as code</a>
                     </label>
                     <div id="actions-editor-container">
-                        {% if priority.actions_config %}
-                        <div class="actions-editor">
-                            <p class="action-summary">Actions configured (editor coming soon)</p>
-                        </div>
+                        {% if actions %}
+                        {% include "partials/actions/actions_editor.html" with context %}
                         {% else %}
-                        <div class="actions-editor empty">
-                            <button type="button" class="btn btn-sm btn-secondary" onclick="openActionWizard()">
+                        <div class="actions-editor-visual">
+                            <p class="empty-hint">No actions configured. Add an action to automate task creation.</p>
+                            <button type="button"
+                                    class="btn btn-sm btn-secondary add-action-btn"
+                                    hx-get="/priorities/{{ priority.id }}/actions/wizard"
+                                    hx-target="#action-wizard-container"
+                                    hx-swap="innerHTML">
                                 + Add Action
                             </button>
-                            <p class="empty-hint">No actions configured</p>
                         </div>
                         {% endif %}
                     </div>
@@ -201,6 +203,9 @@
     </div>
 </div>
 
+<!-- Wizard modal container -->
+<div id="action-wizard-container"></div>
+
 <script>
 function updateCharCount(textarea, counterId, maxLength) {
     const count = textarea.value.length;
@@ -220,14 +225,38 @@ function updateCharCount(textarea, counterId, maxLength) {
     }
 }
 
-function toggleYamlMode(event) {
+// Track current actions editor mode
+var actionsYamlMode = false;
+
+function toggleActionsYamlMode(event, priorityId) {
     event.preventDefault();
-    // Phase 3: Toggle between structured editor and YAML textarea
-    console.log('YAML mode toggle - coming in Phase 3');
+    const container = document.getElementById('actions-editor-container');
+    const toggle = document.getElementById('actions-mode-toggle');
+
+    actionsYamlMode = !actionsYamlMode;
+
+    if (actionsYamlMode) {
+        // Switch to YAML mode
+        toggle.textContent = 'edit as plain english';
+        htmx.ajax('GET', `/priorities/${priorityId}/actions/yaml`, {
+            target: container,
+            swap: 'innerHTML'
+        });
+    } else {
+        // Switch back to visual mode
+        toggle.textContent = 'edit as code';
+        htmx.ajax('GET', `/priorities/${priorityId}/actions`, {
+            target: container,
+            swap: 'innerHTML'
+        });
+    }
 }
 
 function openActionWizard() {
-    // Phase 3: Open the action wizard modal
-    console.log('Action wizard - coming in Phase 3');
+    const priorityId = '{{ priority.id }}';
+    htmx.ajax('GET', `/priorities/${priorityId}/actions/wizard?step=1`, {
+        target: '#action-wizard-container',
+        swap: 'innerHTML'
+    });
 }
 </script>

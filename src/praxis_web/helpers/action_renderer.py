@@ -1,14 +1,14 @@
 """
 Render Practice actions as human-readable sentences.
 
-Converts DSL v2 PracticeAction objects into prose that can be displayed
+Converts DSL PracticeAction objects into prose that can be displayed
 with editable chips in the UI.
 """
 
 import json
 from typing import Any
 
-from praxis_core.triggers.models_v2 import (
+from praxis_core.dsl import (
     PracticeAction,
     PracticeConfig,
     Schedule,
@@ -152,11 +152,11 @@ def render_task_template_phrase(template: TaskTemplate) -> dict:
     chips.append({"type": "name", "value": template.name, "label": template.name})
 
     # Notes
-    if template.notes:
+    if template.description:
         # Truncate long notes
-        notes_preview = template.notes[:50] + "..." if len(template.notes) > 50 else template.notes
+        notes_preview = template.description[:50] + "..." if len(template.description) > 50 else template.description
         parts.append(f'with notes "{notes_preview}"')
-        chips.append({"type": "notes", "value": template.notes, "label": notes_preview})
+        chips.append({"type": "notes", "value": template.description, "label": notes_preview})
 
     # Due
     due_info = render_due_phrase(template.due)
@@ -292,6 +292,87 @@ def render_actions_from_config(actions_config: str | None) -> list[dict]:
     try:
         config = PracticeConfig.from_json(actions_config)
         return [render_action_sentence(action) for action in config.actions]
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        return []
+
+
+def render_action_summary(action: PracticeAction | dict) -> str:
+    """Render an action as a simple human-readable summary for view mode.
+
+    Only includes: trigger condition, task name, and due date.
+    Example: 'On weekdays, create a task called "Practice Leetcode," due at end of day.'
+
+    Args:
+        action: PracticeAction object or dict from JSON
+
+    Returns:
+        Simple summary string
+    """
+    if isinstance(action, dict):
+        action = PracticeAction.from_dict(action)
+
+    parts = []
+
+    # Trigger phrase
+    if action.trigger.schedule:
+        schedule_info = render_schedule_phrase(action.trigger.schedule)
+        parts.append(schedule_info["text"])
+    elif action.trigger.event:
+        event_type = action.trigger.event.type.value
+        event_phrases = {
+            "task_completion": "When a task is completed",
+            "priority_completion": "When a priority is completed",
+        }
+        parts.append(event_phrases.get(event_type, f"On {event_type}"))
+
+    # Task creation (simplified)
+    if action.create and action.create.items:
+        for item in action.create.items:
+            if isinstance(item, TaskTemplate):
+                task_part = f'create a task called "{item.name}"'
+                # Add due if present
+                due_info = render_due_phrase(item.due)
+                if due_info:
+                    task_part += f", {due_info['text']}"
+                parts.append(task_part)
+
+    # Collate (simplified)
+    if action.collate:
+        target = action.collate.target
+        if hasattr(target, 'shorthand') and target.shorthand:
+            if target.shorthand == "children":
+                target_phrase = "child tasks"
+            elif target.shorthand == "descendants":
+                target_phrase = "descendant tasks"
+            else:
+                target_phrase = target.shorthand
+        else:
+            target_phrase = "matching tasks"
+        parts.append(f'batch {target_phrase} into "{action.collate.as_template.name}"')
+
+    # Build sentence
+    summary = ", ".join(parts)
+    if summary and not summary.endswith("."):
+        summary += "."
+
+    return summary
+
+
+def render_action_summaries(actions_config: str | None) -> list[str]:
+    """Parse actions_config and render simple summaries for view mode.
+
+    Args:
+        actions_config: JSON string from Practice.actions_config field
+
+    Returns:
+        List of simple summary strings
+    """
+    if not actions_config:
+        return []
+
+    try:
+        config = PracticeConfig.from_json(actions_config)
+        return [render_action_summary(action) for action in config.actions]
     except (json.JSONDecodeError, KeyError, AttributeError):
         return []
 

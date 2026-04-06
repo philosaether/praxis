@@ -1580,10 +1580,11 @@ a:hover {
 }
 .wizard-step.completed .step-number {
   background: #2e7d32;
-  color: white;
+  color: transparent;
 }
 .wizard-step.completed .step-number::before {
-  content: "\\2713";
+  content: "✓";
+  color: white;
 }
 
 .wizard-step-content h4 {
@@ -2469,21 +2470,19 @@ textarea.property-input {
   font-size: 0.85rem;
   margin: 0;
 }
-
-.permalink {
-  cursor: pointer;
-  font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+.actions-display-section .actions-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.permalink:hover {
-  background: #ebe8e2;
-  color: #735c00;
+.actions-display-section .action-summary-item {
+  color: #1b1c1a;
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: 0.5rem 0;
 }
-.permalink.copied {
-  background: rgba(46, 125, 50, 0.15);
-  color: #2e7d32;
+.actions-display-section .action-summary-item:not(:last-child) {
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
 }
 
 .detail-header {

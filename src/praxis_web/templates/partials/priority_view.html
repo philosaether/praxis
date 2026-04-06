@@ -77,19 +77,17 @@
             </div>
             {% endif %}
         {% elif priority.priority_type == 'practice' %}
-            <!-- Actions Section (DSL v2) -->
-            {% if priority.actions_config %}
+            <!-- Actions Section (DSL v2) - View Mode: Simple summaries -->
+            {% if priority.action_summaries and priority.action_summaries|length > 0 %}
             <div class="actions-display-section">
                 <label>Actions</label>
-                <div class="actions-sentences" id="actions-display"
-                     hx-get="/priorities/{{ priority.id }}/actions"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                    <p class="action-summary">Loading actions...</p>
-                </div>
+                <ul class="actions-summary-list">
+                    {% for summary in priority.action_summaries %}
+                    <li class="action-summary-item">{{ summary }}</li>
+                    {% endfor %}
+                </ul>
             </div>
             {% endif %}
-            {# Triggers removed - use actions instead #}
         {% endif %}
 
         <!-- Actions Bar -->

@@ -1356,10 +1356,11 @@
 
     .step-number {
       background: $success;
-      color: white;
+      color: transparent; // Hide the number text
 
       &::before {
-        content: "\\2713";
+        content: "✓";
+        color: white;
       }
     }
   }

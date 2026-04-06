@@ -172,6 +172,12 @@ def serialize_priority(
         data["trigger_config"] = p.trigger_config
         data["actions_config"] = p.actions_config
         data["last_triggered_at"] = fmt_date(p.last_triggered_at)
+        # Add simple summaries for view mode
+        if p.actions_config:
+            from praxis_web.helpers.action_renderer import render_action_summaries
+            data["action_summaries"] = render_action_summaries(p.actions_config)
+        else:
+            data["action_summaries"] = []
     # Value and Initiative have no type-specific fields
 
     return data

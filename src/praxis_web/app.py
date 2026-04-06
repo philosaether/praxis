@@ -706,6 +706,13 @@ async def priority_edit(request: Request, priority_id: str):
     from praxis_core.model import PriorityType
     data["priority_types"] = [t.value for t in PriorityType]
 
+    # For Practice priorities, render actions for the editor
+    if data["priority"].get("priority_type") == "practice":
+        from praxis_web.helpers.action_renderer import render_actions_from_config
+        actions_config = data["priority"].get("actions_config")
+        data["actions"] = render_actions_from_config(actions_config) if actions_config else []
+        data["editable"] = True
+
     return templates.TemplateResponse(
         request,
         "partials/priority_edit.html",
@@ -904,12 +911,15 @@ async def priority_trigger_save(request: Request, priority_id: str):
     )
 
     # Save to database via direct update
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
 
-    user = await get_current_user_from_request(request)
-    if not user:
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
         return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
@@ -942,12 +952,15 @@ async def priority_trigger_save(request: Request, priority_id: str):
 @app.delete("/priorities/{priority_id}/trigger", response_class=HTMLResponse)
 async def priority_trigger_delete(request: Request, priority_id: str):
     """Remove trigger configuration from a Practice."""
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
 
-    user = await get_current_user_from_request(request)
-    if not user:
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
         return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
@@ -985,13 +998,19 @@ async def priority_trigger_delete(request: Request, priority_id: str):
 @app.get("/priorities/{priority_id}/actions", response_class=HTMLResponse)
 async def priority_actions_editor(request: Request, priority_id: str):
     """HTMX partial: Actions editor for a Practice."""
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
     from praxis_web.helpers.action_renderer import render_actions_from_config, actions_to_yaml
 
-    user = await get_current_user_from_request(request)
-    if not user:
+    # Authenticate via session cookie
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
         return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
+
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
@@ -1063,19 +1082,25 @@ async def priority_actions_create(
     batch_due: str = Form(""),
 ):
     """Create a new action from wizard data."""
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
-    from praxis_core.triggers.models_v2 import (
-        PracticeConfig, PracticeAction, ActionTrigger, Schedule, Cadence,
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+    from praxis_core.dsl import (
+        PracticeConfig, PracticeAction, Trigger, Schedule, Cadence,
         CreateAction, CollateAction, TaskTemplate, CollateTarget
     )
     from praxis_web.helpers.action_renderer import render_actions_from_config, actions_to_yaml
     import json
     from datetime import datetime, date
 
-    user = await get_current_user_from_request(request)
-    if not user:
+    # Authenticate via session cookie
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
         return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
+
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
@@ -1110,14 +1135,14 @@ async def priority_actions_create(
         schedule = Schedule(interval=trigger_type)
 
     # Build action
-    trigger = ActionTrigger(schedule=schedule)
+    trigger = Trigger(schedule=schedule)
 
     if action_type == "create_task":
         tags = [t.strip() for t in task_tags.split(",") if t.strip()]
         create = CreateAction(items=[
             TaskTemplate(
                 name=task_name.strip() or "Untitled task",
-                notes=task_notes.strip() if task_notes.strip() else None,
+                description=task_notes.strip() if task_notes.strip() else None,
                 due=task_due if task_due else None,
                 tags=tags,
             )
@@ -1139,6 +1164,10 @@ async def priority_actions_create(
     priority.updated_at = datetime.now()
     graph.save_priority(priority)
 
+    # Clear the API's graph cache so it reloads from DB
+    from praxis_core.api.app import clear_graph_cache
+    clear_graph_cache(user.entity_id)
+
     # Return updated editor
     actions = render_actions_from_config(priority.actions_config)
     actions_yaml = actions_to_yaml(priority.actions_config)
@@ -1158,14 +1187,17 @@ async def priority_actions_create(
 @app.delete("/priorities/{priority_id}/actions/{action_idx}")
 async def priority_actions_delete(request: Request, priority_id: str, action_idx: int):
     """Delete an action by index."""
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
-    from praxis_core.triggers.models_v2 import PracticeConfig
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+    from praxis_core.dsl import PracticeConfig
     from datetime import datetime
 
-    user = await get_current_user_from_request(request)
-    if not user:
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
         return {"success": False, "error": "Authentication required"}
+    result = validate_session(session_token)
+    if not result:
+        return {"success": False, "error": "Invalid session"}
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
@@ -1194,62 +1226,116 @@ async def priority_actions_delete(request: Request, priority_id: str, action_idx
         return {"success": False, "error": str(e)}
 
 
-@app.get("/priorities/{priority_id}/actions/yaml")
+@app.get("/priorities/{priority_id}/actions/yaml", response_class=HTMLResponse)
 async def priority_actions_yaml_get(request: Request, priority_id: str):
-    """Get actions as YAML text."""
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
+    """Get actions as YAML editor HTML."""
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
     from praxis_web.helpers.action_renderer import actions_to_yaml
 
-    user = await get_current_user_from_request(request)
-    if not user:
-        return Response(content="# Error: Authentication required", media_type="text/plain")
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse("<p class='error'>Authentication required</p>")
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse("<p class='error'>Invalid session</p>")
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
 
     priority = graph.get(priority_id)
     if not priority:
-        return Response(content="# Error: Priority not found", media_type="text/plain")
+        return HTMLResponse("<p class='error'>Priority not found</p>")
 
     yaml_content = actions_to_yaml(priority.actions_config)
-    return Response(content=yaml_content, media_type="text/plain")
+
+    # Return HTML with textarea for editing
+    # Note: The "edit as code" / "edit as plain english" toggle is managed by priority_edit.html
+    html = f'''
+    <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
+        <form hx-post="/priorities/{priority_id}/actions/yaml"
+              hx-target="#actions-editor-container"
+              hx-swap="innerHTML"
+              hx-on::afterRequest="if(event.detail.successful) {{ actionsYamlMode = false; document.getElementById('actions-mode-toggle').textContent = 'edit as code'; }}">
+            <textarea name="yaml" rows="12" class="property-input yaml-input">{yaml_content}</textarea>
+            <div class="yaml-actions">
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                <span id="yaml-status-{priority_id}" class="yaml-status"></span>
+            </div>
+        </form>
+    </div>
+    '''
+    return HTMLResponse(html)
 
 
-@app.post("/priorities/{priority_id}/actions/yaml")
+@app.post("/priorities/{priority_id}/actions/yaml", response_class=HTMLResponse)
 async def priority_actions_yaml_save(
     request: Request,
     priority_id: str,
-    yaml: str = Form(...),
+    yaml_content: str = Form(..., alias="yaml"),
 ):
     """Save actions from YAML text."""
-    from praxis_core.persistence import get_connection, PriorityGraph
-    from praxis_core.api.auth import get_current_user_from_request
-    from praxis_web.helpers.action_renderer import yaml_to_actions_config
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+    from praxis_web.helpers.action_renderer import yaml_to_actions_config, actions_to_yaml
     from datetime import datetime
 
-    user = await get_current_user_from_request(request)
-    if not user:
-        return {"success": False, "error": "Authentication required"}
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse("<p class='error'>Authentication required</p>")
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse("<p class='error'>Invalid session</p>")
+    _, user = result
 
     graph = PriorityGraph(get_connection, entity_id=user.entity_id)
     graph.load()
 
     priority = graph.get(priority_id)
     if not priority:
-        return {"success": False, "error": "Priority not found"}
+        return HTMLResponse("<p class='error'>Priority not found</p>")
 
     if priority.entity_id != user.entity_id:
-        return {"success": False, "error": "Permission denied"}
+        return HTMLResponse("<p class='error'>Permission denied</p>")
 
     try:
-        actions_config = yaml_to_actions_config(yaml, priority.name)
+        actions_config = yaml_to_actions_config(yaml_content, priority.name)
         priority.actions_config = actions_config
         priority.updated_at = datetime.now()
         graph.save_priority(priority)
-        return {"success": True}
+
+        # Clear the API's graph cache so it reloads from DB
+        from praxis_core.api.app import clear_graph_cache
+        clear_graph_cache(user.entity_id)
+
+        # Return visual editor on success (switches back from YAML mode)
+        from praxis_web.helpers.action_renderer import render_actions_from_config
+        actions = render_actions_from_config(priority.actions_config)
+
+        return templates.TemplateResponse(
+            request,
+            "partials/actions/actions_editor.html",
+            {
+                "priority": {"id": priority_id, "actions_config": priority.actions_config},
+                "actions": actions,
+                "editable": True,
+            }
+        )
     except ValueError as e:
-        return {"success": False, "error": str(e)}
+        # Return error with the original YAML so user can fix it
+        html = f'''
+        <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
+            <p class="error-msg">Error: {str(e)}</p>
+            <form hx-post="/priorities/{priority_id}/actions/yaml"
+                  hx-target="#actions-editor-container"
+                  hx-swap="innerHTML">
+                <textarea name="yaml" rows="12" class="property-input yaml-input">{yaml_content}</textarea>
+                <div class="yaml-actions">
+                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+        '''
+        return HTMLResponse(html)
 
 
 @app.post("/priorities/{priority_id}/actions/validate")
@@ -1260,7 +1346,7 @@ async def priority_actions_yaml_validate(
 ):
     """Validate YAML without saving."""
     from praxis_web.helpers.action_renderer import yaml_to_actions_config
-    from praxis_core.triggers.models_v2 import PracticeConfig
+    from praxis_core.dsl import PracticeConfig
 
     try:
         actions_config = yaml_to_actions_config(yaml, "test")

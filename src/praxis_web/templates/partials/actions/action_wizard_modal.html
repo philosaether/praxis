@@ -1,7 +1,7 @@
 {# Multi-step wizard modal for creating new actions #}
 {# Expects: priority_id, step (1-4), wizard_data (dict with accumulated choices) #}
 
-<div class="modal-backdrop" onclick="closeActionWizard(event)">
+<div class="modal-backdrop open" onclick="closeActionWizard(event)">
     <div class="modal wizard-modal" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h3>Add Action</h3>
@@ -213,10 +213,10 @@
             <button type="button"
                     class="btn btn-primary"
                     hx-post="/priorities/{{ priority_id }}/actions"
-                    hx-target="#actions-editor-{{ priority_id }}"
-                    hx-swap="outerHTML"
+                    hx-target="#actions-editor-container"
+                    hx-swap="innerHTML"
                     hx-include="[name^='trigger_'], [name^='action_'], [name^='task_'], [name^='collate_'], [name^='batch_'], [name^='weekly_'], [name^='cadence_']"
-                    onclick="closeActionWizard()">
+                    hx-on::afterRequest="closeActionWizard()">
                 Create Action
             </button>
             {% endif %}
@@ -225,18 +225,23 @@
 </div>
 
 <script>
-// Show/hide sub-options based on trigger type
-document.querySelectorAll('input[name="trigger_type"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        document.getElementById('weekly-day-picker').style.display =
-            this.value === 'weekly' ? 'block' : 'none';
-        document.getElementById('custom-cadence').style.display =
-            this.value === 'custom' ? 'block' : 'none';
-    });
-});
-
+// Close function - must be defined first
 function closeActionWizard(event) {
     if (event && event.target !== event.currentTarget) return;
     document.getElementById('action-wizard-container').innerHTML = '';
 }
+
+// Show/hide sub-options based on trigger type (step 1 only)
+(function() {
+    var weeklyPicker = document.getElementById('weekly-day-picker');
+    var customCadence = document.getElementById('custom-cadence');
+    if (!weeklyPicker || !customCadence) return;
+
+    document.querySelectorAll('input[name="trigger_type"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            weeklyPicker.style.display = this.value === 'weekly' ? 'block' : 'none';
+            customCadence.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+    });
+})();
 </script>
