@@ -259,6 +259,70 @@
     manageStartChip(sentence);
   };
 
+  // Number chip: select a simple interval option (navigate back from custom mode)
+  window.selectSimpleFromNumber = function(optionEl) {
+    const chip = optionEl.closest('.chip');
+    const sentence = chip.closest('.chip-sentence');
+    const value = optionEl.dataset.value;
+    const display = optionEl.dataset.display;
+    const spawns = optionEl.dataset.spawns;
+
+    // Remove all custom interval spawned elements
+    const dayChip = sentence.querySelector('[data-chip-type="day"]');
+    const monthChip = sentence.querySelector('[data-chip-type="month"]');
+    const startChip = sentence.querySelector('[data-chip-type="start"]');
+
+    if (dayChip) dayChip.remove();
+    if (monthChip) monthChip.remove();
+    if (startChip) startChip.remove();
+
+    sentence.querySelectorAll('.chip-spawned-on, .chip-spawned-of, .chip-spawned-starting, .chip-spawned-start, .chip-spawned-day, .chip-spawned-month').forEach(el => el.remove());
+
+    // Remove number and period chips, show interval chip
+    removeCustomIntervalChips(sentence);
+
+    // Update the interval chip with the selected value
+    const intervalChip = sentence.querySelector('[data-chip-type="interval"]');
+    if (intervalChip) {
+      const input = intervalChip.querySelector('input[type="hidden"]');
+      const textEl = intervalChip.querySelector('.chip-trigger__text');
+      const trigger = intervalChip.querySelector('.chip-trigger');
+
+      if (input) input.value = value;
+      if (textEl) textEl.textContent = display;
+      if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+
+      // Update selected state in interval chip's popup
+      const popup = intervalChip.querySelector('.chip-popup');
+      if (popup) {
+        popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+          opt.classList.toggle('selected', opt.dataset.value === value);
+        });
+      }
+
+      // If "week on..." selected, spawn day chip
+      if (spawns === 'day') {
+        const onText = document.createElement('span');
+        onText.className = 'chip-sentence__text chip-spawned-on';
+        onText.textContent = 'on';
+
+        const dayContainer = document.createElement('span');
+        dayContainer.className = 'chip-spawned-day';
+
+        intervalChip.insertAdjacentElement('afterend', onText);
+        onText.insertAdjacentElement('afterend', dayContainer);
+
+        fetch('/partials/chips/day?name=days&value=&period=weeks')
+          .then(r => r.text())
+          .then(html => {
+            dayContainer.outerHTML = html;
+          });
+      }
+    }
+
+    closeAllChipPopups();
+  };
+
   // Check if all required chips have values (not placeholders)
   function allChipsHaveValues(sentence) {
     const numberChip = sentence.querySelector('[data-chip-type="number"]');

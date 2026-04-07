@@ -2064,6 +2064,12 @@ a:hover {
   color: #4a4a48;
 }
 
+.chip-popup__divider {
+  height: 1px;
+  margin: 0.5rem 0;
+  background: rgba(208, 197, 175, 0.4);
+}
+
 .chip-popup__options {
   display: flex;
   flex-wrap: wrap;

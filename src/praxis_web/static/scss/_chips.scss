@@ -173,6 +173,12 @@ $chip-colors: (
   color: $text-secondary;
 }
 
+.chip-popup__divider {
+  height: 1px;
+  margin: $spacing-sm 0;
+  background: $border-subtle;
+}
+
 .chip-popup__options {
   display: flex;
   flex-wrap: wrap;
