@@ -243,8 +243,7 @@ $chip-colors: (
 // -----------------------------------------------------------------------------
 
 .chip-trigger--placeholder {
-  font-style: italic;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 // -----------------------------------------------------------------------------
@@ -365,10 +364,8 @@ $chip-colors: (
   width: 14px;
   min-width: 14px;
   height: 14px;
-  border: 1.5px solid currentColor;
-  border-radius: 2px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
 }
 
@@ -414,31 +411,40 @@ $chip-colors: (
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid $border;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: $radius-md;
-  background: $bg-secondary;
-  color: $text-primary;
-  font-size: $font-size-base;
+  background: #ece0f5;
+  color: #7c5cad;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
   transition: all $transition-fast;
 
   &:hover {
     border-color: #7c5cad;
-    background: #ece0f5;
-    color: #7c5cad;
+  }
+
+  &:active {
+    background: #7c5cad;
+    color: white;
   }
 }
 
 .chip-popup__number-field {
-  width: 48px;
+  width: 52px;
+  height: 32px;
   padding: $spacing-xs;
-  border: 1px solid $border;
+  border: 1px solid #7c5cad;
   border-radius: $radius-md;
-  background: $bg-primary;
-  color: $text-primary;
+  background: white;
+  color: #7c5cad;
+  font-family: $font-family-body;
   font-size: $font-size-base;
+  font-weight: 500;
   text-align: center;
   -moz-appearance: textfield;
 
@@ -450,7 +456,7 @@ $chip-colors: (
 
   &:focus {
     outline: none;
-    border-color: #7c5cad;
+    box-shadow: 0 0 0 2px rgba(#7c5cad, 0.2);
   }
 }
 
@@ -471,19 +477,20 @@ $chip-colors: (
 .chip-popup__tabs {
   display: flex;
   gap: 2px;
-  margin-bottom: $spacing-sm;
-  padding: 2px;
+  margin-bottom: $spacing-md;
+  padding: 3px;
   background: $bg-tertiary;
   border-radius: $radius-md;
 }
 
 .chip-popup__tab {
   flex: 1;
-  padding: $spacing-xs $spacing-sm;
+  padding: $spacing-xs $spacing-md;
   border: none;
   border-radius: $radius-sm;
   background: transparent;
-  color: $text-secondary;
+  color: $text-muted;
+  font-family: $font-family-body;
   font-size: $font-size-sm;
   font-weight: 500;
   cursor: pointer;
@@ -492,29 +499,31 @@ $chip-colors: (
   &:hover {
     color: $text-primary;
   }
+}
 
-  &--active {
-    background: $bg-elevated;
-    color: $text-primary;
-    box-shadow: $shadow-sm;
-  }
+.chip-popup__tab--active {
+  background: $bg-elevated;
+  color: #3d8c5c;
+  box-shadow: $shadow-sm;
 }
 
 // -----------------------------------------------------------------------------
 // Day Mode Panels
 // -----------------------------------------------------------------------------
 
-.chip-popup__mode {
+.chip-popup__mode--date,
+.chip-popup__mode--weekday {
   display: none;
+}
 
-  &--active {
-    display: block;
-  }
+.chip-popup__mode--active {
+  display: block;
 }
 
 // Date quick picks
 .chip-popup__options--dates {
   display: flex;
+  align-items: center;
   gap: $spacing-xs;
   margin-bottom: $spacing-sm;
 }
@@ -523,27 +532,29 @@ $chip-colors: (
 .chip-popup__date-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 3px;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
 }
 
 .chip-popup__date-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  width: 30px;
   height: 28px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: $radius-sm;
-  background: $bg-secondary;
-  color: $text-secondary;
+  background: #d8f0e3;
+  color: #3d8c5c;
   font-size: $font-size-sm;
   cursor: pointer;
   transition: all $transition-fast;
 
   &:hover {
     border-color: #3d8c5c;
-    background: #d8f0e3;
-    color: #3d8c5c;
   }
 
   &.selected {
@@ -557,6 +568,14 @@ $chip-colors: (
 .chip-popup__ordinal-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: $spacing-xs;
   margin-bottom: $spacing-sm;
+}
+
+// Plain text prefix in popup (e.g., "the")
+.chip-popup__prefix {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  margin-right: $spacing-xs;
 }

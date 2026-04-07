@@ -59,11 +59,12 @@ For months+: toggle between date mode (1st, 15th, last) and weekday mode (first 
     {# Date mode: specific day of month #}
     <div class="chip-popup__mode chip-popup__mode--date chip-popup__mode--active">
       <div class="chip-popup__options chip-popup__options--dates">
-        {% for date in ['1st', '15th', 'last'] %}
+        <span class="chip-popup__prefix">the</span>
+        {% for date in [('1st', '1st'), ('15th', '15th'), ('last day', 'last')] %}
         <button type="button"
-                class="chip-popup__option chip-popup__option--chip chip-popup__option--day{% if value == date %} selected{% endif %}"
-                data-value="{{ date }}"
-                onclick="selectDateOption(this)">{{ date }}</button>
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--day{% if value == date[1] %} selected{% endif %}"
+                data-value="{{ date[1] }}"
+                onclick="selectDateOption(this)">{{ date[0] }}</button>
         {% endfor %}
       </div>
       <div class="chip-popup__date-grid">
@@ -79,6 +80,7 @@ For months+: toggle between date mode (1st, 15th, last) and weekday mode (first 
     {# Weekday mode: nth weekday of month #}
     <div class="chip-popup__mode chip-popup__mode--weekday">
       <div class="chip-popup__ordinal-row">
+        <span class="chip-popup__prefix">the</span>
         {% for ord in ['first', 'second', 'third', 'fourth', 'last'] %}
         <button type="button"
                 class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if ord in value %} selected{% endif %}"

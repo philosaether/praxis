@@ -350,6 +350,8 @@
       const num = parseInt(value);
       const suffix = (num === 1 || num === 21) ? 'st' : (num === 2 || num === 22) ? 'nd' : (num === 3 || num === 23) ? 'rd' : 'th';
       display = `the ${num}${suffix}`;
+    } else if (value === 'last') {
+      display = 'the last day';
     } else {
       display = `the ${value}`;
     }
@@ -367,7 +369,8 @@
     });
     optionEl.classList.add('selected');
 
-    updateWeekdayModeChip(optionEl.closest('.chip'));
+    // Don't close - wait for weekday selection
+    updateWeekdayModeChip(optionEl.closest('.chip'), false);
   };
 
   // Day chip (monthly+ weekday mode): select weekday
@@ -380,11 +383,13 @@
     });
     optionEl.classList.add('selected');
 
-    updateWeekdayModeChip(optionEl.closest('.chip'));
+    // Close popup once both ordinal and weekday are selected
+    const hasOrdinal = popup.querySelector('.chip-popup__ordinal-row .chip-popup__option.selected');
+    updateWeekdayModeChip(optionEl.closest('.chip'), !!hasOrdinal);
   };
 
-  // Helper: update chip from ordinal + weekday selections
-  function updateWeekdayModeChip(chip) {
+  // Helper: update chip from ordinal + weekday selections (doesn't close popup until both selected)
+  function updateWeekdayModeChip(chip, shouldClose = false) {
     const popup = chip.querySelector('.chip-popup');
     const ordinalEl = popup.querySelector('.chip-popup__ordinal-row .chip-popup__option.selected');
     const weekdayEl = popup.querySelector('.chip-popup__mode--weekday .chip-popup__options--days .chip-popup__option.selected');
@@ -394,7 +399,20 @@
       const weekday = weekdayEl.dataset.weekday;
       const value = `${ordinal} ${weekday}`;
       const display = `the ${ordinal} ${weekday.charAt(0).toUpperCase() + weekday.slice(1)}`;
-      updateChip(chip, value, display);
+
+      // Update without closing
+      const input = chip.querySelector('input[type="hidden"]');
+      const textEl = chip.querySelector('.chip-trigger__text');
+      const trigger = chip.querySelector('.chip-trigger');
+
+      if (input) input.value = value;
+      if (textEl) textEl.textContent = display;
+      if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+
+      // Only close if explicitly requested (when weekday is selected after ordinal)
+      if (shouldClose) {
+        closeAllChipPopups();
+      }
     }
   }
 
