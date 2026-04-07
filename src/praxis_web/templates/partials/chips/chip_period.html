@@ -1,0 +1,66 @@
+{#
+Period Chip
+===========
+Selects time period for custom cadence: weeks, months, quarters, years.
+
+Params:
+  - name: Form field name (default: "period")
+  - value: Current value (default: "weeks")
+
+When period changes, it updates the sibling day chip's mode.
+#}
+
+{% set name = name or 'period' %}
+{% set value = value or 'weeks' %}
+{% set variant = 'interval' %}
+
+{% set display_map = {
+  'days': 'days',
+  'weeks': 'weeks',
+  'months': 'months',
+  'quarters': 'quarters',
+  'years': 'years'
+} %}
+
+{% set display = display_map.get(value, value) %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="period">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select period">
+    <div class="chip-popup__options chip-popup__options--period">
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'days' %} selected{% endif %}"
+              data-value="days"
+              onclick="selectPeriodOption(this)">days</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'weeks' %} selected{% endif %}"
+              data-value="weeks"
+              onclick="selectPeriodOption(this)">weeks</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'months' %} selected{% endif %}"
+              data-value="months"
+              onclick="selectPeriodOption(this)">months</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'quarters' %} selected{% endif %}"
+              data-value="quarters"
+              onclick="selectPeriodOption(this)">quarters</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'years' %} selected{% endif %}"
+              data-value="years"
+              onclick="selectPeriodOption(this)">years</button>
+    </div>
+  </div>
+</span>

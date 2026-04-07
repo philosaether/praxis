@@ -237,3 +237,326 @@ $chip-colors: (
   // Plain text between chips
   color: $text-secondary;
 }
+
+// -----------------------------------------------------------------------------
+// Placeholder State
+// -----------------------------------------------------------------------------
+
+.chip-trigger--placeholder {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+// -----------------------------------------------------------------------------
+// Vertical Options Layout (for interval chip)
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--vertical {
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.chip-popup__options--vertical .chip-popup__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: $spacing-sm $spacing-md;
+}
+
+.chip-popup__option-label {
+  font-weight: 500;
+  color: $text-primary;
+}
+
+.chip-popup__option-desc {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-top: 2px;
+}
+
+.chip-popup__option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: $border-subtle;
+    background: $bg-secondary;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Interval Options (compact chip-style grid)
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--interval {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.chip-popup__option--interval {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  // Use interval colors (purple)
+  background: #ece0f5;
+  color: #7c5cad;
+  border-color: transparent;
+
+  &:hover {
+    border-color: #7c5cad;
+  }
+
+  &.selected {
+    border-color: #7c5cad;
+    background: #7c5cad;
+    color: white;
+  }
+
+  &.chip-popup__option--disabled {
+    background: $bg-tertiary;
+    color: $text-muted;
+
+    &:hover {
+      border-color: transparent;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Day Options (compact chip-style grid)
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.chip-popup__option--day {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  // Use day colors (green)
+  background: #d8f0e3;
+  color: #3d8c5c;
+  border-color: transparent;
+
+  &:hover {
+    border-color: #3d8c5c;
+  }
+
+  &.selected {
+    border-color: #3d8c5c;
+    background: #3d8c5c;
+    color: white;
+  }
+}
+
+.chip-popup__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  min-width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1;
+}
+
+// -----------------------------------------------------------------------------
+// Done Button
+// -----------------------------------------------------------------------------
+
+.chip-popup__done {
+  width: 100%;
+  margin-top: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $accent;
+  border-radius: $radius-md;
+  background: $accent-glow;
+  color: $accent-dim;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $accent;
+    color: white;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Number Chip
+// -----------------------------------------------------------------------------
+
+.chip-popup--compact {
+  min-width: auto;
+  padding: $spacing-sm;
+}
+
+.chip-popup__number-input {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.chip-popup__number-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  background: $bg-secondary;
+  color: $text-primary;
+  font-size: $font-size-base;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: #7c5cad;
+    background: #ece0f5;
+    color: #7c5cad;
+  }
+}
+
+.chip-popup__number-field {
+  width: 48px;
+  padding: $spacing-xs;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  background: $bg-primary;
+  color: $text-primary;
+  font-size: $font-size-base;
+  text-align: center;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #7c5cad;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Period Options
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--period {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+// -----------------------------------------------------------------------------
+// Day Chip Tabs (Date/Weekday toggle for monthly+)
+// -----------------------------------------------------------------------------
+
+.chip-popup__tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: $spacing-sm;
+  padding: 2px;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+}
+
+.chip-popup__tab {
+  flex: 1;
+  padding: $spacing-xs $spacing-sm;
+  border: none;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $text-primary;
+  }
+
+  &--active {
+    background: $bg-elevated;
+    color: $text-primary;
+    box-shadow: $shadow-sm;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Day Mode Panels
+// -----------------------------------------------------------------------------
+
+.chip-popup__mode {
+  display: none;
+
+  &--active {
+    display: block;
+  }
+}
+
+// Date quick picks
+.chip-popup__options--dates {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+// Date grid (1-28)
+.chip-popup__date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.chip-popup__date-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: $radius-sm;
+  background: $bg-secondary;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: #3d8c5c;
+    background: #d8f0e3;
+    color: #3d8c5c;
+  }
+
+  &.selected {
+    border-color: #3d8c5c;
+    background: #3d8c5c;
+    color: white;
+  }
+}
+
+// Ordinal row (first, second, etc.)
+.chip-popup__ordinal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}

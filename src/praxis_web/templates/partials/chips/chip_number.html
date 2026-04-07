@@ -1,0 +1,43 @@
+{#
+Number Chip
+===========
+Numeric input for cadence count (e.g., "every 2 weeks").
+
+Params:
+  - name: Form field name (default: "count")
+  - value: Current value (default: "2")
+  - min: Minimum value (default: 1)
+  - max: Maximum value (default: 52)
+#}
+
+{% set name = name or 'count' %}
+{% set value = value or '2' %}
+{% set min = min or 1 %}
+{% set max = max or 52 %}
+{% set variant = 'interval' %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="number">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ value }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left chip-popup--compact" role="dialog" aria-label="Select number">
+    <div class="chip-popup__number-input">
+      <button type="button" class="chip-popup__number-btn" onclick="adjustNumberChip(this, -1)">−</button>
+      <input type="number"
+             class="chip-popup__number-field"
+             value="{{ value }}"
+             min="{{ min }}"
+             max="{{ max }}"
+             onchange="setNumberChip(this)"
+             onkeydown="if(event.key==='Enter'){setNumberChip(this);closeAllChipPopups();}">
+      <button type="button" class="chip-popup__number-btn" onclick="adjustNumberChip(this, 1)">+</button>
+    </div>
+  </div>
+</span>

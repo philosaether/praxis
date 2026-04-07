@@ -67,6 +67,53 @@ async def chip_demo(request: Request):
 
 
 # -----------------------------------------------------------------------------
+# Chip Partials (HTMX endpoints for dynamic chip spawning)
+# -----------------------------------------------------------------------------
+
+@app.get("/partials/chips/day", response_class=HTMLResponse)
+async def chip_day_partial(
+    request: Request,
+    name: str = "days",
+    value: str = "",
+    period: str = "weeks"
+):
+    """Return day chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_day.html",
+        {"name": name, "value": value, "period": period}
+    )
+
+
+@app.get("/partials/chips/number", response_class=HTMLResponse)
+async def chip_number_partial(
+    request: Request,
+    name: str = "count",
+    value: str = "2"
+):
+    """Return number chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_number.html",
+        {"name": name, "value": value}
+    )
+
+
+@app.get("/partials/chips/period", response_class=HTMLResponse)
+async def chip_period_partial(
+    request: Request,
+    name: str = "period",
+    value: str = "weeks"
+):
+    """Return period chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_period.html",
+        {"name": name, "value": value}
+    )
+
+
+# -----------------------------------------------------------------------------
 # Auth Routes
 # -----------------------------------------------------------------------------
 

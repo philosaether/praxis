@@ -190,35 +190,69 @@
       </div>
     </section>
 
-    <!-- Multi-value Example -->
+    <!-- Interval Chip (New) -->
     <section class="demo-section">
-      <h2>Multi-value Chips</h2>
-      <p class="demo-description">Some chips can hold multiple values (e.g., multiple days or tags).</p>
+      <h2>Interval Chip</h2>
+      <p class="demo-description">Progressive disclosure: simple options are one click, complex patterns spawn additional chips.</p>
 
       <div class="demo-example">
+        <h3>Empty State (Required Field)</h3>
         <div class="chip-sentence">
-          <span class="chip-sentence__text">Every week on</span>
-          {% with name="days", value="monday, wednesday, friday", variant="day" %}
-          <span class="chip" data-chip="{{ name }}">
-            <input type="hidden" name="{{ name }}" value="{{ value }}">
-            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
-              <span class="chip-trigger__text">{{ value }}</span>
-            </button>
-            <div class="chip-popup">
-              <div class="chip-popup__title">Select days</div>
-              <div class="chip-popup__options">
-                <button type="button" class="chip-popup__option selected">Mon</button>
-                <button type="button" class="chip-popup__option">Tue</button>
-                <button type="button" class="chip-popup__option selected">Wed</button>
-                <button type="button" class="chip-popup__option">Thu</button>
-                <button type="button" class="chip-popup__option selected">Fri</button>
-                <button type="button" class="chip-popup__option">Sat</button>
-                <button type="button" class="chip-popup__option">Sun</button>
-              </div>
-            </div>
-          </span>
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_empty", value="", show_day_chip=false %}
+            {% include "partials/chips/chip_interval.html" %}
           {% endwith %}
-          <button type="button" class="chip-add" title="Add another day">+</button>
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Simple Selection (Weekdays)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_weekdays", value="weekdays", show_day_chip=false %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Weekly with Day Selection (Spawned Chip)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_weekly", value="weekly", show_day_chip=true %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Custom Interval (Click "custom interval" above to test)</h3>
+        <p class="demo-description">Selecting "custom interval" spawns: [number] [period] on [day selection]</p>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_custom" %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day Chip -->
+    <section class="demo-section">
+      <h2>Day Chip</h2>
+      <p class="demo-description">Multi-select checkboxes for days of the week. Displays as comma-separated list.</p>
+
+      <div class="demo-example">
+        <h3>Multi-day Selection</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">On</span>
+          {% with name="days_multi", value="tuesday,thursday" %}
+            {% include "partials/chips/chip_day.html" %}
+          {% endwith %}
         </div>
       </div>
     </section>
@@ -227,6 +261,12 @@
 </div>
 
 <style>
+/* Demo page needs scrolling (main app uses overflow:hidden on body) */
+body {
+  overflow: auto;
+  height: auto;
+}
+
 /* Demo page styles */
 .demo-page {
   max-width: 800px;
