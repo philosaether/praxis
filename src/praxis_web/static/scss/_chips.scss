@@ -579,3 +579,15 @@ $chip-colors: (
   font-size: $font-size-sm;
   margin-right: $spacing-xs;
 }
+
+// -----------------------------------------------------------------------------
+// Month Options
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--month {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  max-width: 280px;
+}

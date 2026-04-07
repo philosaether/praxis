@@ -113,6 +113,21 @@ async def chip_period_partial(
     )
 
 
+@app.get("/partials/chips/month", response_class=HTMLResponse)
+async def chip_month_partial(
+    request: Request,
+    name: str = "month",
+    value: str = "",
+    mode: str = "year"
+):
+    """Return month chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_month.html",
+        {"name": name, "value": value, "mode": mode}
+    )
+
+
 # -----------------------------------------------------------------------------
 # Auth Routes
 # -----------------------------------------------------------------------------

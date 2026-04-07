@@ -271,46 +271,83 @@
     // Update chip
     updateChip(chip, value, value);
 
-    // Handle day chip based on period
+    // Remove existing spawned elements
     const existingDayChip = sentence.querySelector('[data-chip-type="day"]');
+    const existingMonthChip = sentence.querySelector('[data-chip-type="month"]');
     const existingOnText = sentence.querySelector('.chip-spawned-on');
+    const existingOfText = sentence.querySelector('.chip-spawned-of');
+
+    if (existingDayChip) existingDayChip.remove();
+    if (existingMonthChip) existingMonthChip.remove();
+    if (existingOnText) existingOnText.remove();
+    if (existingOfText) existingOfText.remove();
+
+    // Remove placeholders
+    sentence.querySelectorAll('.chip-spawned-day, .chip-spawned-month').forEach(el => el.remove());
 
     if (value === 'days') {
-      // Remove day chip for "days" period
-      if (existingDayChip) existingDayChip.remove();
-      if (existingOnText) existingOnText.remove();
-    } else {
-      // Spawn or update day chip with correct mode
-      if (existingDayChip) {
-        // Replace with new chip for new period
-        const dayContainer = document.createElement('span');
-        dayContainer.className = 'chip-spawned-day';
-        existingDayChip.replaceWith(dayContainer);
-
-        fetch(`/partials/chips/day?name=days&value=&period=${value}`)
-          .then(r => r.text())
-          .then(html => {
-            dayContainer.outerHTML = html;
-          });
-      } else if (!existingOnText) {
-        // Need to spawn day chip
-        const onText = document.createElement('span');
-        onText.className = 'chip-sentence__text chip-spawned-on';
-        onText.textContent = 'on';
-
-        const dayContainer = document.createElement('span');
-        dayContainer.className = 'chip-spawned-day';
-
-        chip.insertAdjacentElement('afterend', onText);
-        onText.insertAdjacentElement('afterend', dayContainer);
-
-        fetch(`/partials/chips/day?name=days&value=&period=${value}`)
-          .then(r => r.text())
-          .then(html => {
-            dayContainer.outerHTML = html;
-          });
-      }
+      // No additional chips needed for "days"
+      return;
     }
+
+    // Spawn "on" + day chip
+    const onText = document.createElement('span');
+    onText.className = 'chip-sentence__text chip-spawned-on';
+    onText.textContent = 'on';
+
+    const dayContainer = document.createElement('span');
+    dayContainer.className = 'chip-spawned-day';
+
+    chip.insertAdjacentElement('afterend', onText);
+    onText.insertAdjacentElement('afterend', dayContainer);
+
+    // For quarters and years, also spawn "of" + month chip
+    if (value === 'quarters' || value === 'years') {
+      const ofText = document.createElement('span');
+      ofText.className = 'chip-sentence__text chip-spawned-of';
+      ofText.textContent = 'of';
+
+      const monthContainer = document.createElement('span');
+      monthContainer.className = 'chip-spawned-month';
+
+      dayContainer.insertAdjacentElement('afterend', ofText);
+      ofText.insertAdjacentElement('afterend', monthContainer);
+
+      const monthMode = value === 'quarters' ? 'quarter' : 'year';
+
+      // Fetch both chips
+      Promise.all([
+        fetch(`/partials/chips/day?name=days&value=&period=${value}`).then(r => r.text()),
+        fetch(`/partials/chips/month?name=month&value=&mode=${monthMode}`).then(r => r.text())
+      ]).then(([dayHtml, monthHtml]) => {
+        dayContainer.outerHTML = dayHtml;
+        monthContainer.outerHTML = monthHtml;
+      });
+    } else {
+      // Just fetch day chip (weeks, months)
+      fetch(`/partials/chips/day?name=days&value=&period=${value}`)
+        .then(r => r.text())
+        .then(html => {
+          dayContainer.outerHTML = html;
+        });
+    }
+  };
+
+  // Month chip: select month
+  window.selectMonthOption = function(optionEl) {
+    const chip = optionEl.closest('.chip');
+    const popup = optionEl.closest('.chip-popup');
+    const value = optionEl.dataset.value;
+    const display = optionEl.dataset.display;
+
+    // Update selected state
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    optionEl.classList.add('selected');
+
+    // Update chip
+    updateChip(chip, value, display);
   };
 
   // Day chip (monthly+): switch between Date and Weekday modes
