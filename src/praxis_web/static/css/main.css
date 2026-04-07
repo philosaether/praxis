@@ -2155,6 +2155,376 @@ a:hover {
   color: #4a4a48;
 }
 
+.chip-trigger--placeholder {
+  opacity: 0.85;
+}
+
+.chip-popup__options--vertical {
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chip-popup__options--vertical .chip-popup__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+}
+
+.chip-popup__option-label {
+  font-weight: 500;
+  color: #1b1c1a;
+}
+
+.chip-popup__option-desc {
+  font-size: 0.85rem;
+  color: #7a7976;
+  margin-top: 2px;
+}
+
+.chip-popup__option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.chip-popup__option--disabled:hover {
+  border-color: rgba(208, 197, 175, 0.4);
+  background: #f5f3ef;
+}
+
+.chip-popup__options--interval {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.chip-popup__option--interval {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  background: #ece0f5;
+  color: #7c5cad;
+  border-color: transparent;
+}
+.chip-popup__option--interval:hover {
+  border-color: #7c5cad;
+}
+.chip-popup__option--interval.selected {
+  border-color: #7c5cad;
+  background: #7c5cad;
+  color: white;
+}
+.chip-popup__option--interval.chip-popup__option--disabled {
+  background: #ebe8e2;
+  color: #7a7976;
+}
+.chip-popup__option--interval.chip-popup__option--disabled:hover {
+  border-color: transparent;
+}
+
+.chip-popup__option--due {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  background: #fff3d6;
+  color: #8a5a00;
+  border-color: transparent;
+}
+.chip-popup__option--due:hover {
+  border-color: #8a5a00;
+}
+.chip-popup__option--due.selected {
+  border-color: #8a5a00;
+  background: #8a5a00;
+  color: white;
+}
+
+.chip-popup__options--days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.chip-popup__option--day {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  background: #d8f0e3;
+  color: #3d8c5c;
+  border-color: transparent;
+}
+.chip-popup__option--day:hover {
+  border-color: #3d8c5c;
+}
+.chip-popup__option--day.selected {
+  border-color: #3d8c5c;
+  background: #3d8c5c;
+  color: white;
+}
+
+.chip-popup__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  margin-right: 2px;
+}
+.chip-popup__check:empty {
+  display: none;
+}
+
+.chip-popup__done {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #735c00;
+  border-radius: 0.5rem;
+  background: #f7e1a6;
+  color: #5a4700;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chip-popup__done:hover {
+  background: #735c00;
+  color: white;
+}
+
+.chip-popup--compact {
+  min-width: auto;
+  padding: 0.5rem;
+}
+
+.chip-popup__number-input {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.chip-popup__number-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: #ece0f5;
+  color: #7c5cad;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chip-popup__number-btn:hover {
+  border-color: #7c5cad;
+}
+.chip-popup__number-btn:active {
+  background: #7c5cad;
+  color: white;
+}
+
+.chip-popup__number-field {
+  width: 52px;
+  height: 32px;
+  padding: 0.25rem;
+  border: 1px solid #7c5cad;
+  border-radius: 0.5rem;
+  background: white;
+  color: #7c5cad;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.chip-popup__number-field::-webkit-outer-spin-button, .chip-popup__number-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.chip-popup__number-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(124, 92, 173, 0.2);
+}
+
+.chip-popup__options--period {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.chip-popup__tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0.75rem;
+  padding: 3px;
+  background: #ebe8e2;
+  border-radius: 0.5rem;
+}
+
+.chip-popup__tab {
+  flex: 1;
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: #7a7976;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chip-popup__tab:hover {
+  color: #1b1c1a;
+}
+
+.chip-popup__tab--active {
+  background: #ffffff;
+  color: #3d8c5c;
+  box-shadow: 0 2px 8px rgba(77, 70, 53, 0.06);
+}
+
+.chip-popup__mode--date,
+.chip-popup__mode--weekday {
+  display: none;
+}
+
+.chip-popup__mode--active {
+  display: block;
+}
+
+.chip-popup__options--dates {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.chip-popup__date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+
+.chip-popup__date-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: #d8f0e3;
+  color: #3d8c5c;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chip-popup__date-btn:hover {
+  border-color: #3d8c5c;
+}
+.chip-popup__date-btn.selected {
+  border-color: #3d8c5c;
+  background: #3d8c5c;
+  color: white;
+}
+
+.chip-popup__ordinal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.chip-popup__prefix {
+  color: #4a4a48;
+  font-size: 0.85rem;
+  margin-right: 0.25rem;
+}
+
+.chip-popup__options--month {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 280px;
+}
+
+.chip-popup__options--start {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.chip-popup__start-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+.chip-popup__start-custom .chip-popup__number-btn {
+  background: #fff3d6;
+  color: #8a5a00;
+}
+.chip-popup__start-custom .chip-popup__number-btn:hover {
+  border-color: #8a5a00;
+}
+.chip-popup__start-custom .chip-popup__number-btn:active {
+  background: #8a5a00;
+  color: white;
+}
+.chip-popup__start-custom .chip-popup__number-field {
+  border-color: #8a5a00;
+  color: #8a5a00;
+}
+.chip-popup__start-custom .chip-popup__number-field:focus {
+  box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
+}
+
+.chip-popup__number-field--small {
+  width: 44px;
+  height: 28px;
+  font-size: 0.85rem;
+}
+
+.chip-popup__suffix {
+  color: #4a4a48;
+  font-size: 0.85rem;
+}
+
+.chip-popup__date-input {
+  display: flex;
+}
+
+.chip-popup__date-field {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d0c5af;
+  border-radius: 0.5rem;
+  background: #fbf9f5;
+  color: #1b1c1a;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+}
+.chip-popup__date-field:focus {
+  outline: none;
+  border-color: #8a5a00;
+  box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
+}
+
 .priority-list {
   flex: 1;
   overflow-y: auto;

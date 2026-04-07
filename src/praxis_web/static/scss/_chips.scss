@@ -324,6 +324,26 @@ $chip-colors: (
   }
 }
 
+// Due/Start options (gold)
+.chip-popup__option--due {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  background: #fff3d6;
+  color: #8a5a00;
+  border-color: transparent;
+
+  &:hover {
+    border-color: #8a5a00;
+  }
+
+  &.selected {
+    border-color: #8a5a00;
+    background: #8a5a00;
+    color: white;
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Day Options (compact chip-style grid)
 // -----------------------------------------------------------------------------
@@ -361,12 +381,13 @@ $chip-colors: (
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  min-width: 14px;
-  height: 14px;
-  flex-shrink: 0;
   font-size: 11px;
   line-height: 1;
+  margin-right: 2px;
+
+  &:empty {
+    display: none;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -590,4 +611,79 @@ $chip-colors: (
   align-items: center;
   gap: $spacing-xs;
   max-width: 280px;
+}
+
+// -----------------------------------------------------------------------------
+// Start Chip
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--start {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.chip-popup__start-custom {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
+
+  // Gold-colored number buttons for start chip
+  .chip-popup__number-btn {
+    background: #fff3d6;
+    color: #8a5a00;
+
+    &:hover {
+      border-color: #8a5a00;
+    }
+
+    &:active {
+      background: #8a5a00;
+      color: white;
+    }
+  }
+
+  .chip-popup__number-field {
+    border-color: #8a5a00;
+    color: #8a5a00;
+
+    &:focus {
+      box-shadow: 0 0 0 2px rgba(#8a5a00, 0.2);
+    }
+  }
+}
+
+.chip-popup__number-field--small {
+  width: 44px;
+  height: 28px;
+  font-size: $font-size-sm;
+}
+
+.chip-popup__suffix {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+.chip-popup__date-input {
+  display: flex;
+}
+
+.chip-popup__date-field {
+  width: 100%;
+  padding: $spacing-sm;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  background: $bg-primary;
+  color: $text-primary;
+  font-family: $font-family-body;
+  font-size: $font-size-base;
+
+  &:focus {
+    outline: none;
+    border-color: #8a5a00;
+    box-shadow: 0 0 0 2px rgba(#8a5a00, 0.2);
+  }
 }

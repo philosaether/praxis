@@ -245,7 +245,8 @@
   // Number chip: set value from input (doesn't close popup)
   window.setNumberChip = function(input) {
     const chip = input.closest('.chip');
-    const value = input.value;
+    const sentence = chip.closest('.chip-sentence');
+    const value = parseInt(input.value) || 1;
 
     // Update without closing popup
     const hiddenInput = chip.querySelector('input[type="hidden"]');
@@ -253,7 +254,82 @@
 
     if (hiddenInput) hiddenInput.value = value;
     if (textEl) textEl.textContent = value;
+
+    // Check if start chip should show (progressive disclosure)
+    manageStartChip(sentence);
   };
+
+  // Check if all required chips have values (not placeholders)
+  function allChipsHaveValues(sentence) {
+    const numberChip = sentence.querySelector('[data-chip-type="number"]');
+    const dayChip = sentence.querySelector('[data-chip-type="day"]');
+    const monthChip = sentence.querySelector('[data-chip-type="month"]');
+
+    // Number chip must have value > 1
+    if (numberChip) {
+      const value = parseInt(numberChip.querySelector('input[type="hidden"]').value) || 1;
+      if (value <= 1) return false;
+    } else {
+      return false;
+    }
+
+    // Day chip must have a value (not placeholder)
+    if (dayChip) {
+      const value = dayChip.querySelector('input[type="hidden"]').value;
+      if (!value) return false;
+    }
+
+    // If month chip exists, it must have a value
+    if (monthChip) {
+      const value = monthChip.querySelector('input[type="hidden"]').value;
+      if (!value) return false;
+    }
+
+    return true;
+  }
+
+  // Manage start chip spawning/despawning
+  function manageStartChip(sentence, forceCheck = false) {
+    const existingStartChip = sentence.querySelector('[data-chip-type="start"]');
+    const existingStartingText = sentence.querySelector('.chip-spawned-starting');
+
+    const shouldShow = allChipsHaveValues(sentence);
+
+    if (shouldShow && !existingStartChip) {
+      // Get current period
+      const periodChip = sentence.querySelector('[data-chip-type="period"]');
+      const period = periodChip ? periodChip.querySelector('input[type="hidden"]').value : 'weeks';
+
+      // Find the last chip in the sentence to append after
+      const lastChip = sentence.querySelector('[data-chip-type="month"]') ||
+                       sentence.querySelector('[data-chip-type="day"]') ||
+                       sentence.querySelector('[data-chip-type="period"]');
+
+      if (lastChip) {
+        const startingText = document.createElement('span');
+        startingText.className = 'chip-sentence__text chip-spawned-starting';
+        startingText.textContent = ', starting';
+
+        const startContainer = document.createElement('span');
+        startContainer.className = 'chip-spawned-start';
+
+        lastChip.insertAdjacentElement('afterend', startingText);
+        startingText.insertAdjacentElement('afterend', startContainer);
+
+        fetch(`/partials/chips/start?name=start&value=immediately&period=${period}`)
+          .then(r => r.text())
+          .then(html => {
+            startContainer.outerHTML = html;
+          });
+      }
+    } else if (!shouldShow && existingStartChip) {
+      // Remove start chip
+      if (existingStartingText) existingStartingText.remove();
+      existingStartChip.remove();
+      const startContainer = sentence.querySelector('.chip-spawned-start');
+      if (startContainer) startContainer.remove();
+    }
+  }
 
   // Period chip: select period and update day chip mode
   window.selectPeriodOption = function(optionEl) {
@@ -270,6 +346,44 @@
 
     // Update chip
     updateChip(chip, value, value);
+
+    // Update existing start chip's period if present
+    const existingStartChip = sentence.querySelector('[data-chip-type="start"]');
+    if (existingStartChip) {
+      // Update data-period attribute
+      existingStartChip.dataset.period = value;
+
+      // Update suffix label in popup
+      const suffixEl = existingStartChip.querySelector('.chip-popup__suffix');
+      if (suffixEl) suffixEl.textContent = value;
+
+      // Update "next {period}" button text and data
+      const nextBtn = existingStartChip.querySelector('[data-value="next"]');
+      if (nextBtn) {
+        const singular = value.replace(/s$/, ''); // weeks -> week
+        nextBtn.textContent = 'next ' + singular;
+        nextBtn.dataset.display = 'next ' + singular;
+      }
+
+      // Update the chip display if it shows "in N {periods}" or "next {period}"
+      const startInput = existingStartChip.querySelector('input[type="hidden"]');
+      const startText = existingStartChip.querySelector('.chip-trigger__text');
+      if (startInput && startText) {
+        const currentValue = startInput.value;
+        if (currentValue.startsWith('in ')) {
+          // Extract the number and update with new period
+          const match = currentValue.match(/^in (\d+)/);
+          if (match) {
+            const n = match[1];
+            startInput.value = `in ${n} ${value}`;
+            startText.textContent = `in ${n} ${value}`;
+          }
+        } else if (currentValue === 'next') {
+          const singular = value.replace(/s$/, '');
+          startText.textContent = 'next ' + singular;
+        }
+      }
+    }
 
     // Remove existing spawned elements
     const existingDayChip = sentence.querySelector('[data-chip-type="day"]');
@@ -348,6 +462,82 @@
 
     // Update chip
     updateChip(chip, value, display);
+
+    // Check if start chip should show (progressive disclosure)
+    const sentence = chip.closest('.chip-sentence');
+    if (sentence) manageStartChip(sentence);
+  };
+
+  // Start chip: select quick option (immediately, next period)
+  window.selectStartOption = function(optionEl) {
+    const chip = optionEl.closest('.chip');
+    const popup = optionEl.closest('.chip-popup');
+    const value = optionEl.dataset.value;
+    const display = optionEl.dataset.display;
+
+    // Update selected state
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    optionEl.classList.add('selected');
+
+    // Clear custom input selection visual
+    const customInput = popup.querySelector('.chip-popup__number-field');
+    if (customInput) customInput.classList.remove('selected');
+
+    updateChip(chip, value, display);
+  };
+
+  // Start chip: adjust custom number
+  window.adjustStartCustom = function(btn, delta) {
+    const input = btn.closest('.chip-popup__number-input').querySelector('.chip-popup__number-field');
+    const min = parseInt(input.min) || 2;
+    const max = parseInt(input.max) || 52;
+    let value = parseInt(input.value) || 2;
+
+    value = Math.max(min, Math.min(max, value + delta));
+    input.value = value;
+    selectStartCustom(input);
+  };
+
+  // Start chip: select custom "in N periods"
+  window.selectStartCustom = function(input) {
+    const chip = input.closest('.chip');
+    const popup = input.closest('.chip-popup');
+    const period = chip.dataset.period || 'weeks';
+    const n = parseInt(input.value) || 2;
+
+    // Clear quick option selection
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+
+    const value = `in ${n} ${period}`;
+    const display = value;
+
+    // Update without closing
+    const hiddenInput = chip.querySelector('input[type="hidden"]');
+    const textEl = chip.querySelector('.chip-trigger__text');
+    const trigger = chip.querySelector('.chip-trigger');
+
+    if (hiddenInput) hiddenInput.value = value;
+    if (textEl) textEl.textContent = display;
+    if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+  };
+
+  // Start chip: select specific date (for days period)
+  window.selectStartDate = function(input) {
+    const chip = input.closest('.chip');
+    const value = input.value;
+
+    // Format display
+    let display = value;
+    if (value) {
+      const date = new Date(value + 'T00:00:00');
+      display = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    updateChip(chip, value, display || 'a specific date');
   };
 
   // Day chip (monthly+): switch between Date and Weekday modes
@@ -394,6 +584,10 @@
     }
 
     updateChip(chip, value, display);
+
+    // Check if start chip should show (progressive disclosure)
+    const sentence = chip.closest('.chip-sentence');
+    if (sentence) manageStartChip(sentence);
   };
 
   // Day chip (monthly+ weekday mode): select ordinal (first, second, etc.)
@@ -446,6 +640,10 @@
       if (textEl) textEl.textContent = display;
       if (trigger) trigger.classList.remove('chip-trigger--placeholder');
 
+      // Check if start chip should show (progressive disclosure)
+      const sentence = chip.closest('.chip-sentence');
+      if (sentence) manageStartChip(sentence);
+
       // Only close if explicitly requested (when weekday is selected after ordinal)
       if (shouldClose) {
         closeAllChipPopups();
@@ -488,6 +686,10 @@
     } else {
       trigger.classList.add('chip-trigger--placeholder');
     }
+
+    // Check if start chip should show (progressive disclosure)
+    const sentence = chip.closest('.chip-sentence');
+    if (sentence) manageStartChip(sentence);
   };
 })();
 </script>
