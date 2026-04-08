@@ -128,6 +128,20 @@ async def chip_month_partial(
     )
 
 
+@app.get("/partials/chips/time", response_class=HTMLResponse)
+async def chip_time_partial(
+    request: Request,
+    name: str = "time",
+    value: str = ""
+):
+    """Return time-of-day chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_time.html",
+        {"name": name, "value": value}
+    )
+
+
 @app.get("/partials/chips/start", response_class=HTMLResponse)
 async def chip_start_partial(
     request: Request,

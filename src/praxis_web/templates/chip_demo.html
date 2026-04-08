@@ -190,6 +190,79 @@
       </div>
     </section>
 
+    <!-- Clause-Based Sentence (Optional Clauses) -->
+    <section class="demo-section">
+      <h2>Clause-Based Sentence</h2>
+      <p class="demo-description">
+        Required clauses (every…, create…) sit at the root level. Optional clauses
+        nest beneath their parent, prefixed with ↳ when inactive. Click the ↳ to
+        activate; the glyph becomes × so you can deactivate again.
+      </p>
+
+      <div class="demo-example">
+        <h3>Schedule + Task with Optional Time-of-Day</h3>
+        <div class="chip-sentence chip-sentence--clauses">
+
+          {# Required clause: every... #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">Every</span>
+            <span class="chip-clause__content">
+              {% with name="clause_interval", value="weekdays", show_day_chip=false %}
+                {% include "partials/chips/chip_interval.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: time-of-day chip (no lead text — chip is self-contained) #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__content">
+              {% with name="clause_time", value="" %}
+                {% include "partials/chips/chip_time.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: when [conditions are met] — visual preview only #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">when</span>
+            <span class="chip-clause__placeholder">conditions are met</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Required clause: create a task... (not yet implemented, plain text) #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">create a task</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: and notify [me] — visual preview only #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">and notify</span>
+            <span class="chip-clause__placeholder">me</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
     <!-- Interval Chip (New) -->
     <section class="demo-section">
       <h2>Interval Chip</h2>

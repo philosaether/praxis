@@ -244,6 +244,192 @@ $chip-colors: (
   color: $text-secondary;
 }
 
+// Clause-aware sentence: stacks clauses vertically so optional clauses
+// can wrap onto their own indented lines.
+.chip-sentence--clauses {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-xs;
+  line-height: 1.6;
+}
+
+// -----------------------------------------------------------------------------
+// Chip Clause (structural unit of a sentence — required or optional)
+// -----------------------------------------------------------------------------
+
+.chip-clause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  color: $text-primary;
+}
+
+.chip-clause__lead {
+  color: $text-secondary;
+}
+
+.chip-clause__placeholder {
+  color: $text-muted;
+}
+
+.chip-clause__content {
+  display: contents;
+}
+
+// Trailing punctuation (comma between clauses, period on last active clause)
+.chip-clause__terminator {
+  color: $text-secondary;
+}
+
+// Optional clause: indented under its parent required clause.
+.chip-clause--optional {
+  margin-left: $spacing-xl;
+  opacity: 0.3;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// Active optional clause: full opacity, full color.
+.chip-clause--optional.chip-clause--active {
+  opacity: 1;
+}
+
+// Inactive optional clause: chip rendered in flat grey, non-interactive.
+// User must click the ↳ to activate before they can interact with the chip.
+.chip-clause--optional:not(.chip-clause--active) {
+  .chip-clause__content {
+    pointer-events: none;
+  }
+
+  // Override chip variant colors with a neutral grey (broader browser
+  // support than `filter: grayscale`, and reads more clearly as "dormant").
+  .chip-trigger {
+    background: $bg-tertiary;
+    color: $text-muted;
+
+    &:hover {
+      border-color: transparent;
+    }
+  }
+}
+
+// Scaffold clauses: dim text only, never activate. Always at low opacity.
+.chip-clause--scaffold {
+  opacity: 0.3;
+  cursor: default;
+
+  &:hover {
+    opacity: 0.5; // Subtler hover bump — these aren't real yet
+  }
+
+  .chip-clause__toggle {
+    cursor: not-allowed;
+  }
+}
+
+// Toggle button (↳ / ×). Position is fixed regardless of state.
+.chip-clause__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  margin-right: $spacing-xs;
+  border: none;
+  background: transparent;
+  color: $text-secondary;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+
+  &:hover:not([disabled]) {
+    background: $bg-tertiary;
+    color: $text-primary;
+  }
+}
+
+.chip-clause__toggle-glyph {
+  display: none;
+}
+
+.chip-clause:not(.chip-clause--active) .chip-clause__toggle-glyph--inactive {
+  display: inline;
+}
+
+.chip-clause--active .chip-clause__toggle-glyph--active {
+  display: inline;
+}
+
+// -----------------------------------------------------------------------------
+// Time Chip (popup contents)
+// -----------------------------------------------------------------------------
+
+.chip-popup__time-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+}
+
+.chip-popup__options--time {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.chip-popup__option--time {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+
+  background: #fde8d4;
+  color: #b87333;
+  border-color: transparent;
+
+  &:hover {
+    border-color: #b87333;
+  }
+
+  &.selected {
+    border-color: #b87333;
+    background: #b87333;
+    color: white;
+  }
+}
+
+.chip-popup__time-custom {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
+}
+
+.chip-popup__time-field {
+  flex: 1;
+  height: 32px;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px solid #b87333;
+  border-radius: $radius-md;
+  background: white;
+  color: #b87333;
+  font-family: $font-family-body;
+  font-size: $font-size-sm;
+  font-weight: 500;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(#b87333, 0.2);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Placeholder State
 // -----------------------------------------------------------------------------

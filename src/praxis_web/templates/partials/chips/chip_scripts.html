@@ -755,5 +755,102 @@
     const sentence = chip.closest('.chip-sentence');
     if (sentence) manageStartChip(sentence);
   };
+
+  // Time chip: select a quick pick option
+  window.selectTimeOption = function(optionEl) {
+    const popup = optionEl.closest('.chip-popup');
+    const chip = optionEl.closest('.chip');
+    const value = optionEl.dataset.value;
+    const display = optionEl.dataset.display || value;
+
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    optionEl.classList.add('selected');
+
+    // Clear custom time field visual
+    const customField = popup.querySelector('.chip-popup__time-field');
+    if (customField) customField.value = '';
+
+    updateChip(chip, value, display);
+
+    const trigger = chip.querySelector('.chip-trigger');
+    if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+  };
+
+  // Time chip: select a custom HH:MM time
+  window.selectTimeCustom = function(input) {
+    const chip = input.closest('.chip');
+    const popup = input.closest('.chip-popup');
+    const value = input.value;
+    if (!value) return;
+
+    // Clear quick pick selection
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+
+    // Format display: 14:30 -> 2:30 pm
+    const [h, m] = value.split(':').map(Number);
+    const period = h >= 12 ? 'pm' : 'am';
+    const hour12 = h % 12 || 12;
+    const display = `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+
+    updateChip(chip, value, display);
+
+    const trigger = chip.querySelector('.chip-trigger');
+    if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+  };
+
+  // Optional clause: toggle between active/inactive states.
+  // The chip itself stays in the DOM the whole time — we just flip a class.
+  // This naturally caches user state across deactivation/reactivation.
+  window.toggleOptionalClause = function(toggleBtn) {
+    const clause = toggleBtn.closest('.chip-clause');
+    if (!clause || clause.classList.contains('chip-clause--scaffold')) return;
+
+    const isActive = clause.classList.toggle('chip-clause--active');
+    clause.dataset.clauseActive = isActive ? 'true' : 'false';
+    toggleBtn.setAttribute(
+      'aria-label',
+      (isActive ? 'Remove' : 'Add') + ' optional clause'
+    );
+
+    // Update terminal punctuation across the whole sentence.
+    const sentence = clause.closest('.chip-sentence');
+    if (sentence) updateClausePunctuation(sentence);
+
+    if (isActive) {
+      // Auto-open the chip's popup so the user can pick a value immediately.
+      const trigger = clause.querySelector('.chip-clause__content .chip-trigger');
+      if (trigger) toggleChipPopup(trigger);
+    } else {
+      closeAllChipPopups();
+    }
+  };
+
+  // Sentence punctuation:
+  //   - The last *active* clause ends with a period.
+  //   - Inactive clauses *following* the last active clause also end with
+  //     periods (they read as terminated/optional sentences).
+  //   - All clauses before the last active clause end with commas.
+  // Run on init and on every clause toggle. DOM order determines position.
+  window.updateClausePunctuation = function(sentence) {
+    const clauses = Array.from(sentence.querySelectorAll('.chip-clause'));
+    let lastActiveIndex = -1;
+    clauses.forEach((c, i) => {
+      if (c.classList.contains('chip-clause--active')) lastActiveIndex = i;
+    });
+    clauses.forEach((c, i) => {
+      const term = c.querySelector('.chip-clause__terminator');
+      if (!term) return;
+      term.textContent = (i >= lastActiveIndex) ? '.' : ',';
+    });
+  };
+
+  // Initialize punctuation for any clause-based sentences on the page.
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.chip-sentence--clauses').forEach(updateClausePunctuation);
+  });
 })();
 </script>
