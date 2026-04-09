@@ -157,6 +157,20 @@ async def chip_start_partial(
     )
 
 
+@app.get("/partials/chips/due", response_class=HTMLResponse)
+async def chip_due_partial(
+    request: Request,
+    name: str = "due",
+    value: str = "end_of_day"
+):
+    """Return due date chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_due.html",
+        {"name": name, "value": value}
+    )
+
+
 @app.get("/partials/chips/task_name", response_class=HTMLResponse)
 async def chip_task_name_partial(
     request: Request,

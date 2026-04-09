@@ -810,6 +810,74 @@
     if (trigger) trigger.classList.remove('chip-trigger--placeholder');
   };
 
+  // Due chip: select a preset option
+  window.selectDueOption = function(optionEl) {
+    const popup = optionEl.closest('.chip-popup');
+    const chip = optionEl.closest('.chip');
+    const value = optionEl.dataset.value;
+    const display = optionEl.dataset.display;
+
+    // Clear all selections (presets + unit buttons)
+    popup.querySelectorAll('.chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    optionEl.classList.add('selected');
+
+    updateChip(chip, value, display);
+  };
+
+  // Due chip: adjust custom number
+  window.adjustDueCustom = function(btn, delta) {
+    const input = btn.closest('.chip-popup__number-input').querySelector('.chip-popup__number-field');
+    const min = parseInt(input.min) || 1;
+    const max = parseInt(input.max) || 90;
+    let value = parseInt(input.value) || 1;
+
+    value = Math.max(min, Math.min(max, value + delta));
+    input.value = value;
+    setDueCustom(input);
+  };
+
+  // Due chip: update from custom number input
+  window.setDueCustom = function(input) {
+    const chip = input.closest('.chip');
+    const popup = input.closest('.chip-popup');
+    const n = parseInt(input.value) || 1;
+
+    // Get selected unit (default to days)
+    const unitBtn = popup.querySelector('.chip-popup__options--due-unit .chip-popup__option.selected');
+    const unit = unitBtn ? unitBtn.dataset.unit : 'd';
+    const label = unitBtn ? unitBtn.dataset.label : 'day';
+
+    // Clear preset selections
+    popup.querySelectorAll('.chip-popup__options--due > .chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+
+    const value = `+${n}${unit}`;
+    const display = n === 1 ? `in 1 ${label}` : `in ${n} ${label}s`;
+
+    const hiddenInput = chip.querySelector('input[type="hidden"]');
+    const textEl = chip.querySelector('.chip-trigger__text');
+    if (hiddenInput) hiddenInput.value = value;
+    if (textEl) textEl.textContent = display;
+  };
+
+  // Due chip: switch between days/weeks unit
+  window.selectDueUnit = function(optionEl) {
+    const popup = optionEl.closest('.chip-popup');
+
+    // Update unit selection
+    popup.querySelectorAll('.chip-popup__options--due-unit .chip-popup__option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    optionEl.classList.add('selected');
+
+    // Re-derive the value with the new unit
+    const input = popup.querySelector('.chip-popup__number-field');
+    if (input) setDueCustom(input);
+  };
+
   // Text-input chip: confirm the typed value and update the chip.
   // Works for any chip with a .chip-popup__text-field input.
   // If the field is cleared, reverts to the chip's default value.

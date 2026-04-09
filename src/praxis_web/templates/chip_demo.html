@@ -262,6 +262,25 @@
             <span class="chip-clause__terminator">,</span>
           </div>
 
+          {# Optional clause: due [end of day] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">due</span>
+            <span class="chip-clause__placeholder">end of day</span>
+            <span class="chip-clause__content">
+              {% with name="clause_due" %}
+                {% include "partials/chips/chip_due.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
           {# Scaffold clause: and notify [me] — visual preview only #}
           <div class="chip-clause chip-clause--optional chip-clause--scaffold"
                data-clause-active="false">
@@ -349,6 +368,42 @@
           <span class="chip-sentence__text">create a task named</span>
           {% with name="task_name_filled", value="Practice Leetcode" %}
             {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Due Date Chip -->
+    <section class="demo-section">
+      <h2>Due Date Chip</h2>
+      <p class="demo-description">Quick presets for common deadlines, custom N days/weeks, or "never" for the whimsical.</p>
+
+      <div class="demo-example">
+        <h3>Default (End of Day)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">due</span>
+          {% with name="due_default" %}
+            {% include "partials/chips/chip_due.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Custom Duration</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">due in</span>
+          {% with name="due_custom", value="+3d" %}
+            {% include "partials/chips/chip_due.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Never</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">due</span>
+          {% with name="due_never", value="never" %}
+            {% include "partials/chips/chip_due.html" %}
           {% endwith %}
         </div>
       </div>

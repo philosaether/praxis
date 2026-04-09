@@ -2196,6 +2196,15 @@ a:hover {
   color: #7a7976;
 }
 
+.chip-clause--active > .chip-clause__placeholder {
+  display: none;
+}
+/* When a clause has explicit placeholder text, hide the chip content when inactive.
+   Clauses without placeholder text (e.g. time chip) show the chip itself as the placeholder. */
+.chip-clause:not(.chip-clause--active) > .chip-clause__placeholder:not(:empty) ~ .chip-clause__content {
+  display: none;
+}
+
 .chip-clause__content {
   display: contents;
 }
@@ -2326,6 +2335,40 @@ a:hover {
 .chip-popup__time-field:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(184, 115, 51, 0.2);
+}
+
+.chip-popup__due-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+.chip-popup__due-custom .chip-popup__number-btn {
+  background: #fff3d6;
+  color: #8a5a00;
+}
+.chip-popup__due-custom .chip-popup__number-btn:hover {
+  border-color: #8a5a00;
+}
+.chip-popup__due-custom .chip-popup__number-btn:active {
+  background: #8a5a00;
+  color: white;
+}
+.chip-popup__due-custom .chip-popup__number-field {
+  border-color: #8a5a00;
+  color: #8a5a00;
+}
+.chip-popup__due-custom .chip-popup__number-field:focus {
+  box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
+}
+.chip-popup__options--due {
+  padding-bottom: 0.5rem;
+}
+.chip-popup__options--due-unit {
+  display: flex;
+  gap: 0.25rem;
+  padding-top: 0.25rem;
 }
 
 .chip-popup__text-input {
