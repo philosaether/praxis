@@ -171,6 +171,35 @@ async def chip_event_subject_partial(
     )
 
 
+@app.get("/partials/actions/card", response_class=HTMLResponse)
+async def action_card_partial(
+    request: Request,
+    trigger_type: str = "schedule",
+    action_type: str = "create",
+    practice_name: str = "",
+    editable: str = "true",
+    mode: str = "edit",
+    idx: int = 99,
+):
+    """Return a blank action card HTML fragment for client-side insertion."""
+    action = {
+        "trigger_type": trigger_type,
+        "action_type": action_type,
+    }
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/action_card.html",
+        {
+            "action": action,
+            "idx": idx,
+            "priority_id": "pending",
+            "priority_name": practice_name,
+            "editable": editable == "true",
+            "mode": mode,
+        }
+    )
+
+
 @app.get("/partials/chips/collate_target", response_class=HTMLResponse)
 async def chip_collate_target_partial(
     request: Request,
@@ -954,11 +983,12 @@ async def priority_edit(request: Request, priority_id: str):
     from praxis_core.model import PriorityType
     data["priority_types"] = [t.value for t in PriorityType]
 
-    # For Practice priorities, render actions for the editor
+    # For Practice priorities, render action cards for the editor
     if data["priority"].get("priority_type") == "practice":
-        from praxis_web.helpers.action_renderer import render_actions_from_config
+        from praxis_web.helpers.action_renderer import actions_to_card_data
         actions_config = data["priority"].get("actions_config")
-        data["actions"] = render_actions_from_config(actions_config) if actions_config else []
+        data["action_cards"] = actions_to_card_data(actions_config) if actions_config else []
+        data["priority_name"] = data["priority"].get("name", "")
         data["editable"] = True
 
     return templates.TemplateResponse(
@@ -1247,9 +1277,8 @@ async def priority_trigger_delete(request: Request, priority_id: str):
 async def priority_actions_editor(request: Request, priority_id: str):
     """HTMX partial: Actions editor for a Practice."""
     from praxis_core.persistence import get_connection, PriorityGraph, validate_session
-    from praxis_web.helpers.action_renderer import render_actions_from_config, actions_to_yaml
+    from praxis_web.helpers.action_renderer import actions_to_card_data, actions_to_yaml
 
-    # Authenticate via session cookie
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
     if not session_token:
         return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
@@ -1267,7 +1296,7 @@ async def priority_actions_editor(request: Request, priority_id: str):
     if not priority:
         return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
 
-    actions = render_actions_from_config(priority.actions_config)
+    action_cards = actions_to_card_data(priority.actions_config)
     actions_yaml = actions_to_yaml(priority.actions_config)
     editable = priority.entity_id == user.entity_id
 
@@ -1275,10 +1304,11 @@ async def priority_actions_editor(request: Request, priority_id: str):
         request,
         "partials/actions/actions_editor.html",
         {
-            "priority": {"id": priority_id, "actions_config": priority.actions_config},
-            "actions": actions,
+            "priority": {"id": priority_id, "name": priority.name, "actions_config": priority.actions_config},
+            "action_cards": action_cards,
             "actions_yaml": actions_yaml,
             "editable": editable,
+            "priority_name": priority.name,
         }
     )
 
@@ -1287,12 +1317,11 @@ async def priority_actions_editor(request: Request, priority_id: str):
 async def priority_actions_wizard(
     request: Request,
     priority_id: str,
-    page: str = "start",
+    replace: str = "",
 ):
-    """HTMX partial: Actions wizard modal with DAG navigation."""
+    """HTMX partial: Single-step action creation wizard."""
     from praxis_core.persistence import get_connection, PriorityGraph, validate_session
 
-    # Authenticate
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
     if not session_token:
         return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
@@ -1310,103 +1339,13 @@ async def priority_actions_wizard(
     if not priority:
         return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
 
-    # Accumulate wizard data from query params
-    params = dict(request.query_params)
-    wizard_data = {
-        "action_type": params.get("action_type", "create"),
-        "trigger_type": params.get("trigger_type", "schedule"),
-        # Collation fields
-        "collate_under_practice": params.get("collate_under_practice"),
-        "collate_under_priority": params.get("collate_under_priority"),
-        "collate_priority_id": params.get("collate_priority_id"),
-        "collate_with_tag": params.get("collate_with_tag"),
-        "collate_tag": params.get("collate_tag"),
-        "collate_due_day": params.get("collate_due_day"),
-        "collate_due_value": params.get("collate_due_value"),
-        # Schedule fields
-        "schedule": {
-            "interval": params.get("schedule_interval", "weekdays"),
-            "days": params.get("schedule_days", "").split(",") if params.get("schedule_days") else [],
-            "cadence_value": int(params.get("schedule_cadence_value", 2)),
-            "cadence_unit": params.get("schedule_cadence_unit", "w"),
-            "cadence_anchor": params.get("schedule_cadence_anchor"),
-            "at": params.get("schedule_at") if params.get("schedule_has_time") else None,
-        },
-        # Event fields
-        "event": {
-            "entity": params.get("event_entity", "task"),
-            "lifecycle": params.get("event_lifecycle", "completed"),
-            "filter": {
-                "type": params.get("event_filter_type", "any"),
-                "priority_id": params.get("event_filter_priority_id"),
-                "tag": params.get("event_filter_tag"),
-            }
-        },
-        # Task details
-        "task_name": params.get("task_name", ""),
-        "task_description": params.get("task_description", ""),
-        "task_due": params.get("task_due", "end_of_day"),
-        "task_tags": params.get("task_tags", ""),
-    }
-
-    # DAG navigation logic
-    action_type = wizard_data["action_type"]
-    trigger_type = wizard_data["trigger_type"]
-
-    # Calculate next_page based on current page and state
-    if page == "start":
-        next_page = "collation" if action_type == "collate" else "trigger"
-        back_page = None
-    elif page == "collation":
-        next_page = "trigger"
-        back_page = "start"
-    elif page == "trigger":
-        next_page = "schedule" if trigger_type == "schedule" else "event"
-        back_page = "collation" if action_type == "collate" else "start"
-    elif page == "schedule":
-        next_page = "details"
-        back_page = "trigger"
-    elif page == "event":
-        next_page = "details"
-        back_page = "trigger"
-    elif page == "details":
-        next_page = "confirm"
-        back_page = "schedule" if trigger_type == "schedule" else "event"
-    elif page == "confirm":
-        next_page = None
-        back_page = "details"
-    else:
-        next_page = "start"
-        back_page = None
-
-    # Progress percentage
-    page_order = ["start", "collation", "trigger", "schedule", "event", "details", "confirm"]
-    progress_pct = 20
-    if page in page_order:
-        idx = page_order.index(page)
-        progress_pct = min(100, (idx + 1) * 20)
-
-    # Build preview sentence for confirmation page
-    preview_sentence = ""
-    if page == "confirm":
-        preview_sentence = _build_action_preview(wizard_data)
-
-    # Get all priorities for selectors (from graph.nodes dict)
-    priorities = [p for p in graph.nodes.values() if p.id != priority_id]
-
     return templates.TemplateResponse(
         request,
-        "partials/actions/action_wizard_modal.html",
+        "partials/actions/action_wizard.html",
         {
             "priority_id": priority_id,
             "practice_name": priority.name,
-            "page": page,
-            "next_page": next_page,
-            "back_page": back_page,
-            "progress_pct": progress_pct,
-            "wizard_data": wizard_data,
-            "priorities": priorities,
-            "preview_sentence": preview_sentence,
+            "replace": replace,
         }
     )
 
@@ -1649,18 +1588,115 @@ async def priority_actions_create(request: Request, priority_id: str):
     async with api_client(request) as client:
         await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
 
-    # Return updated editor
-    actions = render_actions_from_config(priority.actions_config)
+    # Return updated editor with card data
+    from praxis_web.helpers.action_renderer import actions_to_card_data, actions_to_yaml
+    action_cards = actions_to_card_data(priority.actions_config)
     actions_yaml = actions_to_yaml(priority.actions_config)
 
     return templates.TemplateResponse(
         request,
         "partials/actions/actions_editor.html",
         {
-            "priority": {"id": priority_id, "actions_config": priority.actions_config},
-            "actions": actions,
+            "priority": {"id": priority_id, "name": priority.name, "actions_config": priority.actions_config},
+            "action_cards": action_cards,
             "actions_yaml": actions_yaml,
             "editable": True,
+            "priority_name": priority.name,
+        }
+    )
+
+
+@app.post("/priorities/{priority_id}/actions/create", response_class=HTMLResponse)
+async def priority_actions_create_from_wizard(
+    request: Request,
+    priority_id: str,
+    trigger_type: str = "schedule",
+    action_type: str = "create",
+    replace: str = "",
+):
+    """Create a new action from the single-step wizard. Adds a blank action
+    with the chosen trigger/action type and returns the updated editor."""
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+    from praxis_core.dsl import (
+        PracticeConfig, PracticeAction, Trigger, Schedule,
+        CreateAction, CollateAction, TaskTemplate, CollateTarget,
+        Event, EventType,
+    )
+    from praxis_web.helpers.action_renderer import render_actions_from_config, actions_to_yaml
+    from datetime import datetime
+
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
+    _, user = result
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+
+    priority = graph.get(priority_id)
+    if not priority:
+        return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
+    if priority.entity_id != user.entity_id:
+        return HTMLResponse(content="<div class='error'>Permission denied</div>", status_code=403)
+
+    # Parse existing config or create new
+    if priority.actions_config:
+        try:
+            config = PracticeConfig.from_json(priority.actions_config)
+        except Exception:
+            config = PracticeConfig(name=priority.name)
+    else:
+        config = PracticeConfig(name=priority.name)
+
+    # Build a blank trigger
+    if trigger_type == "schedule":
+        trigger = Trigger(schedule=Schedule(interval="weekdays"))
+    else:
+        trigger = Trigger(event=Event(event_type=EventType.PRIORITY_STATUS_CHANGE))
+
+    # Build a blank action
+    if action_type == "collate":
+        collate = CollateAction(
+            target=CollateTarget(shorthand="children"),
+            as_template=TaskTemplate(name="new task")
+        )
+        action = PracticeAction(trigger=trigger, collate=collate)
+    else:
+        create = CreateAction(items=[TaskTemplate(name="new task")])
+        action = PracticeAction(trigger=trigger, create=create)
+
+    # Replace or append
+    if replace and replace.isdigit():
+        idx = int(replace)
+        if 0 <= idx < len(config.actions):
+            config.actions[idx] = action
+    else:
+        config.actions.append(action)
+
+    priority.actions_config = config.to_json()
+    priority.updated_at = datetime.now()
+    graph.save_priority(priority)
+
+    async with api_client(request) as client:
+        await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
+
+    # Return updated editor with card data
+    from praxis_web.helpers.action_renderer import actions_to_card_data, actions_to_yaml
+    action_cards = actions_to_card_data(priority.actions_config)
+    actions_yaml = actions_to_yaml(priority.actions_config)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/actions_editor.html",
+        {
+            "priority": {"id": priority_id, "name": priority.name, "actions_config": priority.actions_config},
+            "action_cards": action_cards,
+            "actions_yaml": actions_yaml,
+            "editable": True,
+            "priority_name": priority.name,
         }
     )
 

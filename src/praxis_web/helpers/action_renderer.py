@@ -358,6 +358,89 @@ def render_action_summary(action: PracticeAction | dict) -> str:
     return summary
 
 
+def action_to_card_data(action: PracticeAction | dict) -> dict:
+    """Extract chip-compatible field values from a PracticeAction for the
+    action card template.
+
+    Returns a flat dict with trigger_type, action_type, and all chip field
+    values that the action_card.html template expects.
+    """
+    if isinstance(action, dict):
+        action = PracticeAction.from_dict(action)
+
+    data = {
+        "trigger_type": "schedule" if action.trigger.schedule else "event",
+        "action_type": "collate" if action.collate else "create",
+    }
+
+    # Schedule fields
+    if action.trigger.schedule:
+        sched = action.trigger.schedule
+        if isinstance(sched.interval, str):
+            data["interval"] = sched.interval
+        elif hasattr(sched.interval, 'frequency'):
+            data["interval"] = "custom"
+        if sched.at:
+            data["time"] = sched.at if isinstance(sched.at, str) else sched.at[0]
+
+    # Event fields
+    if action.trigger.event:
+        evt = action.trigger.event
+        event_type = evt.event_type.value
+        if "task" in event_type:
+            if evt.params.get("entity_type") == "goal":
+                data["event_subject"] = "goal"
+            else:
+                data["event_subject"] = "task"
+        else:
+            entity_type = evt.params.get("entity_type", "any")
+            data["event_subject"] = entity_type
+
+        if "completion" in event_type:
+            data["event_outcome"] = "completed"
+        elif "status_change" in event_type:
+            data["event_outcome"] = f"status_change:{evt.to}" if evt.to else "status_change:active"
+        else:
+            data["event_outcome"] = "created"
+
+        if evt.params.get("under"):
+            data["event_ancestor"] = evt.params["under"]
+
+    # Create fields
+    if action.create and action.create.items:
+        item = action.create.items[0]
+        if isinstance(item, TaskTemplate):
+            data["task_name"] = item.name
+            if item.due:
+                data["due"] = item.due if isinstance(item.due, str) else "end_of_day"
+            if item.tags:
+                data["tags"] = ",".join(item.tags)
+            if item.description:
+                data["description"] = item.description
+
+    # Collate fields
+    if action.collate:
+        target = action.collate.target
+        if hasattr(target, 'shorthand') and target.shorthand:
+            data["collate_target"] = target.shorthand
+        if action.collate.as_template:
+            data["collate_name"] = action.collate.as_template.name
+
+    return data
+
+
+def actions_to_card_data(actions_config: str | None) -> list[dict]:
+    """Parse actions_config and return card data for all actions."""
+    if not actions_config:
+        return []
+
+    try:
+        config = PracticeConfig.from_json(actions_config)
+        return [action_to_card_data(action) for action in config.actions]
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        return []
+
+
 def render_action_summaries(actions_config: str | None) -> list[str]:
     """Parse actions_config and render simple summaries for view mode.
 

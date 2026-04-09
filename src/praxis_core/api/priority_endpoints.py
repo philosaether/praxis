@@ -438,6 +438,8 @@ async def update_priority_properties(
     due_date: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
+    # Practice actions (chip editor serialized JSON)
+    actions_config: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update priority properties including notes."""
@@ -478,15 +480,18 @@ async def update_priority_properties(
         else:
             priority.due_date = None
 
-    # For Practice priorities, preserve actions_config from DB (it's edited separately)
-    # This prevents the cached graph from overwriting changes made via the wizard
+    # For Practice priorities, update actions_config from chip editor if provided,
+    # otherwise preserve the DB value to avoid clobbering wizard edits
     if isinstance(priority, Practice):
-        from praxis_core.persistence import get_connection
-        conn = get_connection()
-        row = conn.execute('SELECT actions_config FROM priorities WHERE id = ?', (priority_id,)).fetchone()
-        if row:
-            priority.actions_config = row['actions_config']
-        conn.close()
+        if actions_config and actions_config.strip():
+            priority.actions_config = actions_config.strip()
+        else:
+            from praxis_core.persistence import get_connection
+            conn = get_connection()
+            row = conn.execute('SELECT actions_config FROM priorities WHERE id = ?', (priority_id,)).fetchone()
+            if row:
+                priority.actions_config = row['actions_config']
+            conn.close()
 
     graph.save_priority(priority)
 
