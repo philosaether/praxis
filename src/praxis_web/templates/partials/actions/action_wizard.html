@@ -1,0 +1,80 @@
+{#
+Action Creation Wizard
+======================
+Single-step selector: pick a trigger×action combination, get an action
+card in edit mode. Replaces the old multi-step wizard modal.
+
+Params:
+  - priority_id: parent practice ID
+  - practice_name: parent practice name
+  - replace: action index to replace (optional, for "edit" button on cards)
+#}
+
+{% set replace = replace if replace is defined else '' %}
+
+<div class="modal-backdrop open" onclick="closeActionWizard(event)">
+  <div class="modal wizard-modal wizard-modal--compact" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{% if replace != '' %}Change action type{% else %}Add action{% endif %}</h3>
+      <button type="button" class="modal-close" onclick="closeActionWizard()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="wizard-grid">
+
+        <div class="wizard-grid__group">
+          <h4 class="wizard-grid__heading">On a schedule...</h4>
+          <button type="button"
+                  class="wizard-grid__option"
+                  hx-post="/priorities/{{ priority_id }}/actions/create?trigger_type=schedule&action_type=create{% if replace != '' %}&replace={{ replace }}{% endif %}"
+                  hx-target="#actions-editor-container"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful) closeActionWizard()">
+            <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+            <span class="wizard-grid__label">create a task</span>
+          </button>
+          <button type="button"
+                  class="wizard-grid__option"
+                  hx-post="/priorities/{{ priority_id }}/actions/create?trigger_type=schedule&action_type=collate{% if replace != '' %}&replace={{ replace }}{% endif %}"
+                  hx-target="#actions-editor-container"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful) closeActionWizard()">
+            <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+            <span class="wizard-grid__label">collate tasks</span>
+          </button>
+        </div>
+
+        <div class="wizard-grid__group">
+          <h4 class="wizard-grid__heading">In response to an event...</h4>
+          <button type="button"
+                  class="wizard-grid__option"
+                  hx-post="/priorities/{{ priority_id }}/actions/create?trigger_type=event&action_type=create{% if replace != '' %}&replace={{ replace }}{% endif %}"
+                  hx-target="#actions-editor-container"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful) closeActionWizard()">
+            <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+            <span class="wizard-grid__label">create a task</span>
+          </button>
+          <button type="button"
+                  class="wizard-grid__option"
+                  hx-post="/priorities/{{ priority_id }}/actions/create?trigger_type=event&action_type=collate{% if replace != '' %}&replace={{ replace }}{% endif %}"
+                  hx-target="#actions-editor-container"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful) closeActionWizard()">
+            <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+            <span class="wizard-grid__label">collate tasks</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function closeActionWizard(event) {
+    if (event && event.type === 'click' && event.target !== event.currentTarget) return;
+    var container = document.getElementById('action-wizard-container');
+    if (container) container.innerHTML = '';
+}
+</script>

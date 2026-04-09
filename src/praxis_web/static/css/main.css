@@ -1738,6 +1738,67 @@ a:hover {
   transition: width 0.3s ease;
 }
 
+/* Compact wizard (chipset-era replacement) */
+.wizard-modal--compact {
+  max-width: 380px;
+}
+.wizard-modal--compact .modal-body {
+  padding: 1rem;
+}
+
+.wizard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.wizard-grid__heading {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a7976;
+}
+.wizard-grid__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.wizard-grid__option {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: #f5f3ef;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+.wizard-grid__option:hover {
+  background: #ebe8e2;
+  border-color: #d0c5af;
+}
+.wizard-grid__icon {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wizard-grid__icon--create {
+  background: #994d5a;
+}
+.wizard-grid__icon--collate {
+  background: #7d6b3a;
+}
+.wizard-grid__label {
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  color: #1b1c1a;
+}
+
 .sentence-builder {
   display: flex;
   align-items: center;

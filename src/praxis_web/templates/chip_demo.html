@@ -501,6 +501,50 @@
       </div>
     </section>
 
+    <!-- Action Wizard -->
+    <section class="demo-section">
+      <h2>Action Creation Wizard</h2>
+      <p class="demo-description">
+        One click to pick a trigger×action combination. Creates an action card in edit mode.
+        In production this is a modal; here it's shown inline.
+      </p>
+
+      <div class="demo-example">
+        <h3>Wizard (Inline Preview)</h3>
+        <div class="wizard-modal wizard-modal--compact" style="position: relative; box-shadow: none; border: 1px solid #d0c5af;">
+          <div class="modal-header">
+            <h3>Add action</h3>
+          </div>
+          <div class="modal-body">
+            <div class="wizard-grid">
+              <div class="wizard-grid__group">
+                <h4 class="wizard-grid__heading">On a schedule...</h4>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: schedule + create')">
+                  <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+                  <span class="wizard-grid__label">create a task</span>
+                </button>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: schedule + collate')">
+                  <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+                  <span class="wizard-grid__label">collate tasks</span>
+                </button>
+              </div>
+              <div class="wizard-grid__group">
+                <h4 class="wizard-grid__heading">In response to an event...</h4>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: event + create')">
+                  <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+                  <span class="wizard-grid__label">create a task</span>
+                </button>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: event + collate')">
+                  <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+                  <span class="wizard-grid__label">collate tasks</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Action Cards -->
     <section class="demo-section">
       <h2>Action Cards</h2>
