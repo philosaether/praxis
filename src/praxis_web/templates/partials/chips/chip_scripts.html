@@ -25,7 +25,7 @@
       const firstFocusable = popup.querySelector('button, input, select, [tabindex]:not([tabindex="-1"])');
       if (firstFocusable) {
         firstFocusable.focus();
-        if (firstFocusable.type === 'text' && firstFocusable.select) {
+        if ((firstFocusable.type === 'text' || firstFocusable.tagName === 'TEXTAREA') && firstFocusable.select) {
           firstFocusable.select();
         }
       }
@@ -35,9 +35,11 @@
   // Close all open chip popups
   window.closeAllChipPopups = function() {
     if (openPopup) {
-      // If the popup has a text field, confirm its value before closing
+      // If the popup has a text field or textarea, confirm its value before closing
       const textField = openPopup.querySelector('.chip-popup__text-field');
       if (textField) confirmTextChip(textField);
+      const textareaField = openPopup.querySelector('.chip-popup__textarea-field');
+      if (textareaField) confirmTextareaChip(textareaField);
 
       openPopup.classList.remove('open');
     }
@@ -945,6 +947,50 @@
     if (input) setDueCustom(input);
   };
 
+  // Render basic inline markdown (bold, italic, code) to HTML.
+  // Escapes all other HTML to prevent injection.
+  function renderInlineMarkdown(text) {
+    // Escape HTML entities first
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    // Then apply markdown: **bold**, *italic*, `code`
+    return escaped
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>');
+  }
+
+  // Description chip: update character count display
+  window.updateDescriptionCount = function(textarea) {
+    const countEl = textarea.closest('.chip-popup__textarea-input').querySelector('.chip-popup__char-current');
+    if (countEl) countEl.textContent = textarea.value.length;
+  };
+
+  // Description chip: confirm textarea value and update the chip.
+  // Called from closeAllChipPopups via the textarea-field check.
+  window.confirmTextareaChip = function(textarea) {
+    const chip = textarea.closest('.chip');
+    const value = textarea.value.trim();
+    const fallback = chip.dataset.chipDefault || 'a new task';
+    const trigger = chip.querySelector('.chip-trigger');
+
+    const hiddenInput = chip.querySelector('input[type="hidden"]');
+    const textEl = chip.querySelector('.chip-trigger__text');
+
+    if (value) {
+      const truncated = value.length > 40 ? value.substring(0, 40) + '...' : value;
+      if (hiddenInput) hiddenInput.value = value;
+      if (textEl) textEl.innerHTML = renderInlineMarkdown(truncated);
+      if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+    } else {
+      if (hiddenInput) hiddenInput.value = '';
+      if (textEl) textEl.textContent = fallback;
+      if (trigger) trigger.classList.add('chip-trigger--placeholder');
+    }
+  };
+
   // Text-input chip: confirm the typed value and update the chip.
   // Works for any chip with a .chip-popup__text-field input.
   // If the field is cleared, reverts to the chip's default value.
@@ -1009,9 +1055,19 @@
     });
   };
 
-  // Initialize punctuation for any clause-based sentences on the page.
+  // Initialize punctuation and render markdown for any pre-populated chips.
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.chip-sentence--clauses').forEach(updateClausePunctuation);
+
+    // Render inline markdown on pre-populated description chips
+    document.querySelectorAll('[data-chip-type="description"]').forEach(chip => {
+      const value = chip.querySelector('input[type="hidden"]').value;
+      if (value) {
+        const textEl = chip.querySelector('.chip-trigger__text');
+        const truncated = value.length > 40 ? value.substring(0, 40) + '...' : value;
+        textEl.innerHTML = renderInlineMarkdown(truncated);
+      }
+    });
   });
 })();
 </script>

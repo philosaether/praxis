@@ -1,0 +1,57 @@
+{#
+Description Chip
+================
+A textarea chip for describing the task a practice creates.
+Supports markdown, 800 character limit.
+
+Params:
+  - name: Form field name (default: "description")
+  - value: Current value (default: context-aware placeholder)
+  - practice_name: Name of the parent practice (for default text)
+
+Display rules:
+  - empty  -> "a new task under {practice_name}" or "a new task"
+  - string -> first ~40 chars, ellipsized if longer
+
+DSL mapping:
+  - value -> create.description
+#}
+
+{% set name = name or 'description' %}
+{% set value = value if value is defined else '' %}
+{% set practice_name = practice_name if practice_name is defined else '' %}
+{% set variant = 'task' %}
+{% set default_text = 'a new task under ' ~ practice_name if practice_name else 'a new task' %}
+
+{% if value %}
+  {% set display = value[:40] ~ ('...' if value|length > 40 else '') %}
+{% else %}
+  {% set display = default_text %}
+{% endif %}
+{% set is_placeholder = not value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="description" data-chip-default="{{ default_text }}">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Describe this task">
+    <div class="chip-popup__textarea-input">
+      <textarea class="chip-popup__textarea-field"
+                placeholder="supports markdown"
+                maxlength="800"
+                rows="4"
+                oninput="updateDescriptionCount(this)"
+                onkeydown="if(event.key==='Enter'&&event.metaKey){event.preventDefault();closeAllChipPopups();}">{{ value }}</textarea>
+      <div class="chip-popup__char-count">
+        <span class="chip-popup__char-current">{{ value|length }}</span>/800
+      </div>
+    </div>
+  </div>
+</span>

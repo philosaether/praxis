@@ -300,6 +300,25 @@
             <span class="chip-clause__terminator">,</span>
           </div>
 
+          {# Optional clause: described as [description] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">described as</span>
+            <span class="chip-clause__placeholder">a new task under Daily Leetcode</span>
+            <span class="chip-clause__content">
+              {% with name="clause_description", practice_name="Daily Leetcode" %}
+                {% include "partials/chips/chip_description.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
           {# Scaffold clause: and notify [me] — visual preview only #}
           <div class="chip-clause chip-clause--optional chip-clause--scaffold"
                data-clause-active="false" title="coming soon">
@@ -387,6 +406,32 @@
           <span class="chip-sentence__text">create a task named</span>
           {% with name="task_name_filled", value="Practice Leetcode" %}
             {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Description Chip -->
+    <section class="demo-section">
+      <h2>Description Chip</h2>
+      <p class="demo-description">Freeform textarea with markdown support and 800 character limit. Cmd+Enter to confirm. Click away also saves.</p>
+
+      <div class="demo-example">
+        <h3>Default (Context-Aware)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">described as</span>
+          {% with name="desc_default", practice_name="Daily Leetcode" %}
+            {% include "partials/chips/chip_description.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>With Value</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">described as</span>
+          {% with name="desc_filled", value="Solve one problem from the blind 75 list. Focus on understanding the pattern, not speed." %}
+            {% include "partials/chips/chip_description.html" %}
           {% endwith %}
         </div>
       </div>

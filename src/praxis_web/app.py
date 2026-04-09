@@ -157,6 +157,21 @@ async def chip_start_partial(
     )
 
 
+@app.get("/partials/chips/description", response_class=HTMLResponse)
+async def chip_description_partial(
+    request: Request,
+    name: str = "description",
+    value: str = "",
+    practice_name: str = ""
+):
+    """Return description chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_description.html",
+        {"name": name, "value": value, "practice_name": practice_name}
+    )
+
+
 @app.get("/partials/chips/tags", response_class=HTMLResponse)
 async def chip_tags_partial(
     request: Request,

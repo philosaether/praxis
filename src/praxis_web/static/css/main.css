@@ -2421,6 +2421,42 @@ a:hover {
   box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
 }
 
+.chip-trigger__text code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8em;
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.chip-popup__textarea-input {
+  padding: 0.25rem 0;
+}
+.chip-popup__textarea-field {
+  width: 100%;
+  min-width: 280px;
+  padding: 0.5rem;
+  border: 1px solid #994d5a;
+  border-radius: 0.5rem;
+  background: white;
+  color: #994d5a;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.chip-popup__textarea-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
+}
+.chip-popup__char-count {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #7a7976;
+  padding-top: 0.25rem;
+}
+
 .chip-trigger--placeholder {
   opacity: 0.85;
 }
