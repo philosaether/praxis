@@ -32,7 +32,8 @@ Or via include:
 {% set scaffold = scaffold if scaffold is defined else false %}
 
 <div class="chip-clause chip-clause--{{ kind }}{% if active %} chip-clause--active{% endif %}{% if scaffold %} chip-clause--scaffold{% endif %}"
-     data-clause-active="{{ 'true' if active else 'false' }}">
+     data-clause-active="{{ 'true' if active else 'false' }}"
+     {% if scaffold %}title="coming soon"{% endif %}>
   {% if kind == 'optional' %}
   <button type="button"
           class="chip-clause__toggle"

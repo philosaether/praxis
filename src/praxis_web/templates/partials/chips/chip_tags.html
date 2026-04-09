@@ -1,0 +1,60 @@
+{#
+Tags Chip
+=========
+Multi-select tag picker with type-to-create.
+Toggle pattern borrowed from the day chip's weekly mode.
+
+Params:
+  - name: Form field name (default: "tags")
+  - value: Comma-separated tag names (e.g., "code,deep_work")
+  - available_tags: List of existing tag names to show as options
+                    (default: demo set; real form passes user's tags)
+
+Display rules:
+  - empty  -> "one or more tags" (placeholder)
+  - tags   -> comma-separated list ("code, deep_work")
+
+DSL mapping:
+  - value -> create.tags (split on comma)
+#}
+
+{% set name = name or 'tags' %}
+{% set value = value if value is defined else '' %}
+{% set variant = 'tag' %}
+
+{% set selected_tags = value.split(',') | map('trim') | select | list if value else [] %}
+{% set available_tags = available_tags or ['code', 'deep_work', 'errands', 'reading', 'networking', 'health', 'writing'] %}
+
+{% set display = selected_tags | join(', ') if selected_tags else 'one or more tags' %}
+{% set is_placeholder = not selected_tags %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="tags">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select tags">
+    <div class="chip-popup__options chip-popup__options--tags">
+      {% for tag in available_tags %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--tag{% if tag in selected_tags %} selected{% endif %}"
+              data-value="{{ tag }}"
+              onclick="toggleTagOption(this)"><span class="chip-popup__check">{% if tag in selected_tags %}&#10003;{% endif %}</span>{{ tag }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="chip-popup__tag-create">
+      <input type="text"
+             class="chip-popup__tag-field"
+             placeholder="new tag..."
+             maxlength="50"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();createTagOption(this);}">
+    </div>
+  </div>
+</span>

@@ -157,6 +157,20 @@ async def chip_start_partial(
     )
 
 
+@app.get("/partials/chips/tags", response_class=HTMLResponse)
+async def chip_tags_partial(
+    request: Request,
+    name: str = "tags",
+    value: str = ""
+):
+    """Return tags chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_tags.html",
+        {"name": name, "value": value}
+    )
+
+
 @app.get("/partials/chips/due", response_class=HTMLResponse)
 async def chip_due_partial(
     request: Request,

@@ -810,6 +810,73 @@
     if (trigger) trigger.classList.remove('chip-trigger--placeholder');
   };
 
+  // Tags chip: toggle a tag on/off
+  window.toggleTagOption = function(optionEl) {
+    const isSelected = optionEl.classList.toggle('selected');
+    const checkEl = optionEl.querySelector('.chip-popup__check');
+    if (checkEl) {
+      checkEl.textContent = isSelected ? '\u2713' : '';
+    }
+    updateTagChipFromOptions(optionEl.closest('.chip'));
+  };
+
+  // Tags chip: create a new tag from the text input
+  window.createTagOption = function(input) {
+    const chip = input.closest('.chip');
+    const popup = input.closest('.chip-popup');
+    const tagName = input.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    if (!tagName) return;
+
+    // Check if tag already exists
+    const existing = popup.querySelector(`.chip-popup__option--tag[data-value="${tagName}"]`);
+    if (existing) {
+      if (!existing.classList.contains('selected')) {
+        toggleTagOption(existing);
+      }
+      input.value = '';
+      return;
+    }
+
+    // Create new tag button
+    const optionsContainer = popup.querySelector('.chip-popup__options--tags');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip-popup__option chip-popup__option--chip chip-popup__option--tag selected';
+    btn.dataset.value = tagName;
+    btn.setAttribute('onclick', 'toggleTagOption(this)');
+    btn.innerHTML = `<span class="chip-popup__check">\u2713</span>${tagName}`;
+    optionsContainer.appendChild(btn);
+
+    input.value = '';
+    updateTagChipFromOptions(chip);
+  };
+
+  // Tags chip: update chip value from selected options
+  window.updateTagChipFromOptions = function(chip) {
+    const popup = chip.querySelector('.chip-popup');
+    const selected = [];
+
+    popup.querySelectorAll('.chip-popup__option--tag.selected').forEach(opt => {
+      selected.push(opt.dataset.value);
+    });
+
+    const value = selected.join(',');
+    const display = selected.length > 0 ? selected.join(', ') : 'one or more tags';
+
+    const input = chip.querySelector('input[type="hidden"]');
+    const textEl = chip.querySelector('.chip-trigger__text');
+    const trigger = chip.querySelector('.chip-trigger');
+
+    if (input) input.value = value;
+    if (textEl) textEl.textContent = display;
+
+    if (selected.length > 0) {
+      trigger.classList.remove('chip-trigger--placeholder');
+    } else {
+      trigger.classList.add('chip-trigger--placeholder');
+    }
+  };
+
   // Due chip: select a preset option
   window.selectDueOption = function(optionEl) {
     const popup = optionEl.closest('.chip-popup');

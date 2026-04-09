@@ -242,7 +242,7 @@
 
           {# Scaffold clause: when [conditions are met] — visual preview only #}
           <div class="chip-clause chip-clause--optional chip-clause--scaffold"
-               data-clause-active="false">
+               data-clause-active="false" title="coming soon">
             <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
               <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
             </button>
@@ -281,9 +281,28 @@
             <span class="chip-clause__terminator">,</span>
           </div>
 
+          {# Optional clause: tagged [tags] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">tagged with</span>
+            <span class="chip-clause__placeholder">one or more tags</span>
+            <span class="chip-clause__content">
+              {% with name="clause_tags" %}
+                {% include "partials/chips/chip_tags.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
           {# Scaffold clause: and notify [me] — visual preview only #}
           <div class="chip-clause chip-clause--optional chip-clause--scaffold"
-               data-clause-active="false">
+               data-clause-active="false" title="coming soon">
             <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
               <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
             </button>
@@ -368,6 +387,32 @@
           <span class="chip-sentence__text">create a task named</span>
           {% with name="task_name_filled", value="Practice Leetcode" %}
             {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Tags Chip -->
+    <section class="demo-section">
+      <h2>Tags Chip</h2>
+      <p class="demo-description">Multi-select with checkmarks. Type a new tag name and press Enter to create it on the fly.</p>
+
+      <div class="demo-example">
+        <h3>Empty State</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">tagged with</span>
+          {% with name="tags_empty" %}
+            {% include "partials/chips/chip_tags.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>With Selections</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">tagged with</span>
+          {% with name="tags_filled", value="code,deep_work" %}
+            {% include "partials/chips/chip_tags.html" %}
           {% endwith %}
         </div>
       </div>
