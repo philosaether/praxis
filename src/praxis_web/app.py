@@ -171,17 +171,36 @@ async def chip_event_subject_partial(
     )
 
 
+@app.get("/partials/chips/priority_picker", response_class=HTMLResponse)
+async def chip_priority_picker_partial(
+    request: Request,
+    name: str = "priority",
+    value: str = "",
+    value_path: str = "",
+    placeholder: str = "any priority",
+    variant: str = "priority"
+):
+    """Return priority picker chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_priority_picker.html",
+        {"name": name, "value": value, "value_path": value_path,
+         "placeholder": placeholder, "variant": variant}
+    )
+
+
 @app.get("/partials/chips/event_ancestor", response_class=HTMLResponse)
 async def chip_event_ancestor_partial(
     request: Request,
     name: str = "event_ancestor",
-    value: str = ""
+    value: str = "",
+    value_path: str = ""
 ):
     """Return event ancestor chip HTML fragment for HTMX spawning."""
     return templates.TemplateResponse(
         request,
         "partials/chips/chip_event_ancestor.html",
-        {"name": name, "value": value}
+        {"name": name, "value": value, "value_path": value_path}
     )
 
 

@@ -514,6 +514,32 @@
       </div>
     </section>
 
+    <!-- Priority Picker Chip -->
+    <section class="demo-section">
+      <h2>Priority Picker Chip</h2>
+      <p class="demo-description">Hierarchical priority selector. Click a name to select, click ▸ to drill into children. Breadcrumb navigates back.</p>
+
+      <div class="demo-example">
+        <h3>Empty State</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">under</span>
+          {% with name="picker_empty" %}
+            {% include "partials/chips/chip_priority_picker.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Pre-Selected (Deep Path)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">under</span>
+          {% with name="picker_filled", value="Software Engineering", value_path="Career > Proper Elevation > Software Engineering" %}
+            {% include "partials/chips/chip_priority_picker.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
     <!-- Event Trigger Chips -->
     <section class="demo-section">
       <h2>Event Trigger Chips</h2>

@@ -812,6 +812,122 @@
     if (trigger) trigger.classList.remove('chip-trigger--placeholder');
   };
 
+  // Priority picker: open popup and render the root level
+  window.togglePriorityPicker = function(trigger) {
+    const chip = trigger.closest('.chip');
+    const popup = chip.querySelector('.chip-popup');
+    const isOpen = popup.classList.contains('open');
+
+    closeAllChipPopups();
+
+    if (!isOpen) {
+      popup.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+      openPopup = popup;
+      openTrigger = trigger;
+
+      // Render root level
+      priorityPickerRenderLevel(chip, []);
+    }
+  };
+
+  // Priority picker: get the tree data from the embedded script tag
+  function priorityPickerGetTree(chip) {
+    if (!chip._priorityTree) {
+      const scriptEl = document.getElementById(chip.dataset.pickerId);
+      chip._priorityTree = scriptEl ? JSON.parse(scriptEl.textContent) : [];
+    }
+    return chip._priorityTree;
+  }
+
+  // Priority picker: get children at a given path (array of names)
+  function priorityPickerGetLevel(tree, path) {
+    let current = tree;
+    for (const name of path) {
+      const node = current.find(n => n.name === name);
+      if (!node) return [];
+      current = node.children || [];
+    }
+    return current;
+  }
+
+  // Priority picker: render a level of the tree
+  function priorityPickerRenderLevel(chip, path) {
+    const popup = chip.querySelector('.chip-popup');
+    const tree = priorityPickerGetTree(chip);
+    const items = priorityPickerGetLevel(tree, path);
+
+    // Update breadcrumb
+    const breadcrumb = popup.querySelector('.chip-popup__breadcrumb');
+    let html = '<span class="chip-popup__breadcrumb-segment chip-popup__breadcrumb-root" onclick="priorityPickerNavigate(this, [], event)">all priorities</span>';
+    for (let i = 0; i < path.length; i++) {
+      const subpath = JSON.stringify(path.slice(0, i + 1));
+      html += '<span class="chip-popup__breadcrumb-sep"> › </span>';
+      html += `<span class="chip-popup__breadcrumb-segment" onclick='priorityPickerNavigate(this, ${subpath}, event)'>${path[i]}</span>`;
+    }
+    breadcrumb.innerHTML = html;
+
+    // Render items
+    const list = popup.querySelector('.chip-popup__priority-list');
+    let listHtml = '';
+    for (const item of items) {
+      const hasChildren = item.children && item.children.length > 0;
+      const itemPath = JSON.stringify([...path, item.name]);
+      listHtml += '<div class="chip-popup__priority-row">';
+      listHtml += `<button type="button" class="chip-popup__priority-name chip-popup__option--priority" onclick='priorityPickerSelect(this, ${itemPath})'>${item.name}</button>`;
+      if (hasChildren) {
+        listHtml += `<button type="button" class="chip-popup__priority-drill" onclick='priorityPickerDrill(this, ${itemPath}, event)'>▸</button>`;
+      }
+      listHtml += '</div>';
+    }
+    list.innerHTML = listHtml;
+
+    // Store current path on chip for reference
+    chip._currentPath = path;
+  }
+
+  // Priority picker: drill into a child (without closing the popup)
+  window.priorityPickerDrill = function(btn, path, event) {
+    if (event) event.stopPropagation();
+    const chip = btn.closest('.chip');
+    priorityPickerRenderLevel(chip, path);
+  };
+
+  // Priority picker: select a priority
+  window.priorityPickerSelect = function(btn, path) {
+    const chip = btn.closest('.chip');
+    const name = path[path.length - 1];
+    const pathStr = path.join(' > ');
+    const trigger = chip.querySelector('.chip-trigger');
+
+    // Update hidden inputs
+    const valueInput = chip.querySelector('input[name="' + chip.dataset.chip + '"]');
+    const pathInput = chip.querySelector('input[name="' + chip.dataset.chip + '_path"]');
+    if (valueInput) valueInput.value = name;
+    if (pathInput) pathInput.value = pathStr;
+
+    // Update display (truncate long paths)
+    let display;
+    if (pathStr.length > 40 && path.length > 2) {
+      display = '… > ' + path.slice(-2).join(' > ');
+    } else {
+      display = pathStr;
+    }
+
+    const textEl = chip.querySelector('.chip-trigger__text');
+    if (textEl) textEl.textContent = display;
+    if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+
+    closeAllChipPopups();
+  };
+
+  // Priority picker: navigate breadcrumb (go back to a level)
+  window.priorityPickerNavigate = function(el, path, event) {
+    if (event) event.stopPropagation();
+    const chip = el.closest('.chip');
+    priorityPickerRenderLevel(chip, path);
+  };
+
   // Event subject chip: select entity type, show/hide "completed" in outcome chip
   window.selectEventSubject = function(optionEl) {
     const popup = optionEl.closest('.chip-popup');
