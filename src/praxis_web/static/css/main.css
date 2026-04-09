@@ -1989,6 +1989,18 @@ a:hover {
   box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
 }
 
+.chip-trigger--task {
+  background: #f5dfe0;
+  color: #994d5a;
+}
+.chip-trigger--task:hover {
+  border-color: #994d5a;
+}
+.chip-trigger--task:focus, .chip-trigger--task[aria-expanded=true] {
+  border-color: #994d5a;
+  box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
+}
+
 .chip-add {
   display: inline-flex;
   align-items: center;
@@ -2314,6 +2326,28 @@ a:hover {
 .chip-popup__time-field:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(184, 115, 51, 0.2);
+}
+
+.chip-popup__text-input {
+  padding: 0.25rem 0;
+}
+.chip-popup__text-field {
+  width: 100%;
+  min-width: 240px;
+  height: 32px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #994d5a;
+  border-radius: 0.5rem;
+  background: white;
+  color: #994d5a;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+.chip-popup__text-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
 }
 
 .chip-trigger--placeholder {

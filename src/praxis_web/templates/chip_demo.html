@@ -69,6 +69,15 @@
             <div class="chip-popup__title">Due (gold)</div>
           </div>
         </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--task" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">Practice Leetcode</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Task name (rose)</div>
+          </div>
+        </span>
       </div>
     </section>
 
@@ -242,9 +251,14 @@
             <span class="chip-clause__terminator">,</span>
           </div>
 
-          {# Required clause: create a task... (not yet implemented, plain text) #}
+          {# Required clause: create a task named [name] #}
           <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
-            <span class="chip-clause__lead">create a task</span>
+            <span class="chip-clause__lead">create a task named</span>
+            <span class="chip-clause__content">
+              {% with name="clause_task_name" %}
+                {% include "partials/chips/chip_task_name.html" %}
+              {% endwith %}
+            </span>
             <span class="chip-clause__terminator">,</span>
           </div>
 
@@ -310,6 +324,32 @@
             {% include "partials/chips/chip_interval.html" %}
           {% endwith %}
           <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task Name Chip -->
+    <section class="demo-section">
+      <h2>Task Name Chip</h2>
+      <p class="demo-description">Freeform text input. Click the chip, type a name, press Enter or click away to confirm.</p>
+
+      <div class="demo-example">
+        <h3>Default Value</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">create a task named</span>
+          {% with name="task_name_default" %}
+            {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Custom Value</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">create a task named</span>
+          {% with name="task_name_filled", value="Practice Leetcode" %}
+            {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
         </div>
       </div>
     </section>

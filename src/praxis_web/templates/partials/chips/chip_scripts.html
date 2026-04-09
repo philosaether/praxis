@@ -20,10 +20,14 @@
       openPopup = popup;
       openTrigger = trigger;
 
-      // Focus first focusable element in popup
+      // Focus first focusable element in popup.
+      // For text inputs, select all so new keystrokes overwrite.
       const firstFocusable = popup.querySelector('button, input, select, [tabindex]:not([tabindex="-1"])');
       if (firstFocusable) {
         firstFocusable.focus();
+        if (firstFocusable.type === 'text' && firstFocusable.select) {
+          firstFocusable.select();
+        }
       }
     }
   };
@@ -31,6 +35,10 @@
   // Close all open chip popups
   window.closeAllChipPopups = function() {
     if (openPopup) {
+      // If the popup has a text field, confirm its value before closing
+      const textField = openPopup.querySelector('.chip-popup__text-field');
+      if (textField) confirmTextChip(textField);
+
       openPopup.classList.remove('open');
     }
     if (openTrigger) {
@@ -800,6 +808,24 @@
 
     const trigger = chip.querySelector('.chip-trigger');
     if (trigger) trigger.classList.remove('chip-trigger--placeholder');
+  };
+
+  // Text-input chip: confirm the typed value and update the chip.
+  // Works for any chip with a .chip-popup__text-field input.
+  // If the field is cleared, reverts to the chip's default value.
+  // Does NOT call updateChip (which would close popups and recurse).
+  window.confirmTextChip = function(input) {
+    const chip = input.closest('.chip');
+    const value = input.value.trim();
+    const fallback = chip.dataset.chipDefault || 'new task';
+
+    const finalValue = value || fallback;
+    input.value = finalValue;
+
+    const hiddenInput = chip.querySelector('input[type="hidden"]');
+    const textEl = chip.querySelector('.chip-trigger__text');
+    if (hiddenInput) hiddenInput.value = finalValue;
+    if (textEl) textEl.textContent = finalValue;
   };
 
   // Optional clause: toggle between active/inactive states.

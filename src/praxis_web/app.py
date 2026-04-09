@@ -157,6 +157,20 @@ async def chip_start_partial(
     )
 
 
+@app.get("/partials/chips/task_name", response_class=HTMLResponse)
+async def chip_task_name_partial(
+    request: Request,
+    name: str = "task_name",
+    value: str = ""
+):
+    """Return task name chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_task_name.html",
+        {"name": name, "value": value}
+    )
+
+
 # -----------------------------------------------------------------------------
 # Auth Routes
 # -----------------------------------------------------------------------------

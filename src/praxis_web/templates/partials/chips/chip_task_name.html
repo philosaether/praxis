@@ -1,0 +1,44 @@
+{#
+Task Name Chip
+==============
+A text-input chip for naming the task a practice creates.
+First chip to use freeform text instead of preset options.
+
+Params:
+  - name: Form field name (default: "task_name")
+  - value: Current value (default: empty/placeholder)
+
+Display rules:
+  - string -> the name itself (default: "new task")
+
+DSL mapping:
+  - value -> create.name
+#}
+
+{% set name = name or 'task_name' %}
+{% set value = value if value is defined else 'new task' %}
+{% set variant = 'task' %}
+{% set display = value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="task_name" data-chip-default="new task">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Name this task">
+    <div class="chip-popup__text-input">
+      <input type="text"
+             class="chip-popup__text-field"
+             value="{{ value }}"
+             placeholder="e.g. Practice Leetcode"
+             maxlength="200"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();closeAllChipPopups();}">
+    </div>
+  </div>
+</span>
