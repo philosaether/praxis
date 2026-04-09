@@ -1,0 +1,49 @@
+{#
+Event Ancestor Chip
+===================
+Optional filter: narrows the event to entities under a specific priority.
+Reads as "under [Career]" in the sentence.
+
+Params:
+  - name: Form field name (default: "event_ancestor")
+  - value: Priority name to filter by (default: empty/placeholder)
+  - available_priorities: List of priority names (default: demo set)
+
+Display rules:
+  - empty  -> "any priority" (placeholder)
+  - string -> the priority name
+
+DSL mapping:
+  - value -> when.event.ancestor
+#}
+
+{% set name = name or 'event_ancestor' %}
+{% set value = value if value is defined else '' %}
+{% set variant = 'priority' %}
+{% set available_priorities = available_priorities or ['Career', 'Health', 'Relationships', 'Finance', 'Learning'] %}
+{% set display = value or 'any priority' %}
+{% set is_placeholder = not value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="event_ancestor">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select parent priority">
+    <div class="chip-popup__options chip-popup__options--event-ancestor">
+      {% for priority in available_priorities %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--priority{% if value == priority %} selected{% endif %}"
+              data-value="{{ priority }}"
+              data-display="{{ priority }}"
+              onclick="selectChipOption(this, '{{ priority }}', '{{ priority }}')">{{ priority }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</span>

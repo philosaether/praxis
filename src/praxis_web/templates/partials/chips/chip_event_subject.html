@@ -1,0 +1,64 @@
+{#
+Event Subject Chip
+==================
+Selects what entity type to watch for events.
+Combined with the outcome chip, determines the EventType.
+
+When subject changes, the outcome chip's "completed" option is
+shown/hidden — only goals and tasks can be completed.
+
+Params:
+  - name: Form field name (default: "event_subject")
+  - value: Current value (default: "any")
+
+Display rules:
+  - any        -> "any priority"
+  - task       -> "a task"
+  - goal       -> "a goal"
+  - initiative -> "an initiative"
+  - practice   -> "a practice"
+
+DSL mapping:
+  - any        → no type filter
+  - task       → event_type: task_*
+  - goal       → event_type: priority_*, params.type: goal
+  - initiative → event_type: priority_*, params.type: initiative
+  - practice   → event_type: priority_*, params.type: practice
+#}
+
+{% set name = name or 'event_subject' %}
+{% set value = value if value is defined else 'any' %}
+{% set variant = 'event' %}
+
+{% set display_map = {
+  'any': 'any priority',
+  'task': 'a task',
+  'goal': 'a goal',
+  'initiative': 'an initiative',
+  'practice': 'a practice'
+} %}
+{% set display = display_map.get(value, 'any priority') %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="event_subject">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select entity type">
+    <div class="chip-popup__options chip-popup__options--event-subject">
+      {% for val, label in [('any', 'any priority'), ('task', 'a task'), ('goal', 'a goal'), ('initiative', 'an initiative'), ('practice', 'a practice')] %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--event{% if value == val %} selected{% endif %}"
+              data-value="{{ val }}"
+              data-display="{{ label }}"
+              onclick="selectEventSubject(this)">{{ label }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</span>

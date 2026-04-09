@@ -78,6 +78,15 @@
             <div class="chip-popup__title">Task name (rose)</div>
           </div>
         </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--event" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">completed</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Event (teal)</div>
+          </div>
+        </span>
       </div>
     </section>
 
@@ -334,6 +343,100 @@
       </div>
     </section>
 
+      <div class="demo-example">
+        <h3>Event Trigger + Task</h3>
+        <div class="chip-sentence chip-sentence--clauses">
+
+          {# Required clause: whenever [any priority] is [created] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">Whenever</span>
+            <span class="chip-clause__content">
+              {% with name="event_subject" %}
+                {% include "partials/chips/chip_event_subject.html" %}
+              {% endwith %}
+              <span class="chip-sentence__text">is</span>
+              {% with name="event_outcome" %}
+                {% include "partials/chips/chip_event_outcome.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: under [priority] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">under</span>
+            <span class="chip-clause__placeholder">any priority</span>
+            <span class="chip-clause__content">
+              {% with name="event_ancestor" %}
+                {% include "partials/chips/chip_event_ancestor.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: when [conditions are met] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">when</span>
+            <span class="chip-clause__placeholder">conditions are met</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Required clause: create a task named [name] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">create a task named</span>
+            <span class="chip-clause__content">
+              {% with name="event_task_name" %}
+                {% include "partials/chips/chip_task_name.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: due [end of day] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">due</span>
+            <span class="chip-clause__placeholder">end of day</span>
+            <span class="chip-clause__content">
+              {% with name="event_due" %}
+                {% include "partials/chips/chip_due.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: and notify [me] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">and notify</span>
+            <span class="chip-clause__placeholder">me</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
     <!-- Interval Chip (New) -->
     <section class="demo-section">
       <h2>Interval Chip</h2>
@@ -406,6 +509,54 @@
           <span class="chip-sentence__text">create a task named</span>
           {% with name="task_name_filled", value="Practice Leetcode" %}
             {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Event Trigger Chips -->
+    <section class="demo-section">
+      <h2>Event Trigger Chips</h2>
+      <p class="demo-description">Three chips compose an event trigger: what to watch, where to watch, and what happened.</p>
+
+      <div class="demo-example">
+        <h3>Default (Any Priority Created)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Whenever</span>
+          {% with name="demo_event_subject" %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="demo_event_outcome" %}
+            {% include "partials/chips/chip_event_outcome.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Goal Completed (Completable)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Whenever</span>
+          {% with name="demo_event_subject2", value="goal" %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="demo_event_outcome2", value="completed" %}
+            {% include "partials/chips/chip_event_outcome.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Status Change Variant</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Whenever</span>
+          {% with name="demo_event_subject3", value="task" %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="demo_event_outcome3", value="status_change:dormant" %}
+            {% include "partials/chips/chip_event_outcome.html" %}
           {% endwith %}
         </div>
       </div>

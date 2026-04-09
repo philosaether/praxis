@@ -157,6 +157,48 @@ async def chip_start_partial(
     )
 
 
+@app.get("/partials/chips/event_subject", response_class=HTMLResponse)
+async def chip_event_subject_partial(
+    request: Request,
+    name: str = "event_subject",
+    value: str = "goal"
+):
+    """Return event subject chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_event_subject.html",
+        {"name": name, "value": value}
+    )
+
+
+@app.get("/partials/chips/event_ancestor", response_class=HTMLResponse)
+async def chip_event_ancestor_partial(
+    request: Request,
+    name: str = "event_ancestor",
+    value: str = ""
+):
+    """Return event ancestor chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_event_ancestor.html",
+        {"name": name, "value": value}
+    )
+
+
+@app.get("/partials/chips/event_outcome", response_class=HTMLResponse)
+async def chip_event_outcome_partial(
+    request: Request,
+    name: str = "event_outcome",
+    value: str = "completed"
+):
+    """Return event outcome chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_event_outcome.html",
+        {"name": name, "value": value}
+    )
+
+
 @app.get("/partials/chips/description", response_class=HTMLResponse)
 async def chip_description_partial(
     request: Request,

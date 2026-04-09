@@ -1989,6 +1989,18 @@ a:hover {
   box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
 }
 
+.chip-trigger--event {
+  background: #d6f0ee;
+  color: #2a7d75;
+}
+.chip-trigger--event:hover {
+  border-color: #2a7d75;
+}
+.chip-trigger--event:focus, .chip-trigger--event[aria-expanded=true] {
+  border-color: #2a7d75;
+  box-shadow: 0 0 0 2px rgba(42, 125, 117, 0.2);
+}
+
 .chip-trigger--task {
   background: #f5dfe0;
   color: #994d5a;
@@ -2362,6 +2374,36 @@ a:hover {
 .chip-popup__due-custom .chip-popup__number-field:focus {
   box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
 }
+.chip-popup__option--event {
+  background: #d6f0ee;
+  color: #2a7d75;
+  border-color: transparent;
+}
+.chip-popup__option--event:hover,
+.chip-popup__option--event.selected {
+  border-color: #2a7d75;
+}
+.chip-popup__option--event.selected {
+  background: #2a7d75;
+  color: white;
+}
+
+.chip-popup__options--event-outcome {
+  padding-bottom: 0.5rem;
+}
+
+.chip-popup__event-status-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+.chip-popup__options--event-status {
+  display: flex;
+  gap: 0.25rem;
+}
+
 .chip-popup__options--tags {
   display: flex;
   flex-wrap: wrap;
