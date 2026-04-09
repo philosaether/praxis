@@ -1989,6 +1989,18 @@ a:hover {
   box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
 }
 
+.chip-trigger--collate {
+  background: #f5ecd6;
+  color: #7d6b3a;
+}
+.chip-trigger--collate:hover {
+  border-color: #7d6b3a;
+}
+.chip-trigger--collate:focus, .chip-trigger--collate[aria-expanded=true] {
+  border-color: #7d6b3a;
+  box-shadow: 0 0 0 2px rgba(125, 107, 58, 0.2);
+}
+
 .chip-trigger--event {
   background: #d6f0ee;
   color: #2a7d75;
@@ -2447,6 +2459,71 @@ a:hover {
 .chip-popup__priority-drill:hover {
   border-color: #2a5082;
   background: #d6e5f5;
+}
+
+.chip-popup__option--task {
+  background: #f5dfe0;
+  color: #994d5a;
+  border-color: transparent;
+}
+.chip-popup__option--task:hover,
+.chip-popup__option--task.selected {
+  border-color: #994d5a;
+}
+.chip-popup__option--task.selected {
+  background: #994d5a;
+  color: white;
+}
+
+.chip-popup__option--collate {
+  background: #f5ecd6;
+  color: #7d6b3a;
+  border-color: transparent;
+}
+.chip-popup__option--chip.chip-popup__option--collate:hover,
+.chip-popup__option--chip.chip-popup__option--collate.selected {
+  border-color: #7d6b3a;
+}
+/* !important needed: generic .chip-popup__option.selected (line ~2129) has
+   an unexplained specificity win in some browsers despite fewer classes.
+   TODO: refactor chip option selected styles to avoid this. */
+.chip-popup__option--chip.chip-popup__option--collate.selected {
+  background: #7d6b3a !important;
+  color: #fff8e6 !important;
+}
+
+.chip-popup__options--collate-target {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.chip-popup__options--collate-target .chip-popup__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+}
+.chip-popup__option-label {
+  font-weight: 600;
+}
+.chip-popup__option-desc {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.chip-popup__options--collate-target .chip-popup__option.selected .chip-popup__option-desc {
+  opacity: 0.85;
+}
+
+.chip-popup__template-vars {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+.chip-popup__options--template-vars {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .chip-popup__option--event {

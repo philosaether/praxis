@@ -171,6 +171,35 @@ async def chip_event_subject_partial(
     )
 
 
+@app.get("/partials/chips/collate_target", response_class=HTMLResponse)
+async def chip_collate_target_partial(
+    request: Request,
+    name: str = "collate_target",
+    value: str = "children"
+):
+    """Return collate target chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_collate_target.html",
+        {"name": name, "value": value}
+    )
+
+
+@app.get("/partials/chips/collate_name", response_class=HTMLResponse)
+async def chip_collate_name_partial(
+    request: Request,
+    name: str = "collate_name",
+    value: str = "",
+    practice_name: str = ""
+):
+    """Return collate name chip HTML fragment for HTMX spawning."""
+    return templates.TemplateResponse(
+        request,
+        "partials/chips/chip_collate_name.html",
+        {"name": name, "value": value, "practice_name": practice_name}
+    )
+
+
 @app.get("/partials/chips/priority_picker", response_class=HTMLResponse)
 async def chip_priority_picker_partial(
     request: Request,

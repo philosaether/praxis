@@ -812,6 +812,27 @@
     if (trigger) trigger.classList.remove('chip-trigger--placeholder');
   };
 
+  // Template variable insertion: insert a {{var}} at cursor position in the text field
+  window.insertTemplateVar = function(btn) {
+    const popup = btn.closest('.chip-popup');
+    const input = popup.querySelector('.chip-popup__text-field');
+    const varText = btn.dataset.var;
+
+    if (!input) return;
+
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const before = input.value.substring(0, start);
+    const after = input.value.substring(end);
+
+    input.value = before + varText + after;
+    input.focus();
+
+    // Place cursor after inserted variable
+    const newPos = start + varText.length;
+    input.setSelectionRange(newPos, newPos);
+  };
+
   // Priority picker: open popup and render the root level
   window.togglePriorityPicker = function(trigger) {
     const chip = trigger.closest('.chip');

@@ -87,6 +87,15 @@
             <div class="chip-popup__title">Event (teal)</div>
           </div>
         </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--collate" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">children</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Collate (amber)</div>
+          </div>
+        </span>
       </div>
     </section>
 
@@ -435,6 +444,61 @@
 
         </div>
       </div>
+
+      <div class="demo-example">
+        <h3>Schedule + Collate</h3>
+        <div class="chip-sentence chip-sentence--clauses">
+
+          {# Required clause: every [2 weeks] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">Every</span>
+            <span class="chip-clause__content">
+              {% with name="collate_interval", value="weekdays" %}
+                {% include "partials/chips/chip_interval.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Required clause: collate [children] as [name] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">collate</span>
+            <span class="chip-clause__content">
+              {% with name="collate_target" %}
+                {% include "partials/chips/chip_collate_target.html" %}
+              {% endwith %}
+              <span class="chip-sentence__text">as</span>
+              {% with name="collate_name", practice_name="Biweekly Shopping" %}
+                {% include "partials/chips/chip_collate_name.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: matching [filter] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">matching</span>
+            <span class="chip-clause__placeholder">filter criteria</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: excluding [filter] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">excluding</span>
+            <span class="chip-clause__placeholder">completed tasks</span>
+            <span class="chip-clause__terminator">.</span>
+          </div>
+
+        </div>
+      </div>
     </section>
 
     <!-- Interval Chip (New) -->
@@ -509,6 +573,32 @@
           <span class="chip-sentence__text">create a task named</span>
           {% with name="task_name_filled", value="Practice Leetcode" %}
             {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Collate Chips -->
+    <section class="demo-section">
+      <h2>Collate Chips</h2>
+      <p class="demo-description">Collation gathers existing tasks into a batch. Target selects scope, name supports template variables.</p>
+
+      <div class="demo-example">
+        <h3>Collate Target</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">collate</span>
+          {% with name="demo_collate_target" %}
+            {% include "partials/chips/chip_collate_target.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Batch Name with Variables</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">as</span>
+          {% with name="demo_collate_name", practice_name="Biweekly Shopping" %}
+            {% include "partials/chips/chip_collate_name.html" %}
           {% endwith %}
         </div>
       </div>

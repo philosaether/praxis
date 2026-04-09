@@ -1,0 +1,62 @@
+{#
+Collate Name Chip
+=================
+Text input for naming the batched task. Supports template variables
+like {{today}} and {{practice.name}} via insert buttons.
+
+Params:
+  - name: Form field name (default: "collate_name")
+  - value: Current value (default: "batch for {{today}}")
+  - practice_name: Name of the parent practice (for default text)
+
+Display rules:
+  - Shows the template string as-is (variables not resolved in preview)
+
+DSL mapping:
+  - value -> collate.as.name
+#}
+
+{% set name = name or 'collate_name' %}
+{% set practice_name = practice_name if practice_name is defined else '' %}
+{% set default_name = practice_name ~ ' batch' if practice_name else 'batch for {{today}}' %}
+{% set value = value if value is defined and value else default_name %}
+{% set variant = 'task' %}
+{% set display = value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="collate_name" data-chip-default="{{ default_name }}">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Name the batch task">
+    <div class="chip-popup__text-input">
+      <input type="text"
+             class="chip-popup__text-field"
+             value="{{ value }}"
+             placeholder="e.g. Shopping for {% raw %}{{today}}{% endraw %}"
+             maxlength="200"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();closeAllChipPopups();}">
+    </div>
+    <div class="chip-popup__template-vars">
+      <span class="chip-popup__prefix">insert</span>
+      <div class="chip-popup__options chip-popup__options--template-vars">
+        {% for var, label in [
+          ('{{today}}', 'today'),
+          ('{{count}}', 'count'),
+          ('{{practice.name}}', 'practice name')
+        ] %}
+        <button type="button"
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--task"
+                data-var="{{ var }}"
+                onclick="insertTemplateVar(this)">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</span>
