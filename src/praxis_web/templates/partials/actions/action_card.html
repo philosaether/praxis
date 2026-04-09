@@ -1,0 +1,311 @@
+{#
+Action Card
+===========
+A card container for a single practice action. Has two modes:
+
+View mode: compact summary sentence with key fields highlighted.
+Edit mode: full chip sentence builder with all clauses.
+
+Params:
+  - action: dict with type info and field values
+  - idx: action index in the actions list
+  - priority_id: parent practice ID
+  - priority_name: parent practice name (for context-aware defaults)
+  - editable: whether the card can be edited
+  - mode: "view" or "edit" (default: "view")
+  - priority_tree: nested priority list for priority picker (optional)
+  - available_tags: list of tag names for tag chip (optional)
+#}
+
+{% set mode = mode or 'view' %}
+{% set action_type = action.action_type or 'create' %}
+{% set trigger_type = action.trigger_type or 'schedule' %}
+
+<div class="action-card action-card--{{ mode }}"
+     data-action-idx="{{ idx }}"
+     data-action-type="{{ action_type }}"
+     data-trigger-type="{{ trigger_type }}">
+
+  {% if mode == 'edit' %}
+  {# Header with badges and controls — edit mode only #}
+  <div class="action-card__header">
+    {% if editable %}
+    <button type="button"
+            class="action-card__btn action-card__btn--change"
+            title="Change action type"
+            hx-get="/priorities/{{ priority_id }}/actions/wizard?replace={{ idx }}"
+            hx-target="#action-wizard-container"
+            hx-swap="innerHTML">
+      edit
+    </button>
+    {% endif %}
+
+    <div class="action-card__controls">
+      {% if editable %}
+      <button type="button"
+              class="action-card__btn action-card__btn--duplicate"
+              title="Duplicate action"
+              hx-post="/priorities/{{ priority_id }}/actions/{{ idx }}/duplicate"
+              hx-target="#actions-list-{{ priority_id }}"
+              hx-swap="beforeend">
+        duplicate
+      </button>
+      <button type="button"
+              class="action-card__btn action-card__btn--delete"
+              title="Delete action"
+              onclick="removeAction('{{ priority_id }}', {{ idx }})">
+        delete
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if mode == 'view' %}
+  {# ── View mode: required clauses as a display sentence ── #}
+  <div class="action-card__summary">
+    <div class="chip-sentence">
+      {% if trigger_type == 'schedule' %}
+        <span class="chip-sentence__text">Every</span>
+        {% with name="view_" ~ idx ~ "_interval", value=action.interval or 'weekdays' %}
+          {% include "partials/chips/chip_interval.html" %}
+        {% endwith %}
+      {% else %}
+        <span class="chip-sentence__text">Whenever</span>
+        {% with name="view_" ~ idx ~ "_event_subject", value=action.event_subject or 'any' %}
+          {% include "partials/chips/chip_event_subject.html" %}
+        {% endwith %}
+        <span class="chip-sentence__text">is</span>
+        {% with name="view_" ~ idx ~ "_event_outcome", value=action.event_outcome or 'created' %}
+          {% include "partials/chips/chip_event_outcome.html" %}
+        {% endwith %}
+      {% endif %}
+
+      {% if action_type == 'create' %}
+        <span class="chip-sentence__text">, create a task named</span>
+        {% with name="view_" ~ idx ~ "_task_name", value=action.task_name or '' %}
+          {% include "partials/chips/chip_task_name.html" %}
+        {% endwith %}
+      {% else %}
+        <span class="chip-sentence__text">, collate</span>
+        {% with name="view_" ~ idx ~ "_collate_target", value=action.collate_target or 'children' %}
+          {% include "partials/chips/chip_collate_target.html" %}
+        {% endwith %}
+        <span class="chip-sentence__text">as</span>
+        {% with name="view_" ~ idx ~ "_collate_name", value=action.collate_name or '', practice_name=priority_name %}
+          {% include "partials/chips/chip_collate_name.html" %}
+        {% endwith %}
+      {% endif %}
+      <span class="chip-sentence__text">.</span>
+    </div>
+  </div>
+
+  {% else %}
+  {# ── Edit mode: full chip sentence builder ── #}
+  <div class="action-card__editor">
+    <div class="chip-sentence chip-sentence--clauses">
+
+      {% if trigger_type == 'schedule' %}
+      {# Required clause: every [interval] #}
+      <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+        <span class="chip-clause__lead">Every</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_interval", value=action.interval or '' %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Optional clause: time of day #}
+      <div class="chip-clause chip-clause--optional{% if action.time %} chip-clause--active{% endif %}"
+           data-clause-active="{{ 'true' if action.time else 'false' }}">
+        <button type="button"
+                class="chip-clause__toggle"
+                aria-label="Add optional clause"
+                onclick="toggleOptionalClause(this)">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+        </button>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_time", value=action.time or '' %}
+            {% include "partials/chips/chip_time.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {% else %}
+      {# Required clause: whenever [subject] is [outcome] #}
+      <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+        <span class="chip-clause__lead">Whenever</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_event_subject", value=action.event_subject or 'any' %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="action_" ~ idx ~ "_event_outcome", value=action.event_outcome or 'created' %}
+            {% include "partials/chips/chip_event_outcome.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Optional clause: under [priority] #}
+      <div class="chip-clause chip-clause--optional{% if action.event_ancestor %} chip-clause--active{% endif %}"
+           data-clause-active="{{ 'true' if action.event_ancestor else 'false' }}">
+        <button type="button"
+                class="chip-clause__toggle"
+                aria-label="Add optional clause"
+                onclick="toggleOptionalClause(this)">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+        </button>
+        <span class="chip-clause__lead">under</span>
+        <span class="chip-clause__placeholder">any priority</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_event_ancestor", value=action.event_ancestor or '', priority_tree=priority_tree %}
+            {% include "partials/chips/chip_event_ancestor.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+      {% endif %}
+
+      {# Scaffold clause: when [conditions] — Phase 2 #}
+      <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+           data-clause-active="false" title="coming soon">
+        <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+        </button>
+        <span class="chip-clause__lead">when</span>
+        <span class="chip-clause__placeholder">conditions are met</span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {% if action_type == 'create' %}
+      {# Required clause: create a task named [name] #}
+      <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+        <span class="chip-clause__lead">create a task named</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_task_name", value=action.task_name or '' %}
+            {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Optional clause: due [date] #}
+      <div class="chip-clause chip-clause--optional{% if action.due %} chip-clause--active{% endif %}"
+           data-clause-active="{{ 'true' if action.due else 'false' }}">
+        <button type="button"
+                class="chip-clause__toggle"
+                aria-label="Add optional clause"
+                onclick="toggleOptionalClause(this)">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+        </button>
+        <span class="chip-clause__lead">due</span>
+        <span class="chip-clause__placeholder">end of day</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_due", value=action.due or 'end_of_day' %}
+            {% include "partials/chips/chip_due.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Optional clause: tagged with [tags] #}
+      <div class="chip-clause chip-clause--optional{% if action.tags %} chip-clause--active{% endif %}"
+           data-clause-active="{{ 'true' if action.tags else 'false' }}">
+        <button type="button"
+                class="chip-clause__toggle"
+                aria-label="Add optional clause"
+                onclick="toggleOptionalClause(this)">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+        </button>
+        <span class="chip-clause__lead">tagged with</span>
+        <span class="chip-clause__placeholder">one or more tags</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_tags", value=action.tags or '', available_tags=available_tags %}
+            {% include "partials/chips/chip_tags.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Optional clause: described as [description] #}
+      <div class="chip-clause chip-clause--optional{% if action.description %} chip-clause--active{% endif %}"
+           data-clause-active="{{ 'true' if action.description else 'false' }}">
+        <button type="button"
+                class="chip-clause__toggle"
+                aria-label="Add optional clause"
+                onclick="toggleOptionalClause(this)">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+        </button>
+        <span class="chip-clause__lead">described as</span>
+        <span class="chip-clause__placeholder">a new task under {{ priority_name or 'this practice' }}</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_description", value=action.description or '', practice_name=priority_name %}
+            {% include "partials/chips/chip_description.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {% else %}
+      {# Required clause: collate [target] as [name] #}
+      <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+        <span class="chip-clause__lead">collate</span>
+        <span class="chip-clause__content">
+          {% with name="action_" ~ idx ~ "_collate_target", value=action.collate_target or 'children' %}
+            {% include "partials/chips/chip_collate_target.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">as</span>
+          {% with name="action_" ~ idx ~ "_collate_name", value=action.collate_name or '', practice_name=priority_name %}
+            {% include "partials/chips/chip_collate_name.html" %}
+          {% endwith %}
+        </span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Scaffold clause: matching [filter] #}
+      <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+           data-clause-active="false" title="coming soon">
+        <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+        </button>
+        <span class="chip-clause__lead">matching</span>
+        <span class="chip-clause__placeholder">filter criteria</span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+
+      {# Scaffold clause: excluding [filter] #}
+      <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+           data-clause-active="false" title="coming soon">
+        <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+        </button>
+        <span class="chip-clause__lead">excluding</span>
+        <span class="chip-clause__placeholder">completed tasks</span>
+        <span class="chip-clause__terminator">,</span>
+      </div>
+      {% endif %}
+
+      {# Scaffold clause: and notify [me] #}
+      <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+           data-clause-active="false" title="coming soon">
+        <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+          <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+        </button>
+        <span class="chip-clause__lead">and notify</span>
+        <span class="chip-clause__placeholder">me</span>
+        <span class="chip-clause__terminator">.</span>
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+</div>

@@ -1507,6 +1507,92 @@ a:hover {
   opacity: 1;
 }
 
+/* Action Card */
+.action-card {
+  border: 1px solid #d0c5af;
+  border-radius: 0.75rem;
+  background: white;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+.action-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background: #f5f3ef;
+  border-bottom: 1px solid #e8e4dc;
+}
+.action-card__badge {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+.action-card__btn--change {
+  margin-right: auto;
+}
+.action-card__badge--schedule {
+  background: #ece0f5;
+  color: #7c5cad;
+}
+.action-card__badge--event {
+  background: #d6f0ee;
+  color: #2a7d75;
+}
+.action-card__badge--create {
+  background: #f5dfe0;
+  color: #994d5a;
+}
+.action-card__badge--collate {
+  background: #f5ecd6;
+  color: #7d6b3a;
+}
+.action-card__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+.action-card__btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: #7a7976;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+}
+.action-card__btn:hover {
+  background: #ebe8e2;
+  color: #4a4a48;
+}
+.action-card__btn--delete {
+  color: #a04050;
+}
+.action-card__btn--delete:hover {
+  background: #fde8e8;
+  color: #8c0d27;
+}
+
+/* View mode: display sentence */
+.action-card__summary {
+  padding: 0.75rem;
+}
+.action-card--view .chip-trigger {
+  background: transparent;
+  padding: 0;
+  cursor: default;
+}
+.action-card--view .chip-trigger:hover {
+  border-color: transparent;
+}
+
+/* Edit mode: chip sentence */
+.action-card__editor {
+  padding: 0.75rem;
+}
+
 .add-action-btn {
   margin-top: 0.5rem;
 }

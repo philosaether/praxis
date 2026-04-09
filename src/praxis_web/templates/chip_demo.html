@@ -501,6 +501,57 @@
       </div>
     </section>
 
+    <!-- Action Cards -->
+    <section class="demo-section">
+      <h2>Action Cards</h2>
+      <p class="demo-description">
+        Each action is a card with view mode (compact summary) and edit mode (full chipset).
+        Header shows trigger type and action type badges. Controls for edit, duplicate, and delete.
+      </p>
+
+      <div class="demo-example">
+        <h3>View Mode — Schedule + Create</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "create", "interval": "weekdays", "task_name": "Practice Leetcode"}, idx=0, priority_id="demo", editable=true, mode="view" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>View Mode — Event + Create</h3>
+        {% with action={"trigger_type": "event", "action_type": "create", "event_subject": "goal", "event_outcome": "completed", "task_name": "Show your work"}, idx=1, priority_id="demo", editable=true, mode="view" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>View Mode — Schedule + Collate</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "collate", "interval": "weekdays", "collate_target": "children"}, idx=2, priority_id="demo", priority_name="Biweekly Shopping", editable=true, mode="view" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>Edit Mode — Schedule + Create</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "create", "interval": "weekdays", "task_name": "Practice Leetcode"}, idx=3, priority_id="demo", priority_name="Daily Leetcode", editable=true, mode="edit" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>Edit Mode — Event + Create</h3>
+        {% with action={"trigger_type": "event", "action_type": "create", "event_subject": "goal", "event_outcome": "completed"}, idx=4, priority_id="demo", priority_name="Show Your Work", editable=true, mode="edit" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>Edit Mode — Schedule + Collate</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "collate", "interval": "weekdays", "collate_target": "children"}, idx=5, priority_id="demo", priority_name="Biweekly Shopping", editable=true, mode="edit" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+    </section>
+
     <!-- Interval Chip (New) -->
     <section class="demo-section">
       <h2>Interval Chip</h2>
