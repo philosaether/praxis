@@ -19,6 +19,8 @@ from praxis_core.dsl import (
     PriorityTemplate,
 )
 
+_ACTION_FIELD_RE = re.compile(r"^action_(\d+)_(.+)$")
+
 
 def render_schedule_phrase(schedule: Schedule) -> dict:
     """Render a schedule as a phrase with editable chip data.
@@ -542,10 +544,9 @@ def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | N
     """
     # Group form fields by action index
     action_fields: dict[int, dict[str, str]] = {}
-    pattern = re.compile(r"^action_(\d+)_(.+)$")
 
     for key, value in form_data.items():
-        m = pattern.match(key)
+        m = _ACTION_FIELD_RE.match(key)
         if m:
             idx = int(m.group(1))
             field = m.group(2)

@@ -1776,6 +1776,8 @@ async def priority_actions_yaml_get(request: Request, priority_id: str):
     priority = graph.get(priority_id)
     if not priority:
         return HTMLResponse("<p class='error'>Priority not found</p>")
+    if priority.entity_id != user.entity_id:
+        return HTMLResponse("<p class='error'>Permission denied</p>")
 
     yaml_content = actions_to_yaml(priority.actions_config)
 
@@ -1784,7 +1786,7 @@ async def priority_actions_yaml_get(request: Request, priority_id: str):
     <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
         <textarea name="yaml" rows="12" class="property-input yaml-input"
                   hx-post="/priorities/{priority_id}/actions/yaml"
-                  hx-trigger="blur"
+                  hx-trigger="blur changed"
                   hx-target="#yaml-status-{priority_id}"
                   hx-swap="innerHTML">{yaml_content}</textarea>
         <span id="yaml-status-{priority_id}" class="yaml-status"></span>
@@ -1834,7 +1836,8 @@ async def priority_actions_yaml_save(
 
         return HTMLResponse('<span class="yaml-status--saved">saved</span>')
     except ValueError as e:
-        return HTMLResponse(f'<span class="yaml-status--error">{e}</span>')
+        from html import escape
+        return HTMLResponse(f'<span class="yaml-status--error">{escape(str(e))}</span>')
 
 
 @app.post("/priorities/{priority_id}/actions/validate")

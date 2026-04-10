@@ -128,6 +128,7 @@ def serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    include_action_cards: bool = False,
 ) -> dict:
     """Convert a Priority to JSON-serializable dict.
 
@@ -179,12 +180,12 @@ def serialize_priority(
         data["trigger_config"] = p.trigger_config
         data["actions_config"] = p.actions_config
         data["last_triggered_at"] = fmt_date(p.last_triggered_at)
-        # Add card data for view mode (action_card.html template)
-        if p.actions_config:
-            from praxis_web.helpers.action_renderer import actions_to_card_data
-            data["action_cards"] = actions_to_card_data(p.actions_config)
-        else:
-            data["action_cards"] = []
+        if include_action_cards:
+            if p.actions_config:
+                from praxis_web.helpers.action_renderer import actions_to_card_data
+                data["action_cards"] = actions_to_card_data(p.actions_config)
+            else:
+                data["action_cards"] = []
     # Value and Initiative have no type-specific fields
 
     return data

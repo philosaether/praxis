@@ -33,6 +33,7 @@ def _serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    include_action_cards: bool = False,
 ):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_priority
@@ -41,6 +42,7 @@ def _serialize_priority(
         render_markdown=render_markdown,
         current_entity_id=current_entity_id,
         shares=shares,
+        include_action_cards=include_action_cards,
     )
 
 
@@ -265,6 +267,7 @@ async def get_priority(
             render_markdown=True,
             current_entity_id=entity_id,
             shares=shares,
+            include_action_cards=True,
         ),
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
@@ -522,7 +525,7 @@ async def update_priority_properties(
     child_ids = graph.children.get(priority_id, set())
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
-    priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id)
+    priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id, include_action_cards=True)
     priority_data["notes_raw"] = priority.description or ""
 
     return {
