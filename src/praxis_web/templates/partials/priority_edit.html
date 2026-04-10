@@ -149,22 +149,11 @@
                         <a href="#" class="label-action" id="actions-mode-toggle" onclick="toggleActionsYamlMode(event, '{{ priority.id }}')">edit as code</a>
                     </label>
                     <div id="actions-editor-container">
-                        {% if actions %}
                         {% include "partials/actions/actions_editor.html" with context %}
-                        {% else %}
-                        <div class="actions-editor-visual">
-                            <p class="empty-hint">No actions configured. Add an action to automate task creation.</p>
-                            <button type="button"
-                                    class="btn btn-sm btn-secondary add-action-btn"
-                                    hx-get="/priorities/{{ priority.id }}/actions/wizard"
-                                    hx-target="#action-wizard-container"
-                                    hx-swap="innerHTML">
-                                + Add Action
-                            </button>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
+                {# Chip hidden inputs (action_N_field) are inside the form and sent automatically by HTMX.
+                   Server assembles actions_config JSON from those fields. #}
             </div>
             {% endif %}
 
@@ -259,4 +248,7 @@ function openActionWizard() {
         swap: 'innerHTML'
     });
 }
+
+// No client-side serialization needed — chip hidden inputs (action_N_field)
+// are sent as regular form fields by HTMX. Server assembles actions_config.
 </script>

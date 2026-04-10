@@ -1,0 +1,144 @@
+{#
+Action Creation Wizard
+======================
+Single-step selector: pick a trigger×action combination, get an action
+card in edit mode. Replaces the old multi-step wizard modal.
+
+Params:
+  - priority_id: parent practice ID
+  - practice_name: parent practice name
+  - replace: action index to replace (optional, for "edit" button on cards)
+#}
+
+{% set replace = replace if replace is defined else '' %}
+
+<div class="modal-backdrop open" onclick="closeActionWizard(event)">
+  <div class="modal wizard-modal wizard-modal--compact" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{% if replace != '' %}Change action type{% else %}Add action{% endif %}</h3>
+      <button type="button" class="modal-close" onclick="closeActionWizard()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="wizard-grid">
+
+        <div class="wizard-grid__group">
+          <h4 class="wizard-grid__heading">On a schedule...</h4>
+          <button type="button"
+                  class="wizard-grid__option"
+                  onclick="addActionCard('{{ priority_id }}', 'schedule', 'create', '{{ replace }}', '{{ practice_name }}')">
+            <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+            <span class="wizard-grid__label">create a task</span>
+          </button>
+          <button type="button"
+                  class="wizard-grid__option"
+                  onclick="addActionCard('{{ priority_id }}', 'schedule', 'collate', '{{ replace }}', '{{ practice_name }}')">
+            <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+            <span class="wizard-grid__label">collate tasks</span>
+          </button>
+        </div>
+
+        <div class="wizard-grid__group">
+          <h4 class="wizard-grid__heading">In response to an event...</h4>
+          <button type="button"
+                  class="wizard-grid__option"
+                  onclick="addActionCard('{{ priority_id }}', 'event', 'create', '{{ replace }}', '{{ practice_name }}')">
+            <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+            <span class="wizard-grid__label">create a task</span>
+          </button>
+          <button type="button"
+                  class="wizard-grid__option"
+                  onclick="addActionCard('{{ priority_id }}', 'event', 'collate', '{{ replace }}', '{{ practice_name }}')">
+            <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+            <span class="wizard-grid__label">collate tasks</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function closeActionWizard(event) {
+    if (event && event.type === 'click' && event.target !== event.currentTarget) return;
+    var container = document.getElementById('action-wizard-container');
+    if (container) container.innerHTML = '';
+}
+
+function addActionCard(priorityId, triggerType, actionType, replace, practiceName) {
+    // Fetch a blank action card partial from the server (no DB writes)
+    const params = new URLSearchParams({
+        trigger_type: triggerType,
+        action_type: actionType,
+        practice_name: practiceName,
+        editable: 'true',
+        mode: 'edit'
+    });
+
+    fetch(`/partials/actions/card?${params}`)
+        .then(r => r.text())
+        .then(html => {
+            const list = document.querySelector(`#actions-list-${priorityId}`);
+
+            if (replace !== '') {
+                // Replace existing card
+                const existing = document.querySelector(`.action-card[data-action-idx="${replace}"]`);
+                if (existing) {
+                    existing.outerHTML = html;
+                }
+            } else {
+                // Append new card
+                if (list) {
+                    list.insertAdjacentHTML('beforeend', html);
+                } else {
+                    // No list yet — create one, replacing the empty hint
+                    const container = document.getElementById('actions-editor-' + priorityId);
+                    if (!container) return;
+                    const hint = container.querySelector('.empty-hint');
+                    if (hint) hint.remove();
+                    const newList = document.createElement('div');
+                    newList.className = 'actions-list';
+                    newList.id = `actions-list-${priorityId}`;
+                    newList.innerHTML = html;
+                    container.insertBefore(newList, container.querySelector('.add-action-btn'));
+                }
+            }
+
+            // Reindex all cards so hidden input names stay sequential
+            reindexActionCards();
+
+            // Initialize clause punctuation on the new card
+            const sentences = document.querySelectorAll('.chip-sentence--clauses');
+            sentences.forEach(s => {
+                if (typeof updateClausePunctuation === 'function') updateClausePunctuation(s);
+            });
+
+            closeActionWizard();
+        });
+}
+
+// Reindex action cards so data-action-idx and input names stay sequential
+function reindexActionCards() {
+    const cards = document.querySelectorAll('.action-card');
+    cards.forEach((card, i) => {
+        const oldIdx = card.dataset.actionIdx;
+        card.dataset.actionIdx = i;
+
+        // Update input names: action_{oldIdx}_{field} → action_{i}_{field}
+        card.querySelectorAll('input, textarea').forEach(input => {
+            if (input.name && input.name.startsWith('action_')) {
+                input.name = input.name.replace(/^action_\d+_/, `action_${i}_`);
+            }
+        });
+
+        // Update chip data-chip attributes
+        card.querySelectorAll('[data-chip]').forEach(chip => {
+            const attr = chip.dataset.chip;
+            if (attr && attr.startsWith('action_')) {
+                chip.dataset.chip = attr.replace(/^action_\d+_/, `action_${i}_`);
+            }
+        });
+    });
+}
+</script>

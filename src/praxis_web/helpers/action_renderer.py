@@ -1,11 +1,12 @@
 """
-Render Practice actions as human-readable sentences.
+Render and assemble Practice actions.
 
-Converts DSL PracticeAction objects into prose that can be displayed
-with editable chips in the UI.
+Converts between DSL PracticeAction objects, chip-compatible dicts for
+templates, and form field values from HTMX submissions.
 """
 
 import json
+import re
 from typing import Any
 
 from praxis_core.dsl import (
@@ -358,6 +359,89 @@ def render_action_summary(action: PracticeAction | dict) -> str:
     return summary
 
 
+def action_to_card_data(action: PracticeAction | dict) -> dict:
+    """Extract chip-compatible field values from a PracticeAction for the
+    action card template.
+
+    Returns a flat dict with trigger_type, action_type, and all chip field
+    values that the action_card.html template expects.
+    """
+    if isinstance(action, dict):
+        action = PracticeAction.from_dict(action)
+
+    data = {
+        "trigger_type": "schedule" if action.trigger.schedule else "event",
+        "action_type": "collate" if action.collate else "create",
+    }
+
+    # Schedule fields
+    if action.trigger.schedule:
+        sched = action.trigger.schedule
+        if isinstance(sched.interval, str):
+            data["interval"] = sched.interval
+        elif hasattr(sched.interval, 'frequency'):
+            data["interval"] = "custom"
+        if sched.at:
+            data["time"] = sched.at if isinstance(sched.at, str) else sched.at[0]
+
+    # Event fields
+    if action.trigger.event:
+        evt = action.trigger.event
+        event_type = evt.event_type.value
+        if "task" in event_type:
+            if evt.params.get("entity_type") == "goal":
+                data["event_subject"] = "goal"
+            else:
+                data["event_subject"] = "task"
+        else:
+            entity_type = evt.params.get("entity_type", "any")
+            data["event_subject"] = entity_type
+
+        if "completion" in event_type:
+            data["event_outcome"] = "completed"
+        elif "status_change" in event_type:
+            data["event_outcome"] = f"status_change:{evt.to}" if evt.to else "status_change:active"
+        else:
+            data["event_outcome"] = "created"
+
+        if evt.params.get("under"):
+            data["event_ancestor"] = evt.params["under"]
+
+    # Create fields
+    if action.create and action.create.items:
+        item = action.create.items[0]
+        if isinstance(item, TaskTemplate):
+            data["task_name"] = item.name
+            if item.due:
+                data["due"] = item.due if isinstance(item.due, str) else "end_of_day"
+            if item.tags:
+                data["tags"] = ",".join(item.tags)
+            if item.description:
+                data["description"] = item.description
+
+    # Collate fields
+    if action.collate:
+        target = action.collate.target
+        if hasattr(target, 'shorthand') and target.shorthand:
+            data["collate_target"] = target.shorthand
+        if action.collate.as_template:
+            data["collate_name"] = action.collate.as_template.name
+
+    return data
+
+
+def actions_to_card_data(actions_config: str | None) -> list[dict]:
+    """Parse actions_config and return card data for all actions."""
+    if not actions_config:
+        return []
+
+    try:
+        config = PracticeConfig.from_json(actions_config)
+        return [action_to_card_data(action) for action in config.actions]
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        return []
+
+
 def render_action_summaries(actions_config: str | None) -> list[str]:
     """Parse actions_config and render simple summaries for view mode.
 
@@ -434,3 +518,104 @@ def yaml_to_actions_config(yaml_str: str, practice_name: str = "") -> str:
     data["name"] = practice_name
     config = PracticeConfig.from_dict(data)
     return config.to_json()
+
+
+def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | None:
+    """Assemble actions_config JSON from flat form fields.
+
+    Parses form fields like action_0_interval, action_0_task_name, etc.
+    into a PracticeConfig JSON string for database storage.
+
+    This is the inverse of action_to_card_data(): card_data → template →
+    hidden inputs → form submit → this function → actions_config JSON.
+
+    Args:
+        form_data: dict of form field names to values
+        practice_name: name of the practice (for PracticeConfig wrapper)
+
+    Returns:
+        JSON string for actions_config, or None if no action fields found
+    """
+    # Group form fields by action index
+    action_fields: dict[int, dict[str, str]] = {}
+    pattern = re.compile(r"^action_(\d+)_(.+)$")
+
+    for key, value in form_data.items():
+        m = pattern.match(key)
+        if m:
+            idx = int(m.group(1))
+            field = m.group(2)
+            if idx not in action_fields:
+                action_fields[idx] = {}
+            action_fields[idx][field] = value
+
+    if not action_fields:
+        return None
+
+    actions = []
+    for idx in sorted(action_fields):
+        fields = action_fields[idx]
+        trigger_type = fields.get("trigger_type", "schedule")
+        action_type = fields.get("action_type", "create")
+
+        action_data: dict[str, Any] = {"trigger": {}}
+
+        # Build trigger
+        if trigger_type == "schedule":
+            interval = fields.get("interval") or "weekdays"
+            action_data["trigger"]["schedule"] = {"interval": interval}
+            time = fields.get("time")
+            if time:
+                action_data["trigger"]["schedule"]["at"] = time
+        else:
+            subject = fields.get("event_subject") or "any"
+            outcome = fields.get("event_outcome") or "created"
+
+            if outcome == "completed":
+                event_type = "task_completion" if subject == "task" else "priority_completion"
+            elif outcome.startswith("status_change:"):
+                event_type = "task_status_change" if subject == "task" else "priority_status_change"
+            else:
+                event_type = "task_status_change" if subject == "task" else "priority_status_change"
+
+            event_dict: dict[str, str] = {"event": event_type}
+            if outcome.startswith("status_change:"):
+                event_dict["to"] = outcome.split(":", 1)[1]
+            if subject not in ("any", "task"):
+                event_dict["entity_type"] = subject
+
+            ancestor = fields.get("event_ancestor")
+            if ancestor:
+                event_dict["under"] = ancestor
+
+            action_data["trigger"]["event"] = event_dict
+
+        # Build action
+        if action_type == "collate":
+            target = fields.get("collate_target") or "children"
+            name = fields.get("collate_name") or "batch"
+            action_data["collate"] = {"target": target, "as": {"name": name}}
+        else:
+            task_name = fields.get("task_name") or "new task"
+            task: dict[str, Any] = {"name": task_name}
+
+            due = fields.get("due")
+            if due:
+                task["due"] = due
+
+            tags = fields.get("tags")
+            if tags:
+                tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+                if tag_list:
+                    task["tags"] = tag_list
+
+            description = fields.get("description")
+            if description:
+                task["description"] = description
+
+            action_data["create"] = [{"task": task}]
+
+        actions.append(action_data)
+
+    config = {"practice": {"name": practice_name, "actions": actions}}
+    return json.dumps(config)

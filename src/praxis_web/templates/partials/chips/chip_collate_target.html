@@ -1,0 +1,51 @@
+{#
+Collate Target Chip
+===================
+Selects which tasks to gather: direct children or all descendants.
+
+Params:
+  - name: Form field name (default: "collate_target")
+  - value: Current value (default: "children")
+
+Display rules:
+  - children    -> "children"
+  - descendants -> "descendants"
+
+DSL mapping:
+  - value -> collate.target (shorthand)
+#}
+
+{% set name = name or 'collate_target' %}
+{% set value = value if value is defined else 'children' %}
+{% set variant = 'collate' %}
+{% set display = value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="collate_target">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select collation target">
+    <div class="chip-popup__options chip-popup__options--collate-target">
+      {% for val, label, desc in [
+        ('children', 'children', 'direct children only'),
+        ('descendants', 'descendants', 'all nested tasks')
+      ] %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--collate{% if value == val %} selected{% endif %}"
+              data-value="{{ val }}"
+              data-display="{{ label }}"
+              onclick="selectChipOption(this, '{{ val }}', '{{ label }}')">
+        <span class="chip-popup__option-label">{{ label }}</span>
+        <span class="chip-popup__option-desc">{{ desc }}</span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</span>

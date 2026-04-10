@@ -1,0 +1,83 @@
+{#
+Time-of-Day Chip
+================
+Selects a time of day. The chip is self-contained: when no value is set
+it displays "at a specific time of day" as its own placeholder, so it
+can sit alone in an optional clause without external lead text.
+
+Params:
+  - name: Form field name (default: "time")
+  - value: Current value — preset word ("morning", "afternoon",
+           "evening", "night") OR HH:MM (e.g. "14:30").
+           Empty string means unconfigured.
+
+Display rules:
+  - empty            -> "at a specific time of day" (placeholder)
+  - preset word      -> the word itself ("morning")
+  - HH:MM time       -> "at H:MM am/pm" (e.g. "at 2:30 pm")
+
+Presets map to wall-clock times in the cron processor:
+  morning=00:00, afternoon=12:00, evening=17:00, night=23:59
+#}
+
+{% set name = name or 'time' %}
+{% set value = value if value is defined else '' %}
+{% set variant = 'time' %}
+
+{% set quick_picks = ['morning', 'afternoon', 'evening', 'night'] %}
+{% set preset_displays = {
+  'morning': 'in the morning',
+  'afternoon': 'in the afternoon',
+  'evening': 'in the evening',
+  'night': 'at night'
+} %}
+{% set is_preset = value in quick_picks %}
+{% set is_custom = (':' in value) %}
+{% set is_placeholder = not value %}
+
+{% if is_placeholder %}
+  {% set display = 'at a specific time of day' %}
+{% elif is_preset %}
+  {% set display = preset_displays[value] %}
+{% else %}
+  {% set _h = value.split(':')[0]|int %}
+  {% set _m = value.split(':')[1] %}
+  {% set _period = 'pm' if _h >= 12 else 'am' %}
+  {% set _h12 = (_h % 12) if (_h % 12) else 12 %}
+  {% set display = 'at ' ~ _h12 ~ ':' ~ _m ~ ' ' ~ _period %}
+{% endif %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="time">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select time of day">
+    <div class="chip-popup__time-presets">
+      <span class="chip-popup__prefix">in the</span>
+      <div class="chip-popup__options chip-popup__options--time">
+        {% for pick in quick_picks %}
+        <button type="button"
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--time{% if value == pick %} selected{% endif %}"
+                data-value="{{ pick }}"
+                data-display="{{ preset_displays[pick] }}"
+                onclick="selectTimeOption(this)">{{ pick }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="chip-popup__time-custom">
+      <span class="chip-popup__prefix">at</span>
+      <input type="time"
+             class="chip-popup__time-field"
+             value="{% if is_custom %}{{ value }}{% endif %}"
+             onchange="selectTimeCustom(this)">
+    </div>
+  </div>
+</span>

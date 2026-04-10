@@ -1,12 +1,13 @@
-{# Actions editor container for Practice priorities - Visual Mode #}
-{# Expects: priority (dict with id, actions_config), actions (list of rendered action dicts), editable (bool) #}
+{# Actions editor container for Practice priorities — Chip-based cards #}
+{# Expects: priority (dict with id, name, actions_config), action_cards (list of card data dicts),
+            editable (bool), priority_name (string) #}
 
 <div class="actions-editor-visual" id="actions-editor-{{ priority.id }}">
-    {% if actions and actions|length > 0 %}
+    {% if action_cards and action_cards|length > 0 %}
     <div class="actions-list" id="actions-list-{{ priority.id }}">
-        {% for action in actions %}
-        {% with idx=loop.index0, priority_id=priority.id %}
-        {% include "partials/actions/action_sentence.html" %}
+        {% for action in action_cards %}
+        {% with idx=loop.index0, priority_id=priority.id, priority_name=priority_name, mode=('edit' if editable else 'view') %}
+        {% include "partials/actions/action_card.html" %}
         {% endwith %}
         {% endfor %}
     </div>
@@ -26,27 +27,27 @@
 </div>
 
 <script>
-function editActionPart(priorityId, actionIdx, partType) {
-    // Phase 3 enhancement: Open inline editor for the part
-    console.log('Edit action', actionIdx, 'part', partType);
-    // For now, prompt user to use "edit as code"
-    alert('To edit action details, use "edit as code" link above.');
-}
-
 function removeAction(priorityId, actionIdx) {
     if (!confirm('Remove this action?')) return;
 
-    fetch('/priorities/' + priorityId + '/actions/' + actionIdx, {
-        method: 'DELETE'
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            htmx.ajax('GET', '/priorities/' + priorityId + '/actions', {
-                target: '#actions-editor-container',
-                swap: 'innerHTML'
-            });
+    // Remove card from DOM (persists on Save)
+    const card = document.querySelector(`.action-card[data-action-idx="${actionIdx}"]`);
+    if (card) card.remove();
+
+    // Reindex remaining cards
+    if (typeof reindexActionCards === 'function') reindexActionCards();
+
+    // If no cards left, show empty hint
+    const list = document.getElementById('actions-list-' + priorityId);
+    if (list && list.children.length === 0) {
+        list.remove();
+        const editor = document.getElementById('actions-editor-' + priorityId);
+        if (editor) {
+            const btn = editor.querySelector('.add-action-btn');
+            if (btn) {
+                btn.insertAdjacentHTML('beforebegin', '<p class="empty-hint">No actions configured. Add an action to automate task creation.</p>');
+            }
         }
-    });
+    }
 }
 </script>

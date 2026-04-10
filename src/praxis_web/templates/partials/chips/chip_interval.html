@@ -1,0 +1,91 @@
+{#
+Interval Chip
+=============
+Selects recurrence interval: day, weekday, weekend, or weekly on specific days.
+
+Params:
+  - name: Form field name (default: "interval")
+  - value: Current value (default: empty/placeholder)
+  - show_day_chip: Whether to show the day chip (for "weekly" value)
+
+When "weekly" is selected, this chip spawns a day chip for day-of-week selection.
+
+DSL mapping:
+  - daily    → interval: daily
+  - weekdays → interval: weekdays
+  - weekends → interval: weekends
+  - weekly   → interval: weekly (+ days from day chip)
+#}
+
+{% set name = name or 'interval' %}
+{% set value = value or '' %}
+{% set variant = 'interval' %}
+
+{# Display mapping #}
+{% set display_map = {
+  'daily': 'day',
+  'weekdays': 'weekday',
+  'weekends': 'weekend day',
+  'weekly': 'week'
+} %}
+
+{% set display = display_map.get(value, 'once in a while') %}
+{% set is_placeholder = not value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="interval">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select interval">
+    <div class="chip-popup__options chip-popup__options--interval">
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'daily' %} selected{% endif %}"
+              data-value="daily"
+              data-display="day"
+              data-spawns=""
+              onclick="selectIntervalOption(this)">day</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'weekdays' %} selected{% endif %}"
+              data-value="weekdays"
+              data-display="weekday"
+              data-spawns=""
+              onclick="selectIntervalOption(this)">weekday</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'weekends' %} selected{% endif %}"
+              data-value="weekends"
+              data-display="weekend day"
+              data-spawns=""
+              onclick="selectIntervalOption(this)">weekend day</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'weekly' %} selected{% endif %}"
+              data-value="weekly"
+              data-display="week"
+              data-spawns="day"
+              onclick="selectIntervalOption(this)">week on...</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == 'custom' %} selected{% endif %}"
+              data-value="custom"
+              data-display=""
+              data-spawns="custom"
+              onclick="selectIntervalOption(this)">custom interval</button>
+    </div>
+  </div>
+</span>
+{#- Spawn point for day chip when weekly is selected -#}
+{% if value == 'weekly' or show_day_chip %}
+<span class="chip-sentence__text chip-spawned-on">on</span>
+{% with name=name ~ '_days', value=days_value or '' %}
+{% include "partials/chips/chip_day.html" %}
+{% endwith %}
+{% endif %}
