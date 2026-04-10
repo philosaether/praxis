@@ -7,6 +7,7 @@ templates, and form field values from HTMX submissions.
 
 import json
 import re
+from datetime import datetime
 from typing import Any
 
 from praxis_core.dsl import (
@@ -380,7 +381,10 @@ def action_to_card_data(action: PracticeAction | dict) -> dict:
         if isinstance(sched.interval, str):
             data["interval"] = sched.interval
         elif hasattr(sched.interval, 'frequency'):
+            # Preserve cadence data for round-tripping
             data["interval"] = "custom"
+            data["cadence_frequency"] = sched.interval.frequency
+            data["cadence_beginning"] = sched.interval.beginning
         if sched.at:
             data["time"] = sched.at if isinstance(sched.at, str) else sched.at[0]
 
@@ -563,7 +567,14 @@ def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | N
         # Build trigger
         if trigger_type == "schedule":
             interval = fields.get("interval") or "weekdays"
-            action_data["trigger"]["schedule"] = {"interval": interval}
+            if interval == "custom":
+                # Reconstruct cadence from companion fields
+                freq = fields.get("cadence_frequency", "2w")
+                beginning = fields.get("cadence_beginning") or datetime.now().strftime("%Y-%m-%d")
+                cadence: dict[str, str] = {"frequency": freq, "beginning": beginning}
+                action_data["trigger"]["schedule"] = {"interval": {"cadence": cadence}}
+            else:
+                action_data["trigger"]["schedule"] = {"interval": interval}
             time = fields.get("time")
             if time:
                 action_data["trigger"]["schedule"]["at"] = time

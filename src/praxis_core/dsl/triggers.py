@@ -68,13 +68,13 @@ class Cadence:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Cadence":
-        beginning = data["beginning"]
+        beginning = data.get("beginning", "")
         # YAML may parse date as datetime.date object
         if hasattr(beginning, "isoformat"):
             beginning = beginning.isoformat()
         return cls(
             frequency=data["frequency"],
-            beginning=str(beginning),
+            beginning=str(beginning) if beginning else "",
             at=str(data.get("at", "00:00")),
         )
 

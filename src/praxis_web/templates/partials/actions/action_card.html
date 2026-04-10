@@ -27,6 +27,10 @@ Params:
      data-trigger-type="{{ trigger_type }}">
   <input type="hidden" name="action_{{ idx }}_trigger_type" value="{{ trigger_type }}">
   <input type="hidden" name="action_{{ idx }}_action_type" value="{{ action_type }}">
+  {% if action.cadence_frequency %}
+  <input type="hidden" name="action_{{ idx }}_cadence_frequency" value="{{ action.cadence_frequency }}">
+  <input type="hidden" name="action_{{ idx }}_cadence_beginning" value="{{ action.cadence_beginning or '' }}">
+  {% endif %}
 
   {% if mode == 'edit' %}
   {# Header with badges and controls — edit mode only #}

@@ -1779,20 +1779,15 @@ async def priority_actions_yaml_get(request: Request, priority_id: str):
 
     yaml_content = actions_to_yaml(priority.actions_config)
 
-    # Return HTML with textarea for editing
-    # Note: The "edit as code" / "edit as plain english" toggle is managed by priority_edit.html
+    # Return HTML with textarea that auto-saves on blur
     html = f'''
     <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
-        <form hx-post="/priorities/{priority_id}/actions/yaml"
-              hx-target="#actions-editor-container"
-              hx-swap="innerHTML"
-              hx-on::afterRequest="if(event.detail.successful) {{ actionsYamlMode = false; document.getElementById('actions-mode-toggle').textContent = 'edit as code'; }}">
-            <textarea name="yaml" rows="12" class="property-input yaml-input">{yaml_content}</textarea>
-            <div class="yaml-actions">
-                <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                <span id="yaml-status-{priority_id}" class="yaml-status"></span>
-            </div>
-        </form>
+        <textarea name="yaml" rows="12" class="property-input yaml-input"
+                  hx-post="/priorities/{priority_id}/actions/yaml"
+                  hx-trigger="blur"
+                  hx-target="#yaml-status-{priority_id}"
+                  hx-swap="innerHTML">{yaml_content}</textarea>
+        <span id="yaml-status-{priority_id}" class="yaml-status"></span>
     </div>
     '''
     return HTMLResponse(html)
@@ -1837,35 +1832,9 @@ async def priority_actions_yaml_save(
         from praxis_core.api.app import clear_graph_cache
         clear_graph_cache(user.entity_id)
 
-        # Return visual editor on success (switches back from YAML mode)
-        from praxis_web.helpers.action_renderer import render_actions_from_config
-        actions = render_actions_from_config(priority.actions_config)
-
-        return templates.TemplateResponse(
-            request,
-            "partials/actions/actions_editor.html",
-            {
-                "priority": {"id": priority_id, "actions_config": priority.actions_config},
-                "actions": actions,
-                "editable": True,
-            }
-        )
+        return HTMLResponse('<span class="yaml-status--saved">saved</span>')
     except ValueError as e:
-        # Return error with the original YAML so user can fix it
-        html = f'''
-        <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
-            <p class="error-msg">Error: {str(e)}</p>
-            <form hx-post="/priorities/{priority_id}/actions/yaml"
-                  hx-target="#actions-editor-container"
-                  hx-swap="innerHTML">
-                <textarea name="yaml" rows="12" class="property-input yaml-input">{yaml_content}</textarea>
-                <div class="yaml-actions">
-                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                </div>
-            </form>
-        </div>
-        '''
-        return HTMLResponse(html)
+        return HTMLResponse(f'<span class="yaml-status--error">{e}</span>')
 
 
 @app.post("/priorities/{priority_id}/actions/validate")
