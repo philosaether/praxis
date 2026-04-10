@@ -16,7 +16,7 @@ DSL mapping:
 #}
 
 {% set name = name or 'task_name' %}
-{% set value = value if value is defined else 'new task' %}
+{% set value = value if value else 'new task' %}
 {% set variant = 'task' %}
 {% set display = value %}
 

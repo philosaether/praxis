@@ -480,18 +480,11 @@ async def update_priority_properties(
         else:
             priority.due_date = None
 
-    # For Practice priorities, update actions_config from chip editor if provided,
-    # otherwise preserve the DB value to avoid clobbering wizard edits
+    # For Practice priorities, update actions_config if provided.
+    # The web layer assembles JSON from chip form fields server-side.
     if isinstance(priority, Practice):
         if actions_config and actions_config.strip():
             priority.actions_config = actions_config.strip()
-        else:
-            from praxis_core.persistence import get_connection
-            conn = get_connection()
-            row = conn.execute('SELECT actions_config FROM priorities WHERE id = ?', (priority_id,)).fetchone()
-            if row:
-                priority.actions_config = row['actions_config']
-            conn.close()
 
     graph.save_priority(priority)
 

@@ -1,11 +1,12 @@
 """
-Render Practice actions as human-readable sentences.
+Render and assemble Practice actions.
 
-Converts DSL PracticeAction objects into prose that can be displayed
-with editable chips in the UI.
+Converts between DSL PracticeAction objects, chip-compatible dicts for
+templates, and form field values from HTMX submissions.
 """
 
 import json
+import re
 from typing import Any
 
 from praxis_core.dsl import (
@@ -517,3 +518,104 @@ def yaml_to_actions_config(yaml_str: str, practice_name: str = "") -> str:
     data["name"] = practice_name
     config = PracticeConfig.from_dict(data)
     return config.to_json()
+
+
+def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | None:
+    """Assemble actions_config JSON from flat form fields.
+
+    Parses form fields like action_0_interval, action_0_task_name, etc.
+    into a PracticeConfig JSON string for database storage.
+
+    This is the inverse of action_to_card_data(): card_data → template →
+    hidden inputs → form submit → this function → actions_config JSON.
+
+    Args:
+        form_data: dict of form field names to values
+        practice_name: name of the practice (for PracticeConfig wrapper)
+
+    Returns:
+        JSON string for actions_config, or None if no action fields found
+    """
+    # Group form fields by action index
+    action_fields: dict[int, dict[str, str]] = {}
+    pattern = re.compile(r"^action_(\d+)_(.+)$")
+
+    for key, value in form_data.items():
+        m = pattern.match(key)
+        if m:
+            idx = int(m.group(1))
+            field = m.group(2)
+            if idx not in action_fields:
+                action_fields[idx] = {}
+            action_fields[idx][field] = value
+
+    if not action_fields:
+        return None
+
+    actions = []
+    for idx in sorted(action_fields):
+        fields = action_fields[idx]
+        trigger_type = fields.get("trigger_type", "schedule")
+        action_type = fields.get("action_type", "create")
+
+        action_data: dict[str, Any] = {"trigger": {}}
+
+        # Build trigger
+        if trigger_type == "schedule":
+            interval = fields.get("interval") or "weekdays"
+            action_data["trigger"]["schedule"] = {"interval": interval}
+            time = fields.get("time")
+            if time:
+                action_data["trigger"]["schedule"]["at"] = time
+        else:
+            subject = fields.get("event_subject") or "any"
+            outcome = fields.get("event_outcome") or "created"
+
+            if outcome == "completed":
+                event_type = "task_completion" if subject == "task" else "priority_completion"
+            elif outcome.startswith("status_change:"):
+                event_type = "task_status_change" if subject == "task" else "priority_status_change"
+            else:
+                event_type = "task_status_change" if subject == "task" else "priority_status_change"
+
+            event_dict: dict[str, str] = {"event": event_type}
+            if outcome.startswith("status_change:"):
+                event_dict["to"] = outcome.split(":", 1)[1]
+            if subject not in ("any", "task"):
+                event_dict["entity_type"] = subject
+
+            ancestor = fields.get("event_ancestor")
+            if ancestor:
+                event_dict["under"] = ancestor
+
+            action_data["trigger"]["event"] = event_dict
+
+        # Build action
+        if action_type == "collate":
+            target = fields.get("collate_target") or "children"
+            name = fields.get("collate_name") or "batch"
+            action_data["collate"] = {"target": target, "as": {"name": name}}
+        else:
+            task_name = fields.get("task_name") or "new task"
+            task: dict[str, Any] = {"name": task_name}
+
+            due = fields.get("due")
+            if due:
+                task["due"] = due
+
+            tags = fields.get("tags")
+            if tags:
+                tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+                if tag_list:
+                    task["tags"] = tag_list
+
+            description = fields.get("description")
+            if description:
+                task["description"] = description
+
+            action_data["create"] = [{"task": task}]
+
+        actions.append(action_data)
+
+    config = {"practice": {"name": practice_name, "actions": actions}}
+    return json.dumps(config)

@@ -1042,11 +1042,19 @@ async def priority_change_type(request: Request, priority_id: str):
 async def priority_save_properties(request: Request, priority_id: str):
     """Save priority properties and return view mode + OOB row update."""
     form_data = await request.form()
+    data = dict(form_data)
+
+    # Assemble actions_config JSON from chip form fields (action_N_field).
+    # This replaces the old client-side serializeActionCards() approach.
+    from praxis_web.helpers.action_renderer import assemble_actions_config
+    actions_config = assemble_actions_config(data, data.get("name", ""))
+    if actions_config:
+        data["actions_config"] = actions_config
 
     async with api_client(request) as client:
         response = await client.post(
             f"/api/priorities/{priority_id}/properties",
-            data=dict(form_data)
+            data=data
         )
         if response.status_code == 404:
             return HTMLResponse(

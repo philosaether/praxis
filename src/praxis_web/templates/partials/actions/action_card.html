@@ -25,6 +25,8 @@ Params:
      data-action-idx="{{ idx }}"
      data-action-type="{{ action_type }}"
      data-trigger-type="{{ trigger_type }}">
+  <input type="hidden" name="action_{{ idx }}_trigger_type" value="{{ trigger_type }}">
+  <input type="hidden" name="action_{{ idx }}_action_type" value="{{ action_type }}">
 
   {% if mode == 'edit' %}
   {# Header with badges and controls — edit mode only #}
@@ -62,42 +64,30 @@ Params:
   {% endif %}
 
   {% if mode == 'view' %}
-  {# ── View mode: required clauses as a display sentence ── #}
+  {# ── View mode: required clauses only, excluding "starting" subclause ── #}
   <div class="action-card__summary">
-    <div class="chip-sentence">
-      {% if trigger_type == 'schedule' %}
-        <span class="chip-sentence__text">Every</span>
-        {% with name="view_" ~ idx ~ "_interval", value=action.interval or 'weekdays' %}
-          {% include "partials/chips/chip_interval.html" %}
-        {% endwith %}
-      {% else %}
-        <span class="chip-sentence__text">Whenever</span>
-        {% with name="view_" ~ idx ~ "_event_subject", value=action.event_subject or 'any' %}
-          {% include "partials/chips/chip_event_subject.html" %}
-        {% endwith %}
-        <span class="chip-sentence__text">is</span>
-        {% with name="view_" ~ idx ~ "_event_outcome", value=action.event_outcome or 'created' %}
-          {% include "partials/chips/chip_event_outcome.html" %}
-        {% endwith %}
-      {% endif %}
-
-      {% if action_type == 'create' %}
-        <span class="chip-sentence__text">, create a task named</span>
-        {% with name="view_" ~ idx ~ "_task_name", value=action.task_name or '' %}
-          {% include "partials/chips/chip_task_name.html" %}
-        {% endwith %}
-      {% else %}
-        <span class="chip-sentence__text">, collate</span>
-        {% with name="view_" ~ idx ~ "_collate_target", value=action.collate_target or 'children' %}
-          {% include "partials/chips/chip_collate_target.html" %}
-        {% endwith %}
-        <span class="chip-sentence__text">as</span>
-        {% with name="view_" ~ idx ~ "_collate_name", value=action.collate_name or '', practice_name=priority_name %}
-          {% include "partials/chips/chip_collate_name.html" %}
-        {% endwith %}
-      {% endif %}
-      <span class="chip-sentence__text">.</span>
-    </div>
+    {# --- Trigger clause (required) --- #}
+    {% if trigger_type == 'schedule' %}
+      {%- set interval_display = {
+        'daily': 'day', 'weekdays': 'weekday', 'weekends': 'weekend day', 'weekly': 'week'
+      } -%}
+      Every {{ interval_display.get(action.interval, action.interval or 'day') -}}
+    {% else %}
+      {%- set subject_display = {
+        'any': 'any priority', 'task': 'a task', 'goal': 'a goal',
+        'practice': 'a practice', 'initiative': 'an initiative'
+      } -%}
+      {%- set outcome_display = {
+        'created': 'created', 'completed': 'completed'
+      } -%}
+      Whenever {{ subject_display.get(action.event_subject, action.event_subject or 'any priority') }} is {{ outcome_display.get(action.event_outcome, action.event_outcome or 'created') -}}
+    {% endif -%}
+    {# --- Action clause (required) --- #}
+    {% if action_type == 'create' -%}
+      , create a task called &ldquo;{{ action.task_name or 'new task' }}.&rdquo;
+    {%- else -%}
+      , collate {{ action.collate_target or 'children' }} as &ldquo;{{ action.collate_name or 'batch' }}.&rdquo;
+    {%- endif %}
   </div>
 
   {% else %}

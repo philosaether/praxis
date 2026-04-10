@@ -77,15 +77,15 @@
             </div>
             {% endif %}
         {% elif priority.priority_type == 'practice' %}
-            <!-- Actions Section (DSL v2) - View Mode: Simple summaries -->
-            {% if priority.action_summaries and priority.action_summaries|length > 0 %}
+            <!-- Actions Section (DSL v2) - View Mode: Action cards -->
+            {% if priority.action_cards and priority.action_cards|length > 0 %}
             <div class="actions-display-section">
                 <label>Actions</label>
-                <ul class="actions-summary-list">
-                    {% for summary in priority.action_summaries %}
-                    <li class="action-summary-item">{{ summary }}</li>
-                    {% endfor %}
-                </ul>
+                {% for action in priority.action_cards %}
+                {% with idx=loop.index0, priority_id=priority.id, priority_name=priority.name, mode='view', editable=false %}
+                {% include "partials/actions/action_card.html" %}
+                {% endwith %}
+                {% endfor %}
             </div>
             {% endif %}
         {% endif %}

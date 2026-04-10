@@ -152,7 +152,8 @@
                         {% include "partials/actions/actions_editor.html" with context %}
                     </div>
                 </div>
-                <input type="hidden" name="actions_config" id="actions-config-field" value="">
+                {# Chip hidden inputs (action_N_field) are inside the form and sent automatically by HTMX.
+                   Server assembles actions_config JSON from those fields. #}
             </div>
             {% endif %}
 
@@ -248,106 +249,6 @@ function openActionWizard() {
     });
 }
 
-// Serialize action card chip values into actions_config JSON before form submit.
-// Each action card has hidden inputs named "action_{idx}_{field}".
-function serializeActionCards() {
-    const configField = document.getElementById('actions-config-field');
-    if (!configField) return;
-
-    const cards = document.querySelectorAll('.action-card');
-    if (cards.length === 0) {
-        configField.value = '';
-        return;
-    }
-
-    const actions = [];
-    cards.forEach(card => {
-        const idx = card.dataset.actionIdx;
-        const triggerType = card.dataset.triggerType;
-        const actionType = card.dataset.actionType;
-
-        // Helper: get hidden input value by name prefix + field
-        function getVal(field) {
-            const input = card.querySelector(`input[name="action_${idx}_${field}"], textarea[name="action_${idx}_${field}"]`);
-            return input ? input.value : '';
-        }
-
-        const actionData = { trigger: {} };
-
-        // Build trigger
-        if (triggerType === 'schedule') {
-            const interval = getVal('interval') || 'weekdays';
-            actionData.trigger.schedule = { interval: interval };
-            const time = getVal('time');
-            if (time) actionData.trigger.schedule.at = time;
-        } else {
-            const subject = getVal('event_subject') || 'any';
-            const outcome = getVal('event_outcome') || 'created';
-
-            let eventType;
-            if (outcome === 'completed') {
-                eventType = (subject === 'task') ? 'task_completion' : 'priority_completion';
-            } else if (outcome.startsWith('status_change:')) {
-                eventType = (subject === 'task') ? 'task_status_change' : 'priority_status_change';
-            } else {
-                eventType = (subject === 'task') ? 'task_status_change' : 'priority_status_change';
-            }
-
-            actionData.trigger.event = { event: eventType };
-            if (outcome.startsWith('status_change:')) {
-                actionData.trigger.event.to = outcome.split(':')[1];
-            }
-            if (subject !== 'any' && subject !== 'task') {
-                actionData.trigger.event.entity_type = subject;
-            }
-
-            const ancestor = getVal('event_ancestor');
-            if (ancestor) {
-                actionData.trigger.when = { 'event.ancestor': ancestor };
-            }
-        }
-
-        // Build action
-        if (actionType === 'collate') {
-            const target = getVal('collate_target') || 'children';
-            const name = getVal('collate_name') || 'batch';
-            actionData.collate = {
-                target: target,
-                as: { name: name }
-            };
-        } else {
-            const taskName = getVal('task_name') || 'new task';
-            const task = { name: taskName };
-
-            const due = getVal('due');
-            if (due) task.due = due;
-
-            const tags = getVal('tags');
-            if (tags) task.tags = tags.split(',').map(t => t.trim()).filter(Boolean);
-
-            const desc = getVal('description');
-            if (desc) task.description = desc;
-
-            actionData.create = [{ task: task }];
-        }
-
-        actions.push(actionData);
-    });
-
-    const config = {
-        practice: {
-            name: document.querySelector('input[name="name"]')?.value || '',
-            actions: actions
-        }
-    };
-
-    configField.value = JSON.stringify(config);
-}
-
-// Wire serialization to form submit
-document.addEventListener('htmx:configRequest', function(evt) {
-    if (evt.detail.elt.closest && evt.detail.elt.closest('form[hx-post*="/properties"]')) {
-        serializeActionCards();
-    }
-});
+// No client-side serialization needed — chip hidden inputs (action_N_field)
+// are sent as regular form fields by HTMX. Server assembles actions_config.
 </script>
