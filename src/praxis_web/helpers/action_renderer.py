@@ -7,7 +7,7 @@ templates, and form field values from HTMX submissions.
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from praxis_core.dsl import (
@@ -35,6 +35,26 @@ def render_schedule_phrase(schedule: Schedule) -> dict:
     # Handle cadence (custom interval)
     if isinstance(interval, Cadence):
         freq = interval.frequency
+        # Build day suffix from stored day value (fallback: derive for weekly)
+        day_suffix = ""
+        effective_day = day
+        if not effective_day and freq.endswith('w') and interval.beginning:
+            try:
+                dt = datetime.fromisoformat(interval.beginning)
+                day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                effective_day = day_names[dt.weekday()]
+            except ValueError:
+                pass
+        if effective_day:
+            first_day = effective_day.split(",")[0].strip()
+            if first_day == "last":
+                day_suffix = " on the last day"
+            elif first_day.isdigit():
+                n = int(first_day)
+                ordinal = f"{n}{'st' if n == 1 else 'nd' if n == 2 else 'rd' if n == 3 else 'th'}"
+                day_suffix = f" on the {ordinal}"
+            else:
+                day_suffix = f" on {first_day.title()}"
         # Parse frequency like "14d" or "2w"
         if freq.endswith('d'):
             num = freq[:-1]
@@ -47,14 +67,22 @@ def render_schedule_phrase(schedule: Schedule) -> dict:
         elif freq.endswith('w'):
             num = freq[:-1]
             return {
-                "text": f"Every {num} weeks",
+                "text": f"Every {num} weeks{day_suffix}",
                 "chips": [
-                    {"type": "cadence", "value": freq, "label": f"every {num} weeks"}
+                    {"type": "cadence", "value": freq, "label": f"every {num} weeks{day_suffix.lower()}"}
+                ]
+            }
+        elif freq.endswith('m'):
+            num = freq[:-1]
+            return {
+                "text": f"Every {num} months{day_suffix}",
+                "chips": [
+                    {"type": "cadence", "value": freq, "label": f"every {num} months{day_suffix.lower()}"}
                 ]
             }
         return {
-            "text": f"On cadence ({freq})",
-            "chips": [{"type": "cadence", "value": freq, "label": freq}]
+            "text": f"On cadence ({freq}){day_suffix}",
+            "chips": [{"type": "cadence", "value": freq, "label": f"{freq}{day_suffix.lower()}"}]
         }
 
     # Handle named intervals
@@ -387,6 +415,24 @@ def action_to_card_data(action: PracticeAction | dict) -> dict:
             data["interval"] = "custom"
             data["cadence_frequency"] = sched.interval.frequency
             data["cadence_beginning"] = sched.interval.beginning
+            # Decompose for chip rendering
+            freq = sched.interval.frequency
+            m = re.match(r"(\d+)([dwmqy])", freq)
+            if m:
+                data["cadence_count"] = m.group(1)
+                unit_map = {"d": "days", "w": "weeks", "m": "months", "q": "quarters", "y": "years"}
+                data["cadence_period"] = unit_map.get(m.group(2), "weeks")
+            # Use stored day value (works for all period types)
+            if sched.day:
+                data["cadence_day"] = sched.day
+            elif data.get("cadence_period") == "weeks" and sched.interval.beginning:
+                # Fallback for old data without stored day: derive from beginning
+                try:
+                    dt = datetime.fromisoformat(sched.interval.beginning)
+                    day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                    data["cadence_day"] = day_names[dt.weekday()]
+                except ValueError:
+                    pass
         if sched.at:
             data["time"] = sched.at if isinstance(sched.at, str) else sched.at[0]
 
@@ -526,6 +572,65 @@ def yaml_to_actions_config(yaml_str: str, practice_name: str = "") -> str:
     return config.to_json()
 
 
+def _offset_beginning(base: datetime, period: str, n: int) -> str:
+    """Offset a date by N periods, calendar-aware for months+."""
+    if period == "weeks":
+        return (base + timedelta(weeks=n)).strftime("%Y-%m-%d")
+    elif period == "days":
+        return (base + timedelta(days=n)).strftime("%Y-%m-%d")
+    elif period == "months":
+        month = base.month - 1 + n
+        year = base.year + month // 12
+        month = month % 12 + 1
+        day = min(base.day, [31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+        return base.replace(year=year, month=month, day=day).strftime("%Y-%m-%d")
+    elif period == "quarters":
+        return _offset_beginning(base, "months", n * 3)
+    elif period == "years":
+        return base.replace(year=base.year + n).strftime("%Y-%m-%d")
+    return (base + timedelta(days=n * 7)).strftime("%Y-%m-%d")
+
+
+def _align_beginning_to_day(beginning: str, days_selected: str, period: str, start: str) -> str:
+    """Align a beginning date to the selected day value.
+
+    For weeks: days_selected is a weekday name like "tuesday"
+    For months+: days_selected is a date like "15" or "first monday"
+    """
+    first_day = days_selected.split(",")[0].strip().lower()
+    begin_dt = datetime.fromisoformat(beginning)
+
+    if period == "weeks":
+        day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        if first_day in day_names:
+            target_weekday = day_names.index(first_day)
+            current_weekday = begin_dt.weekday()
+            delta = (target_weekday - current_weekday) % 7
+            if delta == 0 and start and start != "immediately":
+                delta = 7
+            return (begin_dt + timedelta(days=delta)).strftime("%Y-%m-%d")
+    elif period in ("months", "quarters", "years"):
+        # Date-of-month: "15", "1", "last"
+        if first_day == "last":
+            # Set to last day of the month
+            if begin_dt.month == 12:
+                next_month = begin_dt.replace(year=begin_dt.year + 1, month=1, day=1)
+            else:
+                next_month = begin_dt.replace(month=begin_dt.month + 1, day=1)
+            return (next_month - timedelta(days=1)).strftime("%Y-%m-%d")
+        try:
+            target_day = int(first_day)
+            # Clamp to valid day for this month
+            import calendar
+            max_day = calendar.monthrange(begin_dt.year, begin_dt.month)[1]
+            target_day = min(target_day, max_day)
+            return begin_dt.replace(day=target_day).strftime("%Y-%m-%d")
+        except ValueError:
+            pass  # "first monday" etc. — leave beginning as-is for now
+
+    return beginning
+
+
 def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | None:
     """Assemble actions_config JSON from flat form fields.
 
@@ -569,11 +674,46 @@ def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | N
         if trigger_type == "schedule":
             interval = fields.get("interval") or "weekdays"
             if interval == "custom":
-                # Reconstruct cadence from companion fields
-                freq = fields.get("cadence_frequency", "2w")
-                beginning = fields.get("cadence_beginning") or datetime.now().strftime("%Y-%m-%d")
+                # Reconstruct cadence from chip fields (count+period) or
+                # hidden inputs (cadence_frequency) on re-save without edit
+                count = fields.get("count", "")
+                period = fields.get("period", "")
+                if count and period:
+                    period_unit = {"days": "d", "weeks": "w", "months": "m", "quarters": "q", "years": "y"}
+                    freq = f"{count}{period_unit.get(period, 'w')}"
+                else:
+                    freq = fields.get("cadence_frequency", "2w")
+
+                start = fields.get("start", "")
+                days_selected = fields.get("days", "")
+                if not start or start == "immediately":
+                    beginning = fields.get("cadence_beginning") or datetime.now().strftime("%Y-%m-%d")
+                elif start == "next":
+                    # "next week/month/etc." — use calendar-aware offset
+                    beginning = _offset_beginning(datetime.now(), period, 1)
+                elif start.startswith("in "):
+                    # "in 3 weeks" — parse number and period
+                    parts = start.split()
+                    try:
+                        n = int(parts[1])
+                        beginning = _offset_beginning(datetime.now(), period, n)
+                    except (ValueError, IndexError):
+                        beginning = datetime.now().strftime("%Y-%m-%d")
+                else:
+                    beginning = start
+
+                # Align beginning to selected day (context-dependent)
+                if days_selected and period != "days":
+                    beginning = _align_beginning_to_day(
+                        beginning, days_selected, period, start
+                    )
+
                 cadence: dict[str, str] = {"frequency": freq, "beginning": beginning}
-                action_data["trigger"]["schedule"] = {"interval": {"cadence": cadence}}
+                sched_data: dict[str, Any] = {"interval": {"cadence": cadence}}
+                # Store day selection for round-tripping
+                if days_selected:
+                    sched_data["day"] = days_selected
+                action_data["trigger"]["schedule"] = sched_data
             else:
                 action_data["trigger"]["schedule"] = {"interval": interval}
             time = fields.get("time")

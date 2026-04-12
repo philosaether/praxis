@@ -5,6 +5,14 @@
   let openPopup = null;
   let openTrigger = null;
 
+  // Get action field prefix from parent action card (e.g., "action_0_")
+  function getActionPrefix(el) {
+    const card = el.closest('.action-card');
+    if (!card) return '';
+    const idx = card.dataset.actionIdx;
+    return idx != null ? `action_${idx}_` : '';
+  }
+
   // Toggle a chip popup open/closed
   window.toggleChipPopup = function(trigger) {
     const chip = trigger.closest('.chip');
@@ -145,7 +153,8 @@
         onText.insertAdjacentElement('afterend', dayChipContainer);
 
         // Fetch day chip partial from server (single source of truth)
-        fetch('/partials/chips/day?name=days&value=&period=weeks')
+        const pfx = getActionPrefix(chip);
+        fetch(`/partials/chips/day?name=${pfx}days&value=&period=weeks`)
           .then(response => response.text())
           .then(html => {
             dayChipContainer.outerHTML = html;
@@ -202,11 +211,12 @@
     // Hide the original interval chip
     intervalChip.style.display = 'none';
 
-    // Fetch chips from server
+    // Fetch chips from server (prefix names for form submission)
+    const pfx = getActionPrefix(intervalChip);
     Promise.all([
-      fetch('/partials/chips/number?name=count&value=2').then(r => r.text()),
-      fetch('/partials/chips/period?name=period&value=weeks').then(r => r.text()),
-      fetch('/partials/chips/day?name=days&value=&period=weeks').then(r => r.text())
+      fetch(`/partials/chips/number?name=${pfx}count&value=2`).then(r => r.text()),
+      fetch(`/partials/chips/period?name=${pfx}period&value=weeks`).then(r => r.text()),
+      fetch(`/partials/chips/day?name=${pfx}days&value=&period=weeks`).then(r => r.text())
     ]).then(([numberHtml, periodHtml, dayHtml]) => {
       numberContainer.outerHTML = numberHtml;
       periodContainer.outerHTML = periodHtml;
@@ -322,7 +332,8 @@
         intervalChip.insertAdjacentElement('afterend', onText);
         onText.insertAdjacentElement('afterend', dayContainer);
 
-        fetch('/partials/chips/day?name=days&value=&period=weeks')
+        const pfx = getActionPrefix(chip);
+        fetch(`/partials/chips/day?name=${pfx}days&value=&period=weeks`)
           .then(r => r.text())
           .then(html => {
             dayContainer.outerHTML = html;
@@ -390,7 +401,8 @@
         lastChip.insertAdjacentElement('afterend', startingText);
         startingText.insertAdjacentElement('afterend', startContainer);
 
-        fetch(`/partials/chips/start?name=start&value=immediately&period=${period}`)
+        const pfx = getActionPrefix(lastChip);
+        fetch(`/partials/chips/start?name=${pfx}start&value=immediately&period=${period}`)
           .then(r => r.text())
           .then(html => {
             startContainer.outerHTML = html;
@@ -504,16 +516,18 @@
       const monthMode = value === 'quarters' ? 'quarter' : 'year';
 
       // Fetch both chips
+      const pfx = getActionPrefix(chip);
       Promise.all([
-        fetch(`/partials/chips/day?name=days&value=&period=${value}`).then(r => r.text()),
-        fetch(`/partials/chips/month?name=month&value=&mode=${monthMode}`).then(r => r.text())
+        fetch(`/partials/chips/day?name=${pfx}days&value=&period=${value}`).then(r => r.text()),
+        fetch(`/partials/chips/month?name=${pfx}month&value=&mode=${monthMode}`).then(r => r.text())
       ]).then(([dayHtml, monthHtml]) => {
         dayContainer.outerHTML = dayHtml;
         monthContainer.outerHTML = monthHtml;
       });
     } else {
       // Just fetch day chip (weeks, months)
-      fetch(`/partials/chips/day?name=days&value=&period=${value}`)
+      const pfx = getActionPrefix(chip);
+      fetch(`/partials/chips/day?name=${pfx}days&value=&period=${value}`)
         .then(r => r.text())
         .then(html => {
           dayContainer.outerHTML = html;

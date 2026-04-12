@@ -486,8 +486,19 @@ async def update_priority_properties(
     # For Practice priorities, update actions_config if provided.
     # The web layer assembles JSON from chip form fields server-side.
     if isinstance(priority, Practice):
-        if actions_config and actions_config.strip():
-            priority.actions_config = actions_config.strip()
+        if actions_config is not None:
+            stripped = actions_config.strip()
+            # Check if config has no actions (clear case)
+            if stripped:
+                try:
+                    import json
+                    parsed = json.loads(stripped)
+                    actions = parsed.get("practice", {}).get("actions", [])
+                    priority.actions_config = stripped if actions else None
+                except (json.JSONDecodeError, AttributeError):
+                    priority.actions_config = stripped
+            else:
+                priority.actions_config = None
 
     graph.save_priority(priority)
 

@@ -32,7 +32,7 @@ DSL mapping:
 {% set display = display_map.get(value, 'once in a while') %}
 {% set is_placeholder = not value %}
 
-<span class="chip" data-chip="{{ name }}" data-chip-type="interval">
+<span class="chip" data-chip="{{ name }}" data-chip-type="interval"{% if value == 'custom' %} style="display:none"{% endif %}>
   <input type="hidden" name="{{ name }}" value="{{ value }}">
 
   <button type="button"
@@ -87,5 +87,25 @@ DSL mapping:
 <span class="chip-sentence__text chip-spawned-on">on</span>
 {% with name=name ~ '_days', value=days_value or '' %}
 {% include "partials/chips/chip_day.html" %}
+{% endwith %}
+{% endif %}
+{#- Spawn custom interval subchips when rehydrating from saved data -#}
+{% if value == 'custom' %}
+{% set prefix = name.replace('interval', '') %}
+{% with name=prefix ~ 'count', value=cadence_count or '2' %}
+{% include "partials/chips/chip_number.html" %}
+{% endwith %}
+{% with name=prefix ~ 'period', value=cadence_period or 'weeks' %}
+{% include "partials/chips/chip_period.html" %}
+{% endwith %}
+{% if cadence_period != 'days' %}
+<span class="chip-sentence__text chip-spawned-on">on</span>
+{% with name=prefix ~ 'days', value=cadence_day or '', period=cadence_period or 'weeks' %}
+{% include "partials/chips/chip_day.html" %}
+{% endwith %}
+{% endif %}
+<span class="chip-sentence__text chip-spawned-starting">, starting</span>
+{% with name=prefix ~ 'start', value=cadence_beginning or 'immediately', period=cadence_period or 'weeks' %}
+{% include "partials/chips/chip_start.html" %}
 {% endwith %}
 {% endif %}

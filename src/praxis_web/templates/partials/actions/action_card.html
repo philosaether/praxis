@@ -75,7 +75,18 @@ Params:
       {%- set interval_display = {
         'daily': 'day', 'weekdays': 'weekday', 'weekends': 'weekend day', 'weekly': 'week'
       } -%}
-      Every {{ interval_display.get(action.interval, action.interval or 'day') -}}
+      {% if action.interval == 'custom' and action.cadence_count -%}
+        Every {{ action.cadence_count }} {{ action.cadence_period or 'weeks' }}
+        {%- if action.cadence_day and action.cadence_period != 'days' -%}
+          {%- if action.cadence_period == 'weeks' %} on {{ action.cadence_day|title }}
+          {%- elif action.cadence_day == 'last' %} on the last day
+          {%- elif action.cadence_day|int %} on the {{ action.cadence_day }}{{ 'st' if action.cadence_day|int == 1 else ('nd' if action.cadence_day|int == 2 else ('rd' if action.cadence_day|int == 3 else 'th')) }}
+          {%- else %} on the {{ action.cadence_day }}
+          {%- endif -%}
+        {%- endif -%}
+      {%- else -%}
+        Every {{ interval_display.get(action.interval, action.interval or 'day') }}
+      {%- endif -%}
     {% else %}
       {%- set subject_display = {
         'any': 'any priority', 'task': 'a task', 'goal': 'a goal',
@@ -104,7 +115,9 @@ Params:
       <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
         <span class="chip-clause__lead">Every</span>
         <span class="chip-clause__content">
-          {% with name="action_" ~ idx ~ "_interval", value=action.interval or '' %}
+          {% with name="action_" ~ idx ~ "_interval", value=action.interval or '',
+                  cadence_count=action.cadence_count or '', cadence_period=action.cadence_period or '',
+                  cadence_day=action.cadence_day or '', cadence_beginning=action.cadence_beginning or '' %}
             {% include "partials/chips/chip_interval.html" %}
           {% endwith %}
         </span>

@@ -27,15 +27,34 @@
 </div>
 
 <script>
+// Reindex action cards so data-action-idx and input names stay sequential
+function reindexActionCards() {
+    const cards = document.querySelectorAll('.action-card');
+    cards.forEach((card, i) => {
+        card.dataset.actionIdx = i;
+        card.querySelectorAll('input, textarea').forEach(input => {
+            if (input.name && input.name.startsWith('action_')) {
+                input.name = input.name.replace(/^action_\d+_/, `action_${i}_`);
+            }
+        });
+        card.querySelectorAll('[data-chip]').forEach(chip => {
+            const attr = chip.dataset.chip;
+            if (attr && attr.startsWith('action_')) {
+                chip.dataset.chip = attr.replace(/^action_\d+_/, `action_${i}_`);
+            }
+        });
+    });
+}
+
 function removeAction(priorityId, actionIdx) {
     if (!confirm('Remove this action?')) return;
 
-    // Remove card from DOM (persists on Save)
+    // Remove card from DOM
     const card = document.querySelector(`.action-card[data-action-idx="${actionIdx}"]`);
     if (card) card.remove();
 
     // Reindex remaining cards
-    if (typeof reindexActionCards === 'function') reindexActionCards();
+    reindexActionCards();
 
     // If no cards left, show empty hint
     const list = document.getElementById('actions-list-' + priorityId);

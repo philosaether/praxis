@@ -1046,10 +1046,11 @@ async def priority_save_properties(request: Request, priority_id: str):
 
     # Assemble actions_config JSON from chip form fields (action_N_field).
     # This replaces the old client-side serializeActionCards() approach.
+    # Always send actions_config so deletions persist (empty string clears).
     from praxis_web.helpers.action_renderer import assemble_actions_config
     actions_config = assemble_actions_config(data, data.get("name", ""))
-    if actions_config:
-        data["actions_config"] = actions_config
+    # Send valid empty JSON when no actions (empty string gets swallowed by FastAPI)
+    data["actions_config"] = actions_config or '{"practice": {"name": "", "actions": []}}'
 
     async with api_client(request) as client:
         response = await client.post(
@@ -1793,6 +1794,85 @@ async def priority_actions_yaml_get(request: Request, priority_id: str):
     </div>
     '''
     return HTMLResponse(html)
+
+
+@app.post("/priorities/{priority_id}/actions/to-yaml", response_class=HTMLResponse)
+async def priority_actions_to_yaml(request: Request, priority_id: str):
+    """Convert current chip form values to YAML editor HTML (no DB save)."""
+    from praxis_core.persistence import validate_session
+    from praxis_web.helpers.action_renderer import assemble_actions_config, actions_to_yaml
+
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse("<p class='error'>Authentication required</p>")
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse("<p class='error'>Invalid session</p>")
+
+    form_data = dict(await request.form())
+    actions_config = assemble_actions_config(form_data, form_data.get("name", ""))
+    yaml_content = actions_to_yaml(actions_config)
+
+    html = f'''
+    <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
+        <textarea name="yaml" rows="12" class="property-input yaml-input"
+                  hx-post="/priorities/{priority_id}/actions/yaml"
+                  hx-trigger="blur changed"
+                  hx-target="#yaml-status-{priority_id}"
+                  hx-swap="innerHTML">{yaml_content}</textarea>
+        <span id="yaml-status-{priority_id}" class="yaml-status"></span>
+    </div>
+    '''
+    return HTMLResponse(html)
+
+
+@app.post("/priorities/{priority_id}/actions/to-chips", response_class=HTMLResponse)
+async def priority_actions_to_chips(request: Request, priority_id: str):
+    """Convert YAML text to chip editor HTML (no DB save)."""
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+    from praxis_web.helpers.action_renderer import (
+        yaml_to_actions_config, actions_to_card_data, actions_to_yaml,
+    )
+
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse("<p class='error'>Authentication required</p>")
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse("<p class='error'>Invalid session</p>")
+    _, user = result
+
+    form_data = dict(await request.form())
+    yaml_content = form_data.get("yaml", "")
+
+    try:
+        actions_config = yaml_to_actions_config(yaml_content)
+    except ValueError:
+        # Invalid YAML — fall back to DB state
+        graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+        graph.load()
+        priority = graph.get(priority_id)
+        actions_config = priority.actions_config if priority else None
+
+    action_cards = actions_to_card_data(actions_config)
+    actions_yaml = actions_to_yaml(actions_config)
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+    priority = graph.get(priority_id)
+    editable = priority.entity_id == user.entity_id if priority else False
+
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/actions_editor.html",
+        {
+            "priority": {"id": priority_id, "name": priority.name if priority else "", "actions_config": actions_config},
+            "action_cards": action_cards,
+            "actions_yaml": actions_yaml,
+            "editable": editable,
+            "priority_name": priority.name if priority else "",
+        }
+    )
 
 
 @app.post("/priorities/{priority_id}/actions/yaml", response_class=HTMLResponse)
