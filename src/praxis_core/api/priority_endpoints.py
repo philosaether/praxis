@@ -154,7 +154,6 @@ async def create_priority_full(
                 priority.due_date = datetime.fromisoformat(due_date)
             except ValueError:
                 priority.due_date = None
-    # Practice: trigger_config is set separately via trigger UI, not in create form
 
     graph.add(priority)
 
@@ -350,7 +349,6 @@ async def update_priority(
                 priority.due_date = None
         else:
             priority.due_date = None
-    # Practice: trigger_config is set separately via trigger UI
 
     graph.save_priority(priority)
 

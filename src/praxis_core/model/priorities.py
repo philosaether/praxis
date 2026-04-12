@@ -70,10 +70,7 @@ class Practice(Priority):
 
     priority_type: PriorityType = PriorityType.PRACTICE
 
-    # v1 trigger configuration (deprecated, use actions_config)
-    trigger_config: str | None = None
-
-    # v2 actions configuration (JSON string containing DSL v2 actions array)
+    # Actions configuration (JSON string containing DSL v2 actions array)
     actions_config: str | None = None
 
     # Tracking for fire-at-first-opportunity pattern

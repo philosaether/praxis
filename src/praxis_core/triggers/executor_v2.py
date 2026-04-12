@@ -22,7 +22,7 @@ from .engine_v2 import (
     ExecutionContext,
     execute_action,
 )
-from .models_v2 import PracticeAction
+from praxis_core.dsl import PracticeAction
 
 
 # -----------------------------------------------------------------------------

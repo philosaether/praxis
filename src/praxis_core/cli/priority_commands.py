@@ -121,8 +121,8 @@ def priority_show(
             rprint(f"[bold]Due:[/bold] {p.due_date.strftime('%Y-%m-%d')}")
 
     elif isinstance(p, Practice):
-        if p.trigger_config:
-            rprint(f"\n[bold]Trigger:[/bold] configured")
+        if p.actions_config:
+            rprint(f"\n[bold]Actions:[/bold] configured")
         if p.last_triggered_at:
             rprint(f"[bold]Last triggered:[/bold] {p.last_triggered_at.strftime('%Y-%m-%d %H:%M')}")
 
