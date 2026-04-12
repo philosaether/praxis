@@ -16,6 +16,7 @@ class PriorityStatus(StrEnum):
     # Universal (values, practices, goals)
     ACTIVE = "active"
     DORMANT = "dormant"     # draft, backlog, abandoned, on-hold (see substatus)
+    BLOCKED = "blocked"     # waiting on external dependency
 
     # Goal-specific
     COMPLETED = "completed"  # goal achieved

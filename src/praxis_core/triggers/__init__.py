@@ -19,6 +19,7 @@ from praxis_core.triggers.events import (
     on_task_completed,
     on_task_created,
     on_priority_completed,
+    on_priority_created,
     on_priority_status_changed,
 )
 
@@ -32,5 +33,6 @@ __all__ = [
     "on_task_completed",
     "on_task_created",
     "on_priority_completed",
+    "on_priority_created",
     "on_priority_status_changed",
 ]

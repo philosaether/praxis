@@ -269,8 +269,66 @@ def on_task_created(
     if from_trigger:
         return []
 
-    # Placeholder — no task_creation event type yet (Phase 4c)
-    return []
+    logger.debug(f"on_task_created: task={task_id}, entity={entity_id}")
+
+    if task_data is None:
+        task_data = _get_task(task_id)
+    if not task_data:
+        return []
+
+    graph = _get_graph(entity_id)
+    matches = _find_practices_with_event_actions(graph, EventType.TASK_CREATION)
+    if not matches:
+        return []
+
+    return _execute_event_actions(
+        matches, EventType.TASK_CREATION,
+        entity_id, task_data=task_data, created_by=created_by,
+    )
+
+
+def on_priority_created(
+    priority_id: str,
+    entity_id: str,
+    priority_data: dict | None = None,
+    created_by: int | None = None,
+    from_trigger: bool = False,
+) -> list[dict]:
+    """
+    Handle priority creation event.
+
+    Skipped if priority was created by a trigger to prevent infinite recursion.
+    """
+    if from_trigger:
+        return []
+
+    logger.debug(f"on_priority_created: priority={priority_id}, entity={entity_id}")
+
+    graph = _get_graph(entity_id)
+
+    if priority_data is None:
+        priority = graph.nodes.get(priority_id)
+        if priority:
+            priority_data = {
+                "id": priority.id,
+                "name": priority.name,
+                "priority_type": priority.priority_type.value,
+            }
+
+    if not priority_data:
+        return []
+
+    if "ancestors" not in priority_data:
+        priority_data["ancestors"] = _get_ancestors(graph, priority_id)
+
+    matches = _find_practices_with_event_actions(graph, EventType.PRIORITY_CREATION)
+    if not matches:
+        return []
+
+    return _execute_event_actions(
+        matches, EventType.PRIORITY_CREATION,
+        entity_id, priority_data=priority_data, created_by=created_by,
+    )
 
 
 def on_priority_completed(

@@ -16,7 +16,7 @@ from praxis_core.model import (
     User,
 )
 from praxis_core.api.auth import get_current_user_optional
-from praxis_core.triggers import on_priority_status_changed
+from praxis_core.triggers import on_priority_status_changed, on_priority_created
 
 
 router = APIRouter()
@@ -163,6 +163,19 @@ async def create_priority_full(
             graph.link(priority.id, parent_id.strip())
         except ValueError:
             pass
+
+    # Fire creation event
+    if entity_id:
+        on_priority_created(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            priority_data={
+                "id": priority.id,
+                "name": priority.name,
+                "priority_type": priority.priority_type.value,
+            },
+            created_by=user.id if user else None,
+        )
 
     # Return full detail data for rendering
     parent_ids = graph.parents.get(priority.id, set())

@@ -272,12 +272,7 @@ def _gather_collation_targets(spec: CollateSpec, practice_id: str | None) -> lis
             )
 
         if shorthand == "descendants" and practice_id:
-            # Would need recursive query - for now, just direct children
-            return list_tasks(
-                priority_id=practice_id,
-                include_done=False,
-                entity_id=entity_id,
-            )
+            return _gather_descendant_tasks(practice_id, entity_id)
 
         if shorthand.startswith("tagged:"):
             tag_name = shorthand.split(":", 1)[1].strip()
@@ -288,39 +283,126 @@ def _gather_collation_targets(spec: CollateSpec, practice_id: str | None) -> lis
             )
 
     # Handle complex filtering (match_any, match_all, exclude)
-    # For now, simplified implementation
+    task_sets = []
+
     if spec.match_any:
-        all_tasks = []
-        for filter_item in spec.match_any:
-            if "tag" in filter_item:
-                tasks = list_tasks(
-                    include_done=False,
-                    entity_id=entity_id,
-                    tag_names=[filter_item["tag"]],
-                )
-                all_tasks.extend(tasks)
-            if "ancestor" in filter_item:
-                # Would need to resolve ancestor name to ID
-                # For now, skip
-                pass
+        any_tasks = _gather_match_any(spec.match_any, entity_id, practice_id)
+        task_sets.append(any_tasks)
 
-        # Deduplicate by ID
-        seen = set()
-        unique_tasks = []
-        for t in all_tasks:
-            if t.id not in seen:
-                seen.add(t.id)
-                unique_tasks.append(t)
+    if spec.match_all:
+        all_tasks = _gather_match_all(spec.match_all, entity_id, practice_id)
+        task_sets.append(all_tasks)
 
-        # Apply exclude filters
-        if spec.exclude:
-            for exclude_item in spec.exclude:
-                if exclude_item.get("status") == "done":
-                    unique_tasks = [t for t in unique_tasks if t.status.value != "done"]
+    # Combine: if both match_any and match_all, intersect them
+    if not task_sets:
+        return []
+    if len(task_sets) == 1:
+        result = task_sets[0]
+    else:
+        # Intersect by task ID
+        id_sets = [set(t.id for t in ts) for ts in task_sets]
+        common_ids = id_sets[0].intersection(*id_sets[1:])
+        by_id = {t.id: t for ts in task_sets for t in ts}
+        result = [by_id[tid] for tid in common_ids]
 
-        return unique_tasks
+    # Apply exclude filters
+    if spec.exclude:
+        result = _apply_excludes(result, spec.exclude)
 
-    return []
+    return result
+
+
+def _gather_descendant_tasks(priority_id: str, entity_id: str | None) -> list[Task]:
+    """Gather tasks from a priority and all its descendants."""
+    graph = PriorityGraph(get_connection, entity_id=entity_id)
+    graph.load()
+
+    descendant_ids = graph.descendants(priority_id)
+    all_priority_ids = {priority_id} | descendant_ids
+
+    all_tasks = []
+    for pid in all_priority_ids:
+        tasks = list_tasks(priority_id=pid, include_done=False, entity_id=entity_id)
+        all_tasks.extend(tasks)
+    return all_tasks
+
+
+def _resolve_ancestor_name(name: str, entity_id: str | None) -> str | None:
+    """Resolve a priority name to its ID."""
+    graph = PriorityGraph(get_connection, entity_id=entity_id)
+    graph.load()
+    for p in graph.nodes.values():
+        if p.name.lower() == name.lower():
+            return p.id
+    return None
+
+
+def _gather_tasks_under(priority_id: str, entity_id: str | None) -> list[Task]:
+    """Gather all tasks under a priority (including descendants)."""
+    return _gather_descendant_tasks(priority_id, entity_id)
+
+
+def _gather_match_any(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
+    """OR logic: gather tasks matching any of the filters."""
+    all_tasks = []
+    for f in filters:
+        if "tag" in f:
+            all_tasks.extend(list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]]))
+        if "ancestor" in f:
+            ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id)
+            if ancestor_id:
+                all_tasks.extend(_gather_tasks_under(ancestor_id, entity_id))
+        if "priority_id" in f:
+            all_tasks.extend(list_tasks(priority_id=f["priority_id"], include_done=False, entity_id=entity_id))
+
+    # Deduplicate
+    seen = set()
+    unique = []
+    for t in all_tasks:
+        if t.id not in seen:
+            seen.add(t.id)
+            unique.append(t)
+    return unique
+
+
+def _gather_match_all(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
+    """AND logic: gather tasks matching all filters (intersection)."""
+    sets = []
+    for f in filters:
+        tasks = []
+        if "tag" in f:
+            tasks = list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]])
+        elif "ancestor" in f:
+            ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id)
+            if ancestor_id:
+                tasks = _gather_tasks_under(ancestor_id, entity_id)
+        elif "priority_id" in f:
+            tasks = list_tasks(priority_id=f["priority_id"], include_done=False, entity_id=entity_id)
+        sets.append({t.id: t for t in tasks})
+
+    if not sets:
+        return []
+
+    # Intersect all ID sets
+    common_ids = set(sets[0].keys())
+    for s in sets[1:]:
+        common_ids &= set(s.keys())
+
+    return [sets[0][tid] for tid in common_ids if tid in sets[0]]
+
+
+def _apply_excludes(tasks: list[Task], excludes: list[dict]) -> list[Task]:
+    """Filter out tasks matching any exclude criterion."""
+    result = tasks
+    for ex in excludes:
+        if "status" in ex:
+            result = [t for t in result if t.status.value != ex["status"]]
+        if "tag" in ex:
+            # Would need tag lookup per task — for now, skip
+            pass
+        if "priority_id" in ex:
+            result = [t for t in result if t.priority_id != ex["priority_id"]]
+    return result
 
 
 # -----------------------------------------------------------------------------
