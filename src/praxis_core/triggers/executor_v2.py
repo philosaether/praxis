@@ -312,10 +312,17 @@ def _gather_collation_targets(spec: CollateSpec, practice_id: str | None) -> lis
     return result
 
 
-def _gather_descendant_tasks(priority_id: str, entity_id: str | None) -> list[Task]:
-    """Gather tasks from a priority and all its descendants."""
+def _get_collation_graph(entity_id: str | None) -> PriorityGraph:
+    """Load graph once for collation operations."""
     graph = PriorityGraph(get_connection, entity_id=entity_id)
     graph.load()
+    return graph
+
+
+def _gather_descendant_tasks(priority_id: str, entity_id: str | None, graph: PriorityGraph | None = None) -> list[Task]:
+    """Gather tasks from a priority and all its descendants."""
+    if not graph:
+        graph = _get_collation_graph(entity_id)
 
     descendant_ids = graph.descendants(priority_id)
     all_priority_ids = {priority_id} | descendant_ids
@@ -327,33 +334,35 @@ def _gather_descendant_tasks(priority_id: str, entity_id: str | None) -> list[Ta
     return all_tasks
 
 
-def _resolve_ancestor_name(name: str, entity_id: str | None) -> str | None:
+def _resolve_ancestor_name(name: str, entity_id: str | None, graph: PriorityGraph | None = None) -> str | None:
     """Resolve a priority name to its ID."""
-    graph = PriorityGraph(get_connection, entity_id=entity_id)
-    graph.load()
+    if not graph:
+        graph = _get_collation_graph(entity_id)
     for p in graph.nodes.values():
         if p.name.lower() == name.lower():
             return p.id
     return None
 
 
-def _gather_tasks_under(priority_id: str, entity_id: str | None) -> list[Task]:
-    """Gather all tasks under a priority (including descendants)."""
-    return _gather_descendant_tasks(priority_id, entity_id)
+def _execute_filter(f: dict, entity_id: str | None, graph: PriorityGraph) -> list[Task]:
+    """Execute a single collation filter and return matching tasks."""
+    if "tag" in f:
+        return list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]])
+    if "ancestor" in f:
+        ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id, graph)
+        if ancestor_id:
+            return _gather_descendant_tasks(ancestor_id, entity_id, graph)
+    if "priority_id" in f:
+        return list_tasks(priority_id=f["priority_id"], include_done=False, entity_id=entity_id)
+    return []
 
 
 def _gather_match_any(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
     """OR logic: gather tasks matching any of the filters."""
+    graph = _get_collation_graph(entity_id)
     all_tasks = []
     for f in filters:
-        if "tag" in f:
-            all_tasks.extend(list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]]))
-        if "ancestor" in f:
-            ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id)
-            if ancestor_id:
-                all_tasks.extend(_gather_tasks_under(ancestor_id, entity_id))
-        if "priority_id" in f:
-            all_tasks.extend(list_tasks(priority_id=f["priority_id"], include_done=False, entity_id=entity_id))
+        all_tasks.extend(_execute_filter(f, entity_id, graph))
 
     # Deduplicate
     seen = set()
@@ -367,28 +376,24 @@ def _gather_match_any(filters: list[dict], entity_id: str | None, practice_id: s
 
 def _gather_match_all(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
     """AND logic: gather tasks matching all filters (intersection)."""
+    graph = _get_collation_graph(entity_id)
     sets = []
+    all_by_id: dict[str, Task] = {}
     for f in filters:
-        tasks = []
-        if "tag" in f:
-            tasks = list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]])
-        elif "ancestor" in f:
-            ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id)
-            if ancestor_id:
-                tasks = _gather_tasks_under(ancestor_id, entity_id)
-        elif "priority_id" in f:
-            tasks = list_tasks(priority_id=f["priority_id"], include_done=False, entity_id=entity_id)
-        sets.append({t.id: t for t in tasks})
+        tasks = _execute_filter(f, entity_id, graph)
+        for t in tasks:
+            all_by_id[t.id] = t
+        sets.append({t.id for t in tasks})
 
     if not sets:
         return []
 
     # Intersect all ID sets
-    common_ids = set(sets[0].keys())
+    common_ids = sets[0]
     for s in sets[1:]:
-        common_ids &= set(s.keys())
+        common_ids &= s
 
-    return [sets[0][tid] for tid in common_ids if tid in sets[0]]
+    return [all_by_id[tid] for tid in common_ids]
 
 
 def _apply_excludes(tasks: list[Task], excludes: list[dict]) -> list[Task]:
@@ -427,7 +432,11 @@ def execute_and_persist(
     Returns:
         Dict with counts: {tasks: N, priorities: N, collations: N}
     """
-    # Execute the action to get specs
+    # Execute the action to get specs.
+    # NOTE: entities created here must NOT fire event triggers (on_task_created,
+    # on_priority_created) or infinite loops are possible. The persistence
+    # functions (create_task, create_priority_from_spec) don't fire events —
+    # events are only fired from API endpoints. Keep it that way.
     result = execute_action(action, ctx)
 
     if not result.success:

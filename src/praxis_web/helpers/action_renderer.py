@@ -579,10 +579,12 @@ def _offset_beginning(base: datetime, period: str, n: int) -> str:
     elif period == "days":
         return (base + timedelta(days=n)).strftime("%Y-%m-%d")
     elif period == "months":
+        import calendar
         month = base.month - 1 + n
         year = base.year + month // 12
         month = month % 12 + 1
-        day = min(base.day, [31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+        max_day = calendar.monthrange(year, month)[1]
+        day = min(base.day, max_day)
         return base.replace(year=year, month=month, day=day).strftime("%Y-%m-%d")
     elif period == "quarters":
         return _offset_beginning(base, "months", n * 3)

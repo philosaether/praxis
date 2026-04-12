@@ -116,13 +116,13 @@ def _matches_event_params(
                 if params["entity_type"] not in ("task", "any"):
                     return False
 
-    if event_type in (EventType.PRIORITY_COMPLETION, EventType.PRIORITY_STATUS_CHANGE):
+    if event_type in (EventType.PRIORITY_COMPLETION, EventType.PRIORITY_STATUS_CHANGE,
+                      EventType.PRIORITY_CREATION):
         if priority_data:
-            if "priority_type" in params:
-                if priority_data.get("priority_type") != params["priority_type"]:
-                    return False
-            if "entity_type" in params:
-                if priority_data.get("priority_type") != params["entity_type"]:
+            # entity_type (chip UI) and priority_type (YAML) both filter on priority type
+            expected_type = params.get("entity_type") or params.get("priority_type")
+            if expected_type and expected_type != "any":
+                if priority_data.get("priority_type") != expected_type:
                     return False
             if "under" in params:
                 # Ancestor matching — check if any ancestor name matches

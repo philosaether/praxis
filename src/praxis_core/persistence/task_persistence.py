@@ -375,20 +375,23 @@ def list_tasks(
         return tasks
 
 
+def _apply_outbox_fields(updates: list[str], params: list, status: TaskStatus) -> None:
+    """Add outbox fields to an UPDATE query when task is marked done."""
+    if status == TaskStatus.DONE:
+        updates.append("is_in_outbox = 1")
+        updates.append("moved_to_outbox_at = ?")
+        params.append(datetime.now().isoformat())
+
+
 def update_task_status(task_id: str, status: TaskStatus) -> None:
     """Update a task's status. Auto-moves to outbox when done."""
     ensure_schema()
+    updates = ["status = ?"]
+    params: list = [status.value]
+    _apply_outbox_fields(updates, params, status)
+    params.append(task_id)
     with get_connection() as conn:
-        if status == TaskStatus.DONE:
-            conn.execute(
-                "UPDATE tasks SET status = ?, is_in_outbox = 1, moved_to_outbox_at = ? WHERE id = ?",
-                (status.value, datetime.now().isoformat(), task_id),
-            )
-        else:
-            conn.execute(
-                "UPDATE tasks SET status = ? WHERE id = ?",
-                (status.value, task_id),
-            )
+        conn.execute(f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?", params)
 
 
 def update_task(
@@ -419,11 +422,7 @@ def update_task(
         if status is not None:
             updates.append("status = ?")
             params.append(status.value)
-            # Auto-move to outbox when marked done
-            if status == TaskStatus.DONE:
-                updates.append("is_in_outbox = 1")
-                updates.append("moved_to_outbox_at = ?")
-                params.append(datetime.now().isoformat())
+            _apply_outbox_fields(updates, params, status)
         if due_date is not None:
             updates.append("due_date = ?")
             params.append(due_date.isoformat() if due_date else None)
