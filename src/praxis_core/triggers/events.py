@@ -48,23 +48,15 @@ def _get_task(task_id: str) -> dict | None:
 def _get_ancestors(graph, priority_id: str) -> list[dict]:
     """Get ancestor chain for a priority (for event condition matching)."""
     ancestors = []
-    visited = set()
-    current_id = priority_id
-
-    while current_id and current_id not in visited:
-        visited.add(current_id)
-        parents = graph.parents(current_id)
-        if not parents:
-            break
-        for parent in parents:
+    ancestor_ids = graph.ancestors(priority_id)
+    for aid in ancestor_ids:
+        node = graph.nodes.get(aid)
+        if node:
             ancestors.append({
-                "id": parent.id,
-                "name": parent.name,
-                "priority_type": parent.priority_type.value,
+                "id": node.id,
+                "name": node.name,
+                "priority_type": node.priority_type.value,
             })
-        # Follow first parent for linear chain
-        current_id = parents[0].id if parents else None
-
     return ancestors
 
 

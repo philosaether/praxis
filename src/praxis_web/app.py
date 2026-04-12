@@ -1004,10 +1004,20 @@ async def priority_edit(request: Request, priority_id: str):
     # For Practice priorities, render action cards for the editor
     if data["priority"].get("priority_type") == "practice":
         from praxis_web.helpers.action_renderer import actions_to_card_data
+        from praxis_core.persistence import get_connection, PriorityGraph, validate_session
         actions_config = data["priority"].get("actions_config")
         data["action_cards"] = actions_to_card_data(actions_config) if actions_config else []
         data["priority_name"] = data["priority"].get("name", "")
         data["editable"] = True
+        # Build priority tree for the ancestor picker chip
+        session_token = request.cookies.get(SESSION_COOKIE_NAME)
+        if session_token:
+            result = validate_session(session_token)
+            if result:
+                _, user = result
+                graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+                graph.load()
+                data["priority_tree"] = _build_priority_tree(graph)
 
     return templates.TemplateResponse(
         request,
@@ -1138,6 +1148,22 @@ async def priority_save_notes(request: Request, priority_id: str):
 # Routes: Practice Actions (DSL v2)
 # -----------------------------------------------------------------------------
 
+def _build_priority_tree(graph) -> list[dict]:
+    """Build a nested priority tree for the priority picker chip."""
+    roots = graph.roots()
+
+    def build_node(priority):
+        child_ids = graph.children.get(priority.id, set())
+        children = []
+        for cid in sorted(child_ids):
+            child = graph.nodes.get(cid)
+            if child:
+                children.append(build_node(child))
+        return {"name": priority.name, "children": children}
+
+    return [build_node(r) for r in sorted(roots, key=lambda p: p.name)]
+
+
 @app.get("/priorities/{priority_id}/actions", response_class=HTMLResponse)
 async def priority_actions_editor(request: Request, priority_id: str):
     """HTMX partial: Actions editor for a Practice."""
@@ -1164,6 +1190,7 @@ async def priority_actions_editor(request: Request, priority_id: str):
     action_cards = actions_to_card_data(priority.actions_config)
     actions_yaml = actions_to_yaml(priority.actions_config)
     editable = priority.entity_id == user.entity_id
+    priority_tree = _build_priority_tree(graph)
 
     return templates.TemplateResponse(
         request,
@@ -1174,6 +1201,7 @@ async def priority_actions_editor(request: Request, priority_id: str):
             "actions_yaml": actions_yaml,
             "editable": editable,
             "priority_name": priority.name,
+            "priority_tree": priority_tree,
         }
     )
 
@@ -1718,6 +1746,8 @@ async def priority_actions_to_chips(request: Request, priority_id: str):
     priority = graph.get(priority_id)
     editable = priority.entity_id == user.entity_id if priority else False
 
+    priority_tree = _build_priority_tree(graph)
+
     return templates.TemplateResponse(
         request,
         "partials/actions/actions_editor.html",
@@ -1727,6 +1757,7 @@ async def priority_actions_to_chips(request: Request, priority_id: str):
             "actions_yaml": actions_yaml,
             "editable": editable,
             "priority_name": priority.name if priority else "",
+            "priority_tree": priority_tree,
         }
     )
 
