@@ -231,6 +231,11 @@ def serialize_task(
         ],
     }
 
+    # Outbox fields
+    data["is_in_outbox"] = t.is_in_outbox
+    if t.moved_to_outbox_at:
+        data["moved_to_outbox_at"] = fmt_datetime(t.moved_to_outbox_at)
+
     # Add permission flags if user context provided
     if current_user is not None:
         from praxis_core.api.task_endpoints import (

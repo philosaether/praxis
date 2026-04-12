@@ -560,9 +560,11 @@ async def render_full_page(
 
         # Fetch tasks for task modes (needed for default list if no initial_list_html)
         tasks_data = {"tasks": []}
-        if mode in ["tasks", "inbox"] and not initial_list_html:
+        if mode in ["tasks", "inbox", "outbox"] and not initial_list_html:
             if mode == "inbox":
                 tasks_response = await client.get("/api/tasks/inbox")
+            elif mode == "outbox":
+                tasks_response = await client.get("/api/tasks", params={"outbox": "true"})
             else:
                 tasks_response = await client.get("/api/tasks")
             tasks_data = tasks_response.json()
@@ -577,6 +579,7 @@ async def render_full_page(
             "priority_types": priorities_data["priority_types"],
             "user_tags": tags_data.get("tags", []),
             "default_mode": mode,
+            "outbox_mode": mode == "outbox",
             "initial_list_html": initial_list_html,
             "initial_detail_html": initial_detail_html,
         }
@@ -618,6 +621,21 @@ async def tasks_inbox_page(request: Request):
             {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
         )
     return await render_full_page(request, mode="inbox")
+
+
+@app.get("/tasks/outbox", response_class=HTMLResponse)
+async def tasks_outbox_page(request: Request):
+    """Outbox view - completed tasks awaiting deletion."""
+    if is_htmx_request(request):
+        async with api_client(request) as client:
+            response = await client.get("/api/tasks", params={"outbox": "true"})
+            data = response.json()
+        return templates.TemplateResponse(
+            request,
+            "partials/task_rows.html",
+            {"tasks": data["tasks"], "priorities": data.get("priorities", []), "outbox_mode": True}
+        )
+    return await render_full_page(request, mode="outbox")
 
 
 @app.get("/priorities", response_class=HTMLResponse)
@@ -2032,10 +2050,16 @@ async def task_toggle_done(request: Request, task_id: str):
             return HTMLResponse(content="", status_code=404)
         data = response.json()
 
+    task = data["task"]
+
+    # Task moved to outbox — remove row from list immediately
+    if task.get("is_in_outbox"):
+        return HTMLResponse(content="")
+
     return templates.TemplateResponse(
         request,
         "partials/task_row_single.html",
-        {"task": data["task"]}
+        {"task": task}
     )
 
 

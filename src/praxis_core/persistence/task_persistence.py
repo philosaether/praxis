@@ -76,9 +76,17 @@ CREATE INDEX IF NOT EXISTS idx_priority_tags_tag ON priority_tags(tag_id);
 def ensure_schema() -> None:
     """Ensure the tasks schema exists."""
     with get_connection() as conn:
-        # Migrations disabled - database is up-to-date
-        # _maybe_migrate(conn)
         conn.executescript(TASKS_SCHEMA)
+        _migrate_outbox(conn)
+
+
+def _migrate_outbox(conn: sqlite3.Connection) -> None:
+    """Add outbox columns if they don't exist."""
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+    if "is_in_outbox" not in columns:
+        conn.execute("ALTER TABLE tasks ADD COLUMN is_in_outbox INTEGER DEFAULT 0")
+        conn.execute("ALTER TABLE tasks ADD COLUMN moved_to_outbox_at TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_outbox ON tasks(is_in_outbox)")
 
 
 def _maybe_migrate(conn: sqlite3.Connection) -> None:
@@ -267,6 +275,7 @@ def list_tasks(
     entity_id: str | None = None,
     user_id: int | None = None,  # deprecated, use entity_id
     inbox_only: bool = False,
+    outbox_only: bool = False,
     assigned_to: int | None = None,  # Filter by assigned user
     tag_names: list[str] | None = None,  # Filter by tag names
     search_query: str | None = None,  # Search in name and notes
@@ -320,11 +329,17 @@ def list_tasks(
             query += " AND t.user_id = ?"
             params.append(user_id)
 
-        if inbox_only:
-            query += " AND t.priority_id IS NULL"
-        elif priority_id:
-            query += " AND t.priority_id = ?"
-            params.append(priority_id)
+        if outbox_only:
+            query += " AND t.is_in_outbox = 1"
+        else:
+            # Hide outbox tasks from all non-outbox views
+            query += " AND (t.is_in_outbox = 0 OR t.is_in_outbox IS NULL)"
+
+            if inbox_only:
+                query += " AND t.priority_id IS NULL"
+            elif priority_id:
+                query += " AND t.priority_id = ?"
+                params.append(priority_id)
 
         if status:
             query += " AND t.status = ?"
@@ -361,13 +376,19 @@ def list_tasks(
 
 
 def update_task_status(task_id: str, status: TaskStatus) -> None:
-    """Update a task's status."""
+    """Update a task's status. Auto-moves to outbox when done."""
     ensure_schema()
     with get_connection() as conn:
-        conn.execute(
-            "UPDATE tasks SET status = ? WHERE id = ?",
-            (status.value, task_id),
-        )
+        if status == TaskStatus.DONE:
+            conn.execute(
+                "UPDATE tasks SET status = ?, is_in_outbox = 1, moved_to_outbox_at = ? WHERE id = ?",
+                (status.value, datetime.now().isoformat(), task_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE tasks SET status = ? WHERE id = ?",
+                (status.value, task_id),
+            )
 
 
 def update_task(
@@ -398,6 +419,11 @@ def update_task(
         if status is not None:
             updates.append("status = ?")
             params.append(status.value)
+            # Auto-move to outbox when marked done
+            if status == TaskStatus.DONE:
+                updates.append("is_in_outbox = 1")
+                updates.append("moved_to_outbox_at = ?")
+                params.append(datetime.now().isoformat())
         if due_date is not None:
             updates.append("due_date = ?")
             params.append(due_date.isoformat() if due_date else None)
@@ -416,6 +442,30 @@ def update_task(
         )
 
     return get_task(task_id)
+
+
+def restore_from_outbox(task_id: str) -> Task | None:
+    """Restore a task from the outbox back to the queue."""
+    ensure_schema()
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE tasks SET status = 'queued', is_in_outbox = 0, moved_to_outbox_at = NULL WHERE id = ?",
+            (task_id,),
+        )
+    return get_task(task_id)
+
+
+def purge_old_outbox_tasks(days: int = 7) -> int:
+    """Hard-delete outbox tasks older than N days. Returns count deleted."""
+    ensure_schema()
+    from datetime import timedelta
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+    with get_connection() as conn:
+        result = conn.execute(
+            "DELETE FROM tasks WHERE is_in_outbox = 1 AND moved_to_outbox_at < ?",
+            (cutoff,),
+        )
+        return result.rowcount
 
 
 def delete_task(task_id: str) -> bool:
@@ -456,6 +506,12 @@ def _row_to_task(row: sqlite3.Row) -> Task:
     # Handle description (was 'notes' in older schemas)
     description = row["description"] if "description" in keys else (row["notes"] if "notes" in keys else None)
 
+    # Outbox fields
+    is_in_outbox = bool(row["is_in_outbox"]) if "is_in_outbox" in keys and row["is_in_outbox"] else False
+    moved_to_outbox_at = None
+    if "moved_to_outbox_at" in keys and row["moved_to_outbox_at"]:
+        moved_to_outbox_at = datetime.fromisoformat(row["moved_to_outbox_at"])
+
     return Task(
         id=row["id"],
         name=row["name"],
@@ -467,6 +523,8 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         due_date=due_date,
         created_at=created_at,
         priority_id=row["priority_id"] if "priority_id" in keys else None,
+        is_in_outbox=is_in_outbox,
+        moved_to_outbox_at=moved_to_outbox_at,
         priority_name=row["priority_name"] if "priority_name" in keys else None,
         priority_type=row["priority_type"] if "priority_type" in keys else None,
     )

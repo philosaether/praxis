@@ -25,7 +25,16 @@
             {% endif %}
         </div>
     </div>
-    {% if task.can_toggle %}
+    {% if outbox_mode %}
+    <button class="quick-done"
+            hx-post="/api/tasks/{{ task.id }}/restore"
+            hx-target="closest .task-row"
+            hx-swap="delete"
+            onclick="event.stopPropagation();"
+            title="Restore to queue">
+        ↩
+    </button>
+    {% elif task.can_toggle %}
     <button class="quick-done {% if task.status == 'done' %}checked{% endif %}"
             hx-post="/tasks/{{ task.id }}/toggle"
             hx-target="closest .task-row"
@@ -38,7 +47,12 @@
 </div>
 {% else %}
 <div class="empty-state">
+    {% if outbox_mode %}
+    <h3>Outbox is empty</h3>
+    <p>Completed tasks will appear here before deletion.</p>
+    {% else %}
     <h3>No tasks found</h3>
     <p>All caught up!</p>
+    {% endif %}
 </div>
 {% endfor %}

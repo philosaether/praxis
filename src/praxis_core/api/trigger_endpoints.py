@@ -318,6 +318,17 @@ async def midnight_cron(
                 "error": str(e),
             })
 
+    # Outbox cleanup: hard-delete tasks in outbox for > 7 days
+    from praxis_core.persistence.task_persistence import purge_old_outbox_tasks
+    try:
+        purged = purge_old_outbox_tasks(days=7)
+        results["outbox_purged"] = purged
+        if purged > 0:
+            logger.info(f"Cron: Purged {purged} outbox task(s) older than 7 days")
+    except Exception as e:
+        logger.error(f"Cron: Outbox purge failed: {e}")
+        results["errors"].append({"step": "outbox_purge", "error": str(e)})
+
     logger.info(
         f"Midnight cron completed: {results['entities_processed']} entities, "
         f"{results['triggers_fired']} triggers, {results['tasks_created']} tasks"

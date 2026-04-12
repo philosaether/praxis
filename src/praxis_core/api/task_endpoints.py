@@ -197,6 +197,7 @@ async def list_tasks_endpoint(
     tag: str | None = None,
     q: str | None = None,
     inbox: bool = False,
+    outbox: bool = False,
     user: User | None = Depends(get_current_user_optional),
 ):
     """List tasks with optional filters, ranked by priority score.
@@ -237,6 +238,7 @@ async def list_tasks_endpoint(
         entity_id=entity_id,
         assigned_to=user_id,
         inbox_only=inbox,
+        outbox_only=outbox,
         tag_names=tag_names,
         search_query=search_query,
     )
@@ -372,7 +374,11 @@ async def toggle_task(
         return JSONResponse({"error": "Permission denied"}, status_code=403)
 
     new_status = TaskStatus.QUEUED if task.status == TaskStatus.DONE else TaskStatus.DONE
-    update_task_status(task_id, new_status)
+    if new_status == TaskStatus.QUEUED and task.is_in_outbox:
+        from praxis_core.persistence.task_persistence import restore_from_outbox
+        restore_from_outbox(task_id)
+    else:
+        update_task_status(task_id, new_status)
 
     # Fire event triggers if task was marked done
     if new_status == TaskStatus.DONE and task.entity_id:
@@ -406,6 +412,23 @@ async def toggle_task(
         task_data["aptness"] = round(st.aptness, 2)
 
     return {"task": task_data}
+
+
+@router.post("/{task_id}/restore")
+async def restore_task(
+    task_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Restore a task from the outbox back to the queue."""
+    from praxis_core.persistence.task_persistence import restore_from_outbox
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    if not task.is_in_outbox:
+        return JSONResponse({"error": "Task is not in outbox"}, status_code=400)
+
+    restored = restore_from_outbox(task_id)
+    return {"task": _serialize_task(restored, current_user=user)}
 
 
 @router.post("/{task_id}/properties")

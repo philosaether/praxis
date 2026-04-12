@@ -52,6 +52,15 @@
                 title="Rules">
             <span class="mode-nav-icon mode-nav-icon--rules"></span>
         </button>
+        <button class="mode-nav-btn {% if default_mode == 'outbox' %}active{% endif %}"
+                id="outbox-nav-btn"
+                hx-get="/tasks/outbox"
+                hx-target="#item-list"
+                hx-push-url="/tasks/outbox"
+                onclick="setMode('outbox')"
+                title="Outbox">
+            <span class="mode-nav-icon mode-nav-icon--outbox"></span>
+        </button>
     </nav>
 
     <!-- Left Pane -->
@@ -306,6 +315,7 @@
         document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
         document.getElementById('friends-nav-btn').classList.toggle('active', mode === 'friends');
         document.getElementById('rules-nav-btn').classList.toggle('active', mode === 'rules');
+        document.getElementById('outbox-nav-btn').classList.toggle('active', mode === 'outbox');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
