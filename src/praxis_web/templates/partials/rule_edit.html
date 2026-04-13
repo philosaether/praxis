@@ -107,6 +107,7 @@
                 <option value="tag_missing">Missing tag</option>
                 <option value="due_date_proximity">Due date</option>
                 <option value="staleness">Staleness</option>
+                <option value="engagement_recency">Priority not engaged</option>
             </select>
             <div class="block-fields" id="condition-fields-${idx}"></div>
             <button type="button" class="block-delete" onclick="this.closest('.rule-block').remove()">×</button>
@@ -160,7 +161,14 @@
                 html = `
                     <span class="block-label">untouched for</span>
                     <input type="number" name="conditions[${idx}][days]" value="3" class="block-input block-input-sm" min="1">
-                    <span class="block-label">days</span>
+                    <span class="block-label">+ days</span>
+                `;
+                break;
+            case 'engagement_recency':
+                html = `
+                    <span class="block-label">not engaged for</span>
+                    <input type="number" name="conditions[${idx}][days]" value="7" class="block-input block-input-sm" min="1">
+                    <span class="block-label">+ days</span>
                 `;
                 break;
         }

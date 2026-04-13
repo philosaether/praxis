@@ -236,6 +236,15 @@ def on_task_completed(
         return []
 
     graph = _get_graph(entity_id)
+
+    # Update last_engaged_at on the parent priority
+    priority_id = task_data.get("priority_id")
+    if priority_id:
+        priority = graph.get(priority_id)
+        if priority:
+            priority.last_engaged_at = datetime.now()
+            graph.save_priority(priority)
+
     matches = _find_practices_with_event_actions(graph, EventType.TASK_COMPLETION)
     if not matches:
         return []

@@ -56,6 +56,14 @@ def is_htmx_request(request: Request) -> bool:
     return request.headers.get("HX-Request") == "true"
 
 
+def _prepare_rule_for_ui(rule: dict) -> dict:
+    """Map API rule conditions to UI-friendly types (e.g., tag_match+missing → tag_missing)."""
+    for c in rule.get("conditions", []):
+        if c.get("type") == "tag_match" and c.get("params", {}).get("operator") == "missing":
+            c["type"] = "tag_missing"
+    return rule
+
+
 # -----------------------------------------------------------------------------
 # Dev/Demo Routes
 # -----------------------------------------------------------------------------
@@ -2622,7 +2630,7 @@ async def rule_detail(request: Request, rule_id: str):
         if response.status_code != 200:
             return HTMLResponse("<div class='error'>Rule not found</div>", status_code=404)
         data = response.json()
-        rule = data.get("rule")
+        rule = _prepare_rule_for_ui(data.get("rule"))
 
     # HTMX request - return partial
     if is_htmx_request(request):
@@ -2666,6 +2674,8 @@ async def rule_edit(request: Request, rule_id: str):
         # Get YAML representation for toggle view
         yaml_response = await client.get(f"/api/rules/export/{rule_id}")
         rule_yaml = yaml_response.text if yaml_response.status_code == 200 else ""
+
+    _prepare_rule_for_ui(rule)
 
     return templates.TemplateResponse(
         request,
@@ -2727,6 +2737,11 @@ async def rule_save(request: Request, rule_id: str):
                 condition["params"]["days"] = days
             elif cond_type in ("tag_match", "tag_missing"):
                 condition["params"]["tag"] = form_data.get(f"conditions[{idx}][tag]", "")
+                if cond_type == "tag_missing":
+                    condition["type"] = "tag_match"
+                    condition["params"]["operator"] = "missing"
+                else:
+                    condition["params"]["operator"] = "has"
             elif cond_type == "due_date_proximity":
                 condition["params"]["due_type"] = form_data.get(f"conditions[{idx}][due_type]", "has_due_date")
                 hours = form_data.get(f"conditions[{idx}][hours]")
@@ -2735,7 +2750,13 @@ async def rule_save(request: Request, rule_id: str):
             elif cond_type == "staleness":
                 days = form_data.get(f"conditions[{idx}][days]")
                 if days:
+                    condition["params"]["days_untouched"] = int(days)
+                condition["params"]["operator"] = "gte"
+            elif cond_type == "engagement_recency":
+                days = form_data.get(f"conditions[{idx}][days]")
+                if days:
                     condition["params"]["days"] = int(days)
+                condition["params"]["operator"] = "gte"
 
             rule_data["conditions"].append(condition)
 
@@ -2764,7 +2785,7 @@ async def rule_save(request: Request, rule_id: str):
                 error = response.json().get("error", "Failed to save rule")
                 return HTMLResponse(f"<div class='error'>{error}</div>", status_code=400)
             data = response.json()
-            rule = data.get("rule")
+            rule = _prepare_rule_for_ui(data.get("rule"))
 
     # Return view mode with trigger to refresh list
     html_response = templates.TemplateResponse(

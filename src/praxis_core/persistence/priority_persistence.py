@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS priorities (
     actions_config TEXT,       -- JSON: v2 DSL actions array
     last_triggered_at TEXT,    -- datetime: managed by trigger system, not edit form
 
+    -- Engagement tracking
+    last_engaged_at TEXT,      -- datetime: updated when child tasks are completed
+
     -- Metadata
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -112,6 +115,8 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     # Handle description (was 'notes' in older schemas)
     description = row["description"] if "description" in keys else (row["notes"] if "notes" in keys else None)
 
+    last_engaged_at = _parse_datetime(row["last_engaged_at"]) if "last_engaged_at" in keys else None
+
     common_kwargs = {
         "id": row["id"],
         "name": row["name"],
@@ -123,6 +128,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "rank": row["rank"],
         "auto_assign_owner": auto_assign_owner,
         "auto_assign_creator": auto_assign_creator,
+        "last_engaged_at": last_engaged_at,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -194,6 +200,8 @@ def priority_to_row_values(priority: Priority) -> tuple:
     if isinstance(priority, Practice) and priority.last_triggered_at:
         last_triggered_at = priority.last_triggered_at.isoformat()
 
+    last_engaged_at = priority.last_engaged_at.isoformat() if priority.last_engaged_at else None
+
     now = datetime.now().isoformat()
     return (
         priority.id,
@@ -212,6 +220,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         progress,
         actions_config,
         last_triggered_at,
+        last_engaged_at,
         priority.created_at.isoformat() if priority.created_at else now,
         priority.updated_at.isoformat() if priority.updated_at else now,
     )
@@ -250,8 +259,10 @@ class PriorityGraph:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Migrations disabled - database is up-to-date
-            # If you need to add columns, do it manually via sqlite3 CLI
+            # Migrate: add last_engaged_at if missing
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()}
+            if "last_engaged_at" not in columns:
+                conn.execute("ALTER TABLE priorities ADD COLUMN last_engaged_at TEXT")
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:
@@ -304,9 +315,9 @@ class PriorityGraph:
                     agent_context, description, rank,
                     auto_assign_owner, auto_assign_creator,
                     complete_when, due_date, progress,
-                    actions_config, last_triggered_at,
+                    actions_config, last_triggered_at, last_engaged_at,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -323,6 +334,7 @@ class PriorityGraph:
                     progress = excluded.progress,
                     actions_config = excluded.actions_config,
                     last_triggered_at = excluded.last_triggered_at,
+                    last_engaged_at = excluded.last_engaged_at,
                     updated_at = CURRENT_TIMESTAMP
             """, values)
             conn.commit()
