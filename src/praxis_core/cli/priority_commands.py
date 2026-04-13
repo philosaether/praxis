@@ -112,13 +112,7 @@ def priority_show(
         rprint(f"\n[bold]Context:[/bold]\n{p.agent_context}")
 
     # Type-specific fields
-    if isinstance(p, Value):
-        if p.success_looks_like:
-            rprint(f"\n[bold]Success looks like:[/bold]\n{p.success_looks_like}")
-        if p.obsolete_when:
-            rprint(f"\n[bold]Obsolete when:[/bold]\n{p.obsolete_when}")
-
-    elif isinstance(p, Goal):
+    if isinstance(p, Goal):
         if p.complete_when:
             rprint(f"\n[bold]Complete when:[/bold]\n{p.complete_when}")
         if p.progress:
@@ -127,12 +121,10 @@ def priority_show(
             rprint(f"[bold]Due:[/bold] {p.due_date.strftime('%Y-%m-%d')}")
 
     elif isinstance(p, Practice):
-        if p.rhythm_frequency:
-            rprint(f"\n[bold]Rhythm:[/bold] {p.rhythm_frequency}")
-        if p.rhythm_constraints:
-            rprint(f"[bold]Constraints:[/bold] {p.rhythm_constraints}")
-        if p.generation_prompt:
-            rprint(f"[bold]Generation prompt:[/bold]\n{p.generation_prompt}")
+        if p.actions_config:
+            rprint(f"\n[bold]Actions:[/bold] configured")
+        if p.last_triggered_at:
+            rprint(f"[bold]Last triggered:[/bold] {p.last_triggered_at.strftime('%Y-%m-%d %H:%M')}")
 
     # Ancestry
     parent_ids = graph.parents.get(p.id, set())

@@ -1,0 +1,76 @@
+{#
+Number Chip
+===========
+Numeric input for cadence count (e.g., "every 2 weeks").
+Also provides simple interval options to navigate back from custom mode.
+
+Params:
+  - name: Form field name (default: "count")
+  - value: Current value (default: "2")
+  - min: Minimum value (default: 1)
+  - max: Maximum value (default: 52)
+#}
+
+{% set name = name or 'count' %}
+{% set value = value or '2' %}
+{% set min = min or 1 %}
+{% set max = max or 52 %}
+{% set variant = 'interval' %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="number">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ value }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select interval">
+    <div class="chip-popup__number-input">
+      <button type="button" class="chip-popup__number-btn" onclick="adjustNumberChip(this, -1)">−</button>
+      <input type="number"
+             class="chip-popup__number-field"
+             value="{{ value }}"
+             min="{{ min }}"
+             max="{{ max }}"
+             onchange="setNumberChip(this)"
+             onkeydown="if(event.key==='Enter'){setNumberChip(this);closeAllChipPopups();}">
+      <button type="button" class="chip-popup__number-btn" onclick="adjustNumberChip(this, 1)">+</button>
+    </div>
+
+    <div class="chip-popup__divider"></div>
+
+    <div class="chip-popup__options chip-popup__options--interval">
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval"
+              data-value="daily"
+              data-display="day"
+              data-spawns=""
+              onclick="selectSimpleFromNumber(this)">day</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval"
+              data-value="weekdays"
+              data-display="weekday"
+              data-spawns=""
+              onclick="selectSimpleFromNumber(this)">weekday</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval"
+              data-value="weekends"
+              data-display="weekend day"
+              data-spawns=""
+              onclick="selectSimpleFromNumber(this)">weekend day</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval"
+              data-value="weekly"
+              data-display="week"
+              data-spawns="day"
+              onclick="selectSimpleFromNumber(this)">week on...</button>
+    </div>
+  </div>
+</span>

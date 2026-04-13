@@ -19,6 +19,7 @@ from praxis_core.persistence import (
 )
 from praxis_core.prioritization import rank_tasks
 from praxis_core.api.auth import get_current_user, get_current_user_optional
+from praxis_core.triggers import on_task_completed
 
 
 def _get_active_rules(entity_id: str | None):
@@ -196,6 +197,7 @@ async def list_tasks_endpoint(
     tag: str | None = None,
     q: str | None = None,
     inbox: bool = False,
+    outbox: bool = False,
     user: User | None = Depends(get_current_user_optional),
 ):
     """List tasks with optional filters, ranked by priority score.
@@ -236,6 +238,7 @@ async def list_tasks_endpoint(
         entity_id=entity_id,
         assigned_to=user_id,
         inbox_only=inbox,
+        outbox_only=outbox,
         tag_names=tag_names,
         search_query=search_query,
     )
@@ -302,7 +305,7 @@ async def get_task_for_edit(
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     task_data = _serialize_task(task, render_markdown=False, current_user=user, graph=graph)
-    task_data["notes_raw"] = task.notes or ""
+    task_data["notes_raw"] = task.description or ""
 
     return {
         "task": task_data,
@@ -371,7 +374,27 @@ async def toggle_task(
         return JSONResponse({"error": "Permission denied"}, status_code=403)
 
     new_status = TaskStatus.QUEUED if task.status == TaskStatus.DONE else TaskStatus.DONE
-    update_task_status(task_id, new_status)
+    if new_status == TaskStatus.QUEUED and task.is_in_outbox:
+        from praxis_core.persistence.task_persistence import restore_from_outbox
+        restore_from_outbox(task_id)
+    else:
+        update_task_status(task_id, new_status)
+
+    # Fire event triggers if task was marked done
+    if new_status == TaskStatus.DONE and task.entity_id:
+        task_data_for_trigger = {
+            "id": task.id,
+            "name": task.name,
+            "priority_id": task.priority_id,
+            "entity_id": task.entity_id,
+            "tags": [],  # TODO: Load tags if needed
+        }
+        on_task_completed(
+            task_id=task.id,
+            entity_id=task.entity_id,
+            task_data=task_data_for_trigger,
+            created_by=user.id if user else None,
+        )
 
     task = get_task(task_id)
     task_data = _serialize_task(task, current_user=user, graph=graph)
@@ -389,6 +412,28 @@ async def toggle_task(
         task_data["aptness"] = round(st.aptness, 2)
 
     return {"task": task_data}
+
+
+@router.post("/{task_id}/restore")
+async def restore_task(
+    task_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Restore a task from the outbox back to the queue."""
+    from praxis_core.persistence.task_persistence import restore_from_outbox
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    if not task.is_in_outbox:
+        return JSONResponse({"error": "Task is not in outbox"}, status_code=400)
+
+    graph = _get_graph(user.entity_id if user else None)
+    permission = get_task_permission(task, user, graph)
+    if not can_toggle_task(permission):
+        return JSONResponse({"error": "Permission denied"}, status_code=403)
+
+    restored = restore_from_outbox(task_id)
+    return {"task": _serialize_task(restored, current_user=user)}
 
 
 @router.post("/{task_id}/properties")
@@ -439,7 +484,7 @@ async def update_task_properties(
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     task_data = _serialize_task(task, render_markdown=True, current_user=user, graph=graph)
-    task_data["notes_raw"] = task.notes or ""
+    task_data["notes_raw"] = task.description or ""
 
     return {
         "task": task_data,
@@ -476,14 +521,14 @@ async def update_task_notes(
 
     task = get_task(task_id)
     task_data = _serialize_task(task, render_markdown=True, current_user=user, graph=graph)
-    task_data["notes_raw"] = task.notes or ""
+    task_data["notes_raw"] = task.description or ""
 
     return {
         "task": task_data,
         "item_type": "task",
         "item_id": task.id,
         "notes": task_data.get("notes", ""),
-        "notes_raw": task.notes or "",
+        "notes_raw": task.description or "",
     }
 
 

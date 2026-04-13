@@ -1,0 +1,98 @@
+{#
+Priority Picker Chip
+====================
+Hierarchical priority selector with breadcrumb navigation.
+Reusable wherever the user needs to pick a priority from their forest.
+
+Params:
+  - name: Form field name (default: "priority")
+  - value: Selected priority name (default: empty/placeholder)
+  - value_path: Full path string, e.g. "Career > Networking" (default: same as value)
+  - priority_tree: JSON-serializable list of root priorities, each with:
+      {"name": "...", "children": [...]}
+    (default: demo tree)
+  - placeholder: Text when nothing selected (default: "any priority")
+  - variant: Color variant (default: "priority")
+
+Display rules:
+  - empty  -> placeholder text
+  - short path (≤40 chars) -> full path
+  - long path  -> "... > Parent > Leaf"
+#}
+
+{% set name = name or 'priority' %}
+{% set value = value if value is defined else '' %}
+{% set value_path = value_path if value_path is defined else value %}
+{% set placeholder = placeholder or 'any priority' %}
+{% set variant = variant or 'priority' %}
+{% set is_placeholder = not value %}
+
+{% if value_path and value_path|length > 40 %}
+  {% set path_parts = value_path.split(' > ') %}
+  {% if path_parts|length > 2 %}
+    {% set display = '… > ' ~ path_parts[-2] ~ ' > ' ~ path_parts[-1] %}
+  {% else %}
+    {% set display = value_path %}
+  {% endif %}
+{% elif value_path %}
+  {% set display = value_path %}
+{% else %}
+  {% set display = placeholder %}
+{% endif %}
+
+{# Default demo tree if none provided #}
+{% set priority_tree = priority_tree or [
+  {"name": "Career", "children": [
+    {"name": "Proper Elevation", "children": [
+      {"name": "Business Development", "children": []},
+      {"name": "Software Engineering", "children": []},
+      {"name": "Interview Prep", "children": []}
+    ]},
+    {"name": "Networking", "children": []},
+    {"name": "Side Projects", "children": [
+      {"name": "Praxis", "children": []},
+      {"name": "Open Source", "children": []}
+    ]}
+  ]},
+  {"name": "Health", "children": [
+    {"name": "Exercise", "children": []},
+    {"name": "Nutrition", "children": []},
+    {"name": "Sleep", "children": []}
+  ]},
+  {"name": "Relationships", "children": [
+    {"name": "Keep in Touch", "children": []},
+    {"name": "Family", "children": []}
+  ]},
+  {"name": "Finance", "children": []},
+  {"name": "Learning", "children": [
+    {"name": "Reading", "children": []},
+    {"name": "Courses", "children": []}
+  ]}
+] %}
+
+{% set picker_id = name ~ '_picker_' ~ range(10000)|random %}
+<span class="chip" data-chip="{{ name }}"
+      data-chip-type="priority_picker"
+      data-picker-id="{{ picker_id }}"
+      data-priority-placeholder="{{ placeholder }}">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+  <input type="hidden" name="{{ name }}_path" value="{{ value_path }}">
+  <script id="{{ picker_id }}" type="application/json">{{ priority_tree | tojson }}</script>
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="togglePriorityPicker(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left chip-popup--priority-picker" role="dialog" aria-label="Select priority">
+    <div class="chip-popup__breadcrumb">
+      <span class="chip-popup__breadcrumb-segment chip-popup__breadcrumb-root" onclick="priorityPickerNavigate(this, [], event)">all priorities</span>
+    </div>
+    <div class="chip-popup__priority-list">
+      {# Rendered by JS on open #}
+    </div>
+  </div>
+</span>

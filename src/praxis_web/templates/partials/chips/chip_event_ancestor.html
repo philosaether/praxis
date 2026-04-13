@@ -1,0 +1,25 @@
+{#
+Event Ancestor Chip
+===================
+Optional filter: narrows the event to entities under a specific priority.
+Reads as "under [Career]" or "under [Career > Networking]" in the sentence.
+
+This is a thin wrapper around the priority picker chip.
+
+Params:
+  - name: Form field name (default: "event_ancestor")
+  - value: Priority name (default: empty/placeholder)
+  - value_path: Full path (default: same as value)
+  - priority_tree: Nested priority list (default: demo tree)
+
+DSL mapping:
+  - value -> when.event.ancestor
+#}
+
+{% set name = name or 'event_ancestor' %}
+{% set value = value if value is defined else '' %}
+{% set value_path = value_path if value_path is defined else value %}
+
+{% with name=name, value=value, value_path=value_path, placeholder='any priority', variant='priority', priority_tree=priority_tree %}
+  {% include "partials/chips/chip_priority_picker.html" %}
+{% endwith %}

@@ -80,11 +80,15 @@ def score_task(
     """
     base_importance = get_importance(task, graph)
 
-    # Get priority depth for rule context
+    # Get priority depth and engagement data for rule context
     depth = 0
+    last_engaged_at = None
     if task.priority_id:
         path = graph.path_to_root(task.priority_id)
         depth = len(path) if path else 0
+        priority = graph.get(task.priority_id)
+        if priority:
+            last_engaged_at = priority.last_engaged_at
 
     # Evaluate rules (urgency comes entirely from rules)
     result = evaluate_rules(
@@ -94,6 +98,7 @@ def score_task(
         base_importance=base_importance,
         base_urgency=0.0,
         priority_depth=depth,
+        last_engaged_at=last_engaged_at,
     )
 
     # Final scores

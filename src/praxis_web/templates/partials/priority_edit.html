@@ -5,12 +5,20 @@
     <!-- Back link -->
     <div class="detail-nav">
         <a href="#"
+           hx-get="/priorities/{{ priority.id }}"
+           hx-target="#detail-pane"
+           hx-swap="innerHTML"
+           class="back-link">
+            &larr; Back to View
+        </a>
+        <span class="nav-separator">|</span>
+        <a href="#"
            hx-get="/priorities/tree-pane"
            hx-target="#detail-pane"
            hx-swap="innerHTML"
            hx-push-url="/priorities"
            class="back-link">
-            ← Back to Tree
+            &larr; Back to Tree
         </a>
     </div>
 
@@ -19,22 +27,40 @@
               hx-target="#detail-pane"
               hx-swap="innerHTML">
 
-            <!-- Type selector -->
-            <div class="property-row">
-                <label for="priority_type">Type</label>
-                <select id="priority_type"
-                        name="new_priority_type"
-                        class="property-input type-select"
-                        hx-post="/priorities/{{ priority.id }}/change-type"
-                        hx-target="#detail-pane"
-                        hx-swap="innerHTML"
-                        hx-trigger="change">
-                    {% for t in priority_types %}
-                    <option value="{{ t }}" {% if t == priority.priority_type %}selected{% endif %}>
-                        {{ t|title }}
-                    </option>
-                    {% endfor %}
-                </select>
+            <!-- Header row: Type + Status -->
+            <div class="edit-header-row">
+                <!-- Type selector with badge styling -->
+                <div class="property-row compact">
+                    <label for="priority_type">Type</label>
+                    <select id="priority_type"
+                            name="new_priority_type"
+                            class="property-input type-select"
+                            hx-post="/priorities/{{ priority.id }}/change-type"
+                            hx-target="#detail-pane"
+                            hx-swap="innerHTML"
+                            hx-trigger="change">
+                        {% for t in priority_types %}
+                        <option value="{{ t }}" {% if t == priority.priority_type %}selected{% endif %}>
+                            [{{ t|upper }}] {{ t|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="property-row compact">
+                    <label for="status">Status</label>
+                    <select id="status" name="status" class="property-input">
+                        {% if priority.priority_type == 'goal' %}
+                        <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>Dormant</option>
+                        <option value="active" {% if priority.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="completed" {% if priority.status == 'completed' %}selected{% endif %}>Completed</option>
+                        {% else %}
+                        <option value="active" {% if priority.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>Dormant</option>
+                        {% endif %}
+                    </select>
+                </div>
             </div>
 
             <!-- Name -->
@@ -50,80 +76,86 @@
                        class="property-input title-input">
             </div>
 
-            <!-- Status -->
-            <div class="property-row">
-                <label for="status">Status</label>
-                <select id="status" name="status" class="property-input">
-                    {% if priority.priority_type == 'goal' %}
-                    {# Goals have dormant/active/completed #}
-                    <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>dormant</option>
-                    <option value="active" {% if priority.status == 'active' %}selected{% endif %}>active</option>
-                    <option value="completed" {% if priority.status == 'completed' %}selected{% endif %}>completed</option>
-                    {% else %}
-                    {# Values and practices only have active/dormant #}
-                    <option value="active" {% if priority.status == 'active' %}selected{% endif %}>active</option>
-                    <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>dormant</option>
-                    {% endif %}
-                </select>
-            </div>
-
-            <!-- Parent -->
+            <!-- Parent picker with badges -->
             <div class="property-row">
                 <label for="parent_id">Parent</label>
-                <select id="parent_id" name="parent_id" class="property-input">
-                    <option value="">None</option>
+                {% set selected_parent_id = parents[0].id if parents and parents|length > 0 else '' %}
+                <select id="parent_id" name="parent_id" class="property-input parent-picker">
+                    <option value="">None (top-level)</option>
                     {% for p in all_priorities %}
                     {% if p.id != priority.id %}
-                    <option value="{{ p.id }}" {% if parents and p.id in parents|map(attribute='id')|list %}selected{% endif %}>
-                        {{ p.name }} ({{ p.priority_type }})
+                    <option value="{{ p.id }}"
+                            data-type="{{ p.priority_type }}"
+                            {% if p.id == selected_parent_id %}selected{% endif %}>
+                        [{{ p.priority_type|upper }}] {{ p.name }}
                     </option>
                     {% endif %}
                     {% endfor %}
                 </select>
             </div>
 
-            <!-- Type-specific fields -->
-            {# Values have no type-specific fields - just notes #}
-            {% if priority.priority_type == 'goal' %}
+            <!-- Description (markdown) -->
             <div class="property-row">
-                <label for="complete_when">Complete When</label>
-                <textarea id="complete_when"
-                          name="complete_when"
-                          rows="3"
-                          class="property-input"
-                          placeholder="What does done look like?">{{ priority.complete_when or '' }}</textarea>
-            </div>
-            <div class="property-row">
-                <label for="progress">Progress</label>
-                <input type="text"
-                       id="progress"
-                       name="progress"
-                       value="{{ priority.progress or '' }}"
-                       class="property-input"
-                       placeholder="e.g., 3/10, 70%">
-            </div>
-            <div class="property-row">
-                <label for="due_date">Due Date</label>
-                <input type="date"
-                       id="due_date"
-                       name="due_date"
-                       value="{{ priority.due_date or '' }}"
-                       class="property-input">
-            </div>
-            {% elif priority.priority_type == 'practice' %}
-            {# Practice-specific fields hidden until task generation is implemented #}
-            {# Will be replaced by Rhythm entity reference #}
-            {% endif %}
-
-            <!-- Notes -->
-            <div class="property-row">
-                <label for="notes">Notes</label>
+                <label for="notes">
+                    Description
+                    <span class="char-counter" id="desc-counter">
+                        <span id="desc-count">{{ (priority.notes_raw or '')|length }}</span>/800
+                    </span>
+                </label>
                 <textarea id="notes"
                           name="notes"
                           rows="6"
-                          class="property-input"
-                          placeholder="Add notes... (supports Markdown)">{{ priority.notes_raw or '' }}</textarea>
+                          maxlength="800"
+                          class="property-input description-input"
+                          placeholder="Add description... (supports Markdown)"
+                          oninput="updateCharCount(this, 'desc-count', 800)">{{ priority.notes_raw or '' }}</textarea>
             </div>
+
+            <!-- Type-specific fields -->
+            {% if priority.priority_type == 'goal' %}
+            <div class="type-specific-fields goal-fields">
+                <div class="property-row">
+                    <label for="complete_when">Complete When</label>
+                    <textarea id="complete_when"
+                              name="complete_when"
+                              rows="3"
+                              class="property-input"
+                              placeholder="What does done look like?">{{ priority.complete_when or '' }}</textarea>
+                </div>
+                <div class="property-row">
+                    <label for="progress">Progress</label>
+                    <input type="text"
+                           id="progress"
+                           name="progress"
+                           value="{{ priority.progress or '' }}"
+                           class="property-input"
+                           placeholder="e.g., 3/10, 70%">
+                </div>
+                <div class="property-row">
+                    <label for="due_date">Due Date</label>
+                    <input type="date"
+                           id="due_date"
+                           name="due_date"
+                           value="{{ priority.due_date or '' }}"
+                           class="property-input">
+                </div>
+            </div>
+            {% elif priority.priority_type == 'practice' %}
+            <div class="type-specific-fields practice-fields">
+                <!-- Actions Editor -->
+                <div class="property-row">
+                    <label>
+                        Actions
+                        <a href="#" class="label-action" id="actions-mode-toggle" onclick="toggleActionsYamlMode(event, '{{ priority.id }}')">edit as code</a>
+                    </label>
+                    <div id="actions-editor-container">
+                        {% include "partials/actions/actions_editor.html" with context %}
+                    </div>
+                </div>
+                {# Chip hidden inputs (action_N_field) are inside the form and sent automatically by HTMX.
+                   Server assembles actions_config JSON from those fields. #}
+            </div>
+            {% endif %}
 
             <!-- Actions -->
             <div class="property-actions">
@@ -138,11 +170,7 @@
                     </button>
                 </div>
                 <div class="actions-right">
-                    <button type="button"
-                            class="btn btn-danger"
-                            onclick="showDeleteConfirmation('{{ priority.id }}', {{ priority.name|tojson|e }})">
-                        Delete
-                    </button>
+                    {% include "partials/components/delete_priority_btn.html" %}
                 </div>
             </div>
 
@@ -154,8 +182,75 @@
         <div class="property-meta">
             <span class="meta-item">{{ priority.id }}</span>
             {% if priority.created_at %}
-            <span class="meta-item">Created: {{ priority.created_at }}</span>
+            <span class="meta-item">Created {{ priority.created_at }}</span>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Wizard modal container -->
+<div id="action-wizard-container"></div>
+
+<script>
+function updateCharCount(textarea, counterId, maxLength) {
+    const count = textarea.value.length;
+    const counter = document.getElementById(counterId);
+    counter.textContent = count;
+
+    const wrapper = counter.closest('.char-counter');
+    if (count > maxLength * 0.9) {
+        wrapper.classList.add('warning');
+    } else {
+        wrapper.classList.remove('warning');
+    }
+    if (count >= maxLength) {
+        wrapper.classList.add('limit');
+    } else {
+        wrapper.classList.remove('limit');
+    }
+}
+
+// Track current actions editor mode
+var actionsYamlMode = false;
+
+function toggleActionsYamlMode(event, priorityId) {
+    event.preventDefault();
+    const container = document.getElementById('actions-editor-container');
+    const toggle = document.getElementById('actions-mode-toggle');
+
+    actionsYamlMode = !actionsYamlMode;
+
+    if (actionsYamlMode) {
+        // Switch to YAML: collect current chip values and convert
+        toggle.textContent = 'edit as plain english';
+        const form = container.closest('form');
+        const formData = new FormData(form);
+        htmx.ajax('POST', `/priorities/${priorityId}/actions/to-yaml`, {
+            target: container,
+            swap: 'innerHTML',
+            values: Object.fromEntries(formData)
+        });
+    } else {
+        // Switch to chips: collect current YAML and convert
+        toggle.textContent = 'edit as code';
+        const textarea = container.querySelector('textarea[name="yaml"]');
+        const yamlContent = textarea ? textarea.value : '';
+        htmx.ajax('POST', `/priorities/${priorityId}/actions/to-chips`, {
+            target: container,
+            swap: 'innerHTML',
+            values: { yaml: yamlContent }
+        });
+    }
+}
+
+function openActionWizard() {
+    const priorityId = '{{ priority.id }}';
+    htmx.ajax('GET', `/priorities/${priorityId}/actions/wizard?step=1`, {
+        target: '#action-wizard-container',
+        swap: 'innerHTML'
+    });
+}
+
+// No client-side serialization needed — chip hidden inputs (action_N_field)
+// are sent as regular form fields by HTMX. Server assembles actions_config.
+</script>

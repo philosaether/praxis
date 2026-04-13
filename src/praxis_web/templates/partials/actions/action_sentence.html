@@ -1,0 +1,36 @@
+{# Single action rendered as a prose sentence with editable chips #}
+{# Expects: action (dict with text, parts, chips), idx (int), editable (bool), priority_id (string) #}
+
+<div class="action-sentence {% if editable %}editable{% endif %}" data-action-idx="{{ idx }}">
+    {% if editable %}
+    <span class="action-drag-handle" title="Drag to reorder">&#x2630;</span>
+    {% endif %}
+
+    <div class="action-text">
+        {% for part in action.parts %}
+        <span class="action-part" data-type="{{ part.type }}">
+            {% if editable %}
+            {# Make parts clickable for editing #}
+            <span class="editable-chip"
+                  onclick="editActionPart('{{ priority_id }}', {{ idx }}, '{{ part.type }}')"
+                  title="Click to edit">
+                {{ part.text }}
+            </span>
+            {% else %}
+            {{ part.text }}
+            {% endif %}
+        </span>
+        {% if not loop.last %}, {% endif %}
+        {% endfor %}
+        {% if not action.text.endswith('.') %}.{% endif %}
+    </div>
+
+    {% if editable %}
+    <button type="button"
+            class="action-remove"
+            title="Remove action"
+            onclick="removeAction('{{ priority_id }}', {{ idx }})">
+        &times;
+    </button>
+    {% endif %}
+</div>

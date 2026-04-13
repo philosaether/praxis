@@ -22,34 +22,31 @@ PRIORITIES_SCHEMA = """
 CREATE TABLE IF NOT EXISTS priorities (
     id TEXT PRIMARY KEY,
     entity_id TEXT REFERENCES entities(id),
-    user_id INTEGER REFERENCES users(id),  -- deprecated, use entity_id
     priority_type TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
 
     -- Common
     substatus TEXT,  -- Extension field (e.g., draft, backlog, abandoned)
-    agent_context TEXT,
-    notes TEXT,
+    agent_context TEXT,  -- Scaffolding for AI integration
+    description TEXT,
     rank INTEGER,
 
     -- Task assignment settings
     auto_assign_owner INTEGER NOT NULL DEFAULT 1,
     auto_assign_creator INTEGER NOT NULL DEFAULT 0,
 
-    -- Value (direction/principle, never completes)
-    success_looks_like TEXT,
-    obsolete_when TEXT,
-
     -- Goal (concrete outcome with end state)
     complete_when TEXT,
     due_date TEXT,
     progress TEXT,
 
-    -- Practice
-    rhythm_frequency TEXT,
-    rhythm_constraints TEXT,
-    generation_prompt TEXT,
+    -- Practice fields
+    actions_config TEXT,       -- JSON: v2 DSL actions array
+    last_triggered_at TEXT,    -- datetime: managed by trigger system, not edit form
+
+    -- Engagement tracking
+    last_engaged_at TEXT,      -- datetime: updated when child tasks are completed
 
     -- Metadata
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,7 +65,6 @@ CREATE TABLE IF NOT EXISTS priority_edges (
 CREATE INDEX IF NOT EXISTS idx_priorities_type ON priorities(priority_type);
 CREATE INDEX IF NOT EXISTS idx_priorities_status ON priorities(status);
 CREATE INDEX IF NOT EXISTS idx_priorities_entity ON priorities(entity_id);
-CREATE INDEX IF NOT EXISTS idx_priorities_user ON priorities(user_id);  -- deprecated
 CREATE INDEX IF NOT EXISTS idx_priority_edges_child ON priority_edges(child_id);
 CREATE INDEX IF NOT EXISTS idx_priority_edges_parent ON priority_edges(parent_id);
 
@@ -116,6 +112,11 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     auto_assign_owner = bool(row["auto_assign_owner"]) if "auto_assign_owner" in keys else True
     auto_assign_creator = bool(row["auto_assign_creator"]) if "auto_assign_creator" in keys else False
 
+    # Handle description (was 'notes' in older schemas)
+    description = row["description"] if "description" in keys else (row["notes"] if "notes" in keys else None)
+
+    last_engaged_at = _parse_datetime(row["last_engaged_at"]) if "last_engaged_at" in keys else None
+
     common_kwargs = {
         "id": row["id"],
         "name": row["name"],
@@ -123,10 +124,11 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "substatus": substatus,
         "entity_id": entity_id,
         "agent_context": row["agent_context"],
-        "notes": row["notes"],
+        "description": description,
         "rank": row["rank"],
         "auto_assign_owner": auto_assign_owner,
         "auto_assign_creator": auto_assign_creator,
+        "last_engaged_at": last_engaged_at,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -136,8 +138,6 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
             return Value(
                 **common_kwargs,
                 priority_type=priority_type,
-                success_looks_like=row["success_looks_like"],
-                obsolete_when=row["obsolete_when"],
             )
 
         case PriorityType.GOAL:
@@ -150,12 +150,15 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
             )
 
         case PriorityType.PRACTICE:
+            # Handle practice fields (may not exist in older schemas)
+            actions_config = row["actions_config"] if "actions_config" in keys else None
+            last_triggered_at = _parse_datetime(row["last_triggered_at"]) if "last_triggered_at" in keys else None
+
             return Practice(
                 **common_kwargs,
                 priority_type=priority_type,
-                rhythm_frequency=row["rhythm_frequency"],
-                rhythm_constraints=row["rhythm_constraints"],
-                generation_prompt=row["generation_prompt"],
+                actions_config=actions_config,
+                last_triggered_at=last_triggered_at,
             )
 
         case PriorityType.INITIATIVE:
@@ -177,32 +180,27 @@ def priority_to_row_values(priority: Priority) -> tuple:
     """
     Convert a Priority (any subclass) to a tuple of values for SQL insert/update.
     Returns values in column order matching the INSERT statement.
-    Includes entity_id in the tuple.
     """
     # Type-specific fields default to None
-    success_looks_like = None
-    obsolete_when = None
     complete_when = None
     due_date = None
     progress = None
-    rhythm_frequency = None
-    rhythm_constraints = None
-    generation_prompt = None
+    actions_config = None
 
     # Extract type-specific fields based on actual type
-    if isinstance(priority, Value):
-        success_looks_like = priority.success_looks_like
-        obsolete_when = priority.obsolete_when
-
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         complete_when = priority.complete_when
         due_date = priority.due_date.isoformat() if priority.due_date else None
         progress = priority.progress
 
     elif isinstance(priority, Practice):
-        rhythm_frequency = priority.rhythm_frequency
-        rhythm_constraints = priority.rhythm_constraints
-        generation_prompt = priority.generation_prompt
+        actions_config = priority.actions_config
+
+    last_triggered_at = None
+    if isinstance(priority, Practice) and priority.last_triggered_at:
+        last_triggered_at = priority.last_triggered_at.isoformat()
+
+    last_engaged_at = priority.last_engaged_at.isoformat() if priority.last_engaged_at else None
 
     now = datetime.now().isoformat()
     return (
@@ -213,18 +211,16 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.status.value,
         priority.substatus,
         priority.agent_context,
-        priority.notes,
+        priority.description,
         priority.rank,
         int(priority.auto_assign_owner),
         int(priority.auto_assign_creator),
-        success_looks_like,
-        obsolete_when,
         complete_when,
         due_date,
         progress,
-        rhythm_frequency,
-        rhythm_constraints,
-        generation_prompt,
+        actions_config,
+        last_triggered_at,
+        last_engaged_at,
         priority.created_at.isoformat() if priority.created_at else now,
         priority.updated_at.isoformat() if priority.updated_at else now,
     )
@@ -263,8 +259,10 @@ class PriorityGraph:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Migrations disabled - database is up-to-date
-            # If you need to add columns, do it manually via sqlite3 CLI
+            # Migrate: add last_engaged_at if missing
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()}
+            if "last_engaged_at" not in columns:
+                conn.execute("ALTER TABLE priorities ADD COLUMN last_engaged_at TEXT")
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:
@@ -314,13 +312,12 @@ class PriorityGraph:
             conn.execute("""
                 INSERT INTO priorities (
                     id, entity_id, priority_type, name, status, substatus,
-                    agent_context, notes, rank,
+                    agent_context, description, rank,
                     auto_assign_owner, auto_assign_creator,
-                    success_looks_like, obsolete_when,
                     complete_when, due_date, progress,
-                    rhythm_frequency, rhythm_constraints, generation_prompt,
+                    actions_config, last_triggered_at, last_engaged_at,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -328,20 +325,19 @@ class PriorityGraph:
                     status = excluded.status,
                     substatus = excluded.substatus,
                     agent_context = excluded.agent_context,
-                    notes = excluded.notes,
+                    description = excluded.description,
                     rank = excluded.rank,
                     auto_assign_owner = excluded.auto_assign_owner,
                     auto_assign_creator = excluded.auto_assign_creator,
-                    success_looks_like = excluded.success_looks_like,
-                    obsolete_when = excluded.obsolete_when,
                     complete_when = excluded.complete_when,
                     due_date = excluded.due_date,
                     progress = excluded.progress,
-                    rhythm_frequency = excluded.rhythm_frequency,
-                    rhythm_constraints = excluded.rhythm_constraints,
-                    generation_prompt = excluded.generation_prompt,
+                    actions_config = excluded.actions_config,
+                    last_triggered_at = excluded.last_triggered_at,
+                    last_engaged_at = excluded.last_engaged_at,
                     updated_at = CURRENT_TIMESTAMP
             """, values)
+            conn.commit()
 
     def save_edge(self, child_id: str, parent_id: str) -> None:
         """Persist a parent-child edge to SQLite."""
@@ -422,14 +418,15 @@ class PriorityGraph:
         for child_id in list(self.children.get(priority_id, set())):
             self.unlink(child_id, priority_id)
 
-        # Remove from in-memory graph
+        # Delete from database BEFORE in-memory cleanup
+        # so a FK constraint failure doesn't leave the graph inconsistent
+        with self.connection_factory() as conn:
+            conn.execute("DELETE FROM priorities WHERE id = ?", (priority_id,))
+
+        # Remove from in-memory graph (only reached if DB delete succeeded)
         del self.nodes[priority_id]
         self.parents.pop(priority_id, None)
         self.children.pop(priority_id, None)
-
-        # Delete from database
-        with self.connection_factory() as conn:
-            conn.execute("DELETE FROM priorities WHERE id = ?", (priority_id,))
 
         return True
 

@@ -99,6 +99,20 @@
       color: list.nth($colors, 1);
     }
   }
+
+  // Small variant for inline use
+  &.small {
+    padding: 0.1rem 0.35rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+  }
+
+  // Large variant for header use
+  &.large {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+  }
 }
 
 .priority-badge {
@@ -1013,4 +1027,676 @@
   font-size: $font-size-sm;
   color: $text-muted;
   line-height: 1.4;
+}
+
+// -----------------------------------------------------------------------------
+// Trigger Section (Practice detail view)
+// -----------------------------------------------------------------------------
+
+.trigger-section {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-subtle;
+}
+
+.trigger-status {
+  display: inline-block;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: 500;
+
+  &.configured {
+    background: rgba($accent, 0.15);
+    color: $accent;
+  }
+
+  &.not-configured {
+    background: $bg-tertiary;
+    color: $text-muted;
+  }
+}
+
+.trigger-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.trigger-editor {
+  margin-top: $spacing-lg;
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+
+  h4 {
+    margin: 0 0 $spacing-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $text-primary;
+
+    &:not(:first-child) {
+      margin-top: $spacing-lg;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid $border-subtle;
+    margin: $spacing-lg 0;
+  }
+
+  .form-group {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-xs;
+      font-size: $font-size-sm;
+      font-weight: 500;
+      color: $text-secondary;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      background: $bg-primary;
+      border: 1px solid $border-subtle;
+      border-radius: $radius-md;
+      color: $text-primary;
+      font-size: $font-size-base;
+      font-family: $font-family-body;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+        box-shadow: 0 0 0 2px $accent-glow;
+      }
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-hint {
+      display: block;
+      margin-top: $spacing-xs;
+      font-size: $font-size-xs;
+      color: $text-muted;
+
+      code {
+        background: $bg-tertiary;
+        padding: 0.1em 0.3em;
+        border-radius: $radius-sm;
+        font-family: $font-family-mono;
+      }
+    }
+  }
+
+  .checkbox-group {
+    label {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      cursor: pointer;
+      font-weight: normal;
+      color: $text-primary;
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid $border-subtle;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Actions Editor (Practice DSL v2)
+// -----------------------------------------------------------------------------
+
+.actions-editor-container {
+  margin-top: $spacing-md;
+}
+
+.actions-mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: $spacing-md;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-md;
+  overflow: hidden;
+  width: fit-content;
+
+  .mode-btn {
+    padding: $spacing-sm $spacing-md;
+    background: $bg-tertiary;
+    color: $text-secondary;
+    border: none;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    font-family: $font-family-body;
+    transition: all $transition-base;
+
+    &:hover {
+      background: $bg-secondary;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
+      color: white;
+    }
+
+    & + .mode-btn {
+      border-left: 1px solid $border-subtle;
+    }
+  }
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.action-sentence {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  line-height: 1.5;
+
+  &.editable {
+    cursor: default;
+
+    .editable-chip {
+      background: rgba($accent, 0.1);
+      padding: 0.1rem 0.4rem;
+      border-radius: $radius-sm;
+      cursor: pointer;
+      transition: background $transition-base;
+
+      &:hover {
+        background: rgba($accent, 0.2);
+      }
+    }
+  }
+
+  .action-drag-handle {
+    color: $text-muted;
+    cursor: grab;
+    flex-shrink: 0;
+    padding: 0 $spacing-xs;
+
+    &:hover {
+      color: $text-secondary;
+    }
+  }
+
+  .action-text {
+    flex: 1;
+  }
+
+  .action-remove {
+    background: none;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 $spacing-xs;
+    opacity: 0;
+    transition: opacity $transition-base, color $transition-base;
+
+    &:hover {
+      color: $error;
+    }
+  }
+
+  &:hover .action-remove {
+    opacity: 1;
+  }
+}
+
+.add-action-btn {
+  margin-top: $spacing-sm;
+}
+
+// YAML editor
+.yaml-editor {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  line-height: 1.4;
+  min-height: 200px;
+}
+
+.yaml-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.yaml-status {
+  font-size: $font-size-sm;
+
+  &.success {
+    color: $success;
+  }
+
+  &.error {
+    color: $error;
+  }
+}
+
+// Wizard modal
+.wizard-modal {
+  max-width: 500px;
+}
+
+.wizard-steps {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-lg;
+  padding: $spacing-md $spacing-lg;
+  background: $bg-tertiary;
+  border-bottom: 1px solid $border-subtle;
+}
+
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  color: $text-muted;
+
+  .step-number {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: $bg-secondary;
+    font-size: $font-size-sm;
+    font-weight: 600;
+  }
+
+  .step-label {
+    font-size: $font-size-sm;
+  }
+
+  &.active {
+    color: $accent;
+
+    .step-number {
+      background: $accent;
+      color: white;
+    }
+  }
+
+  &.completed {
+    color: $success;
+
+    .step-number {
+      background: $success;
+      color: transparent; // Hide the number text
+
+      &::before {
+        content: "✓";
+        color: white;
+      }
+    }
+  }
+}
+
+.wizard-step-content {
+  h4 {
+    margin: 0 0 $spacing-lg 0;
+    font-size: $font-size-lg;
+    color: $text-primary;
+  }
+}
+
+.wizard-options {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.wizard-option {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: background $transition-base;
+
+  &:hover {
+    background: $bg-secondary;
+  }
+
+  input[type="radio"] {
+    margin-top: 0.2rem;
+    accent-color: $accent;
+  }
+
+  .option-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    strong {
+      color: $text-primary;
+    }
+
+    span {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+    }
+  }
+}
+
+.wizard-sub-options {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+
+  label {
+    display: block;
+    margin-bottom: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+}
+
+// Wizard progress bar
+.wizard-progress {
+  height: 4px;
+  background: $bg-tertiary;
+
+  .wizard-progress-bar {
+    height: 100%;
+    background: $accent-bright;
+    transition: width 0.3s ease;
+  }
+}
+
+// Schedule/Event sentence builder
+.sentence-builder {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+}
+
+.sentence-static {
+  color: $text-secondary;
+}
+
+.sentence-dropdown {
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  font-size: $font-size-base;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.sentence-dropdown-sm {
+  min-width: 80px;
+}
+
+.sentence-number-input {
+  width: 60px;
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  text-align: center;
+}
+
+.sentence-date-input,
+.sentence-time-input {
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-primary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-primary;
+}
+
+.sentence-add-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: $bg-tertiary;
+  border: 1px dashed $border;
+  border-radius: $radius-sm;
+  color: $text-muted;
+  cursor: pointer;
+  font-size: $font-size-sm;
+
+  &:hover {
+    background: $bg-tertiary;
+    border-color: $accent;
+    color: $accent;
+  }
+}
+
+// Multi-day chips
+.multi-day-container {
+  margin-top: $spacing-sm;
+  padding: $spacing-sm;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  background: $bg-tertiary;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    display: none;
+  }
+
+  &.selected {
+    background: $accent-bright;
+    border-color: $accent-bright;
+    color: white;
+  }
+
+  .chip-remove {
+    padding: 0 2px;
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    cursor: pointer;
+    font-size: $font-size-base;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &.add-chip {
+    background: transparent;
+    border-style: dashed;
+    color: $text-muted;
+
+    &:hover {
+      border-color: $accent;
+      color: $accent;
+    }
+  }
+}
+
+// Day picker chips (multi-select mode)
+.day-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+// Schedule time option
+.schedule-time-option {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  padding: $spacing-sm;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      margin: 0;
+    }
+  }
+}
+
+// Custom cadence fields
+.custom-cadence-fields {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+}
+
+// Event filter value inputs
+.event-filter-value {
+  margin-top: $spacing-sm;
+
+  > div {
+    padding: $spacing-sm;
+    background: $bg-secondary;
+    border-radius: $radius-md;
+  }
+}
+
+// Collation options
+.collation-options {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.collation-option {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    margin-right: $spacing-sm;
+  }
+
+  .collation-label {
+    display: flex;
+    align-items: center;
+  }
+
+  .collation-detail {
+    margin-left: $spacing-lg + $spacing-sm;
+    padding: $spacing-sm;
+    background: $bg-secondary;
+    border-radius: $radius-sm;
+  }
+}
+
+// Action preview
+.action-preview {
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  border-left: 3px solid $accent;
+
+  .preview-sentence {
+    margin: 0;
+    font-size: $font-size-lg;
+    color: $text-primary;
+    line-height: 1.5;
+  }
+}
+
+.preview-details {
+  margin-top: $spacing-md;
+
+  .preview-row {
+    display: flex;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+
+    label {
+      color: $text-muted;
+      font-size: $font-size-sm;
+    }
+
+    span {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+// Field hint
+.field-hint {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $text-muted;
 }

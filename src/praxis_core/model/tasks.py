@@ -42,12 +42,16 @@ class Task:
     created_by: int | None = None  # user_id of creator
 
     # Content
-    notes: str | None = None
+    description: str | None = None
     due_date: datetime | None = None
     created_at: datetime | None = None
 
     # Priority link
     priority_id: str | None = None
+
+    # Outbox (soft delete before permanent removal)
+    is_in_outbox: bool = False
+    moved_to_outbox_at: datetime | None = None
 
     # Inferred/joined fields
     priority_name: str | None = None

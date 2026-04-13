@@ -1,0 +1,108 @@
+{#
+Due Date Chip
+=============
+Selects when a practice-generated task is due.
+Presets cover the common cases; "never" is there for whimsy.
+
+Params:
+  - name: Form field name (default: "due")
+  - value: Current value (default: "end_of_day")
+
+Display rules:
+  - end_of_day  -> "end of day"
+  - tomorrow    -> "tomorrow"
+  - end_of_week -> "end of week"
+  - next_week   -> "next week"
+  - +Nd         -> "N days"
+  - +Nw         -> "N weeks"
+  - never       -> "never"
+
+DSL mapping:
+  - value -> create.due
+#}
+
+{% set name = name or 'due' %}
+{% set value = value if value is defined else 'end_of_day' %}
+{% set variant = 'due' %}
+
+{% set preset_displays = {
+  'end_of_day': 'end of day',
+  'tomorrow': 'tomorrow',
+  'end_of_week': 'end of week',
+  'next_week': 'next week',
+  'never': 'never'
+} %}
+
+{% set unit_labels = {'d': 'day', 'w': 'week', 'm': 'month'} %}
+{% if value in preset_displays %}
+  {% set display = preset_displays[value] %}
+{% elif value.startswith('+') and value[-1:] in unit_labels %}
+  {% set _n = value[1:-1] %}
+  {% set _label = unit_labels[value[-1:]] %}
+  {% set display = 'in ' ~ _n ~ ' ' ~ _label ~ ('s' if _n != '1' else '') %}
+{% else %}
+  {% set display = value %}
+{% endif %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="due">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Set due date">
+    <div class="chip-popup__options chip-popup__options--due">
+      {% for preset, label in [
+        ('end_of_day', 'end of day'),
+        ('tomorrow', 'tomorrow'),
+        ('end_of_week', 'end of week'),
+        ('next_week', 'next week'),
+        ('never', 'never')
+      ] %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--due{% if value == preset %} selected{% endif %}"
+              data-value="{{ preset }}"
+              data-display="{{ label }}"
+              onclick="selectDueOption(this)">{{ label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="chip-popup__due-custom">
+      <span class="chip-popup__prefix">in</span>
+      <div class="chip-popup__number-input">
+        <button type="button" class="chip-popup__number-btn" onclick="adjustDueCustom(this, -1)">&minus;</button>
+        <input type="number"
+               class="chip-popup__number-field"
+               value="{% if value.startswith('+') %}{{ value[1:-1] }}{% else %}3{% endif %}"
+               min="1" max="90"
+               onchange="setDueCustom(this)"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();setDueCustom(this);closeAllChipPopups();}">
+        <button type="button" class="chip-popup__number-btn" onclick="adjustDueCustom(this, 1)">+</button>
+      </div>
+    </div>
+    {% set is_custom = value.startswith('+') %}
+    {% set active_unit = value[-1:] if is_custom else 'd' %}
+    <div class="chip-popup__options chip-popup__options--due-unit">
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--due{% if active_unit == 'd' %} selected{% endif %}"
+              data-unit="d"
+              data-label="day"
+              onclick="selectDueUnit(this)">days</button>
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--due{% if active_unit == 'w' %} selected{% endif %}"
+              data-unit="w"
+              data-label="week"
+              onclick="selectDueUnit(this)">weeks</button>
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--due{% if value.startswith('+') and value.endswith('m') %} selected{% endif %}"
+              data-unit="m"
+              data-label="month"
+              onclick="selectDueUnit(this)">months</button>
+    </div>
+  </div>
+</span>

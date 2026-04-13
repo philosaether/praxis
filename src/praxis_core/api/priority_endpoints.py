@@ -1,5 +1,6 @@
 """Priority API endpoints."""
 
+import json
 from datetime import datetime
 from typing import Annotated
 
@@ -16,6 +17,7 @@ from praxis_core.model import (
     User,
 )
 from praxis_core.api.auth import get_current_user_optional
+from praxis_core.triggers import on_priority_status_changed, on_priority_created
 
 
 router = APIRouter()
@@ -32,6 +34,7 @@ def _serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    include_action_cards: bool = False,
 ):
     """Import here to avoid circular import."""
     from praxis_core.api.app import serialize_priority
@@ -40,6 +43,7 @@ def _serialize_priority(
         render_markdown=render_markdown,
         current_entity_id=current_entity_id,
         shares=shares,
+        include_action_cards=include_action_cards,
     )
 
 
@@ -117,17 +121,10 @@ async def create_priority_full(
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = "on",
     auto_assign_creator: Annotated[str | None, Form()] = None,
-    # Value fields
-    success_looks_like: Annotated[str | None, Form()] = None,
-    obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    # Practice fields
-    rhythm_frequency: Annotated[str | None, Form()] = None,
-    rhythm_constraints: Annotated[str | None, Form()] = None,
-    generation_prompt: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Create a priority with all fields (form-first flow)."""
@@ -143,17 +140,14 @@ async def create_priority_full(
     # Set common fields
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
 
     # Set task assignment settings (checkboxes: "on" if checked, None if not)
     priority.auto_assign_owner = auto_assign_owner == "on"
     priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Set type-specific fields
-    if isinstance(priority, Value):
-        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -161,10 +155,6 @@ async def create_priority_full(
                 priority.due_date = datetime.fromisoformat(due_date)
             except ValueError:
                 priority.due_date = None
-    elif isinstance(priority, Practice):
-        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
 
     graph.add(priority)
 
@@ -174,6 +164,19 @@ async def create_priority_full(
             graph.link(priority.id, parent_id.strip())
         except ValueError:
             pass
+
+    # Fire creation event
+    if entity_id:
+        on_priority_created(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            priority_data={
+                "id": priority.id,
+                "name": priority.name,
+                "priority_type": priority.priority_type.value,
+            },
+            created_by=user.id if user else None,
+        )
 
     # Return full detail data for rendering
     parent_ids = graph.parents.get(priority.id, set())
@@ -277,6 +280,7 @@ async def get_priority(
             render_markdown=True,
             current_entity_id=entity_id,
             shares=shares,
+            include_action_cards=True,
         ),
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "children": [_serialize_priority(graph.get(cid), current_entity_id=entity_id) for cid in sorted(child_ids) if graph.get(cid)],
@@ -304,7 +308,7 @@ async def get_priority_for_edit(
     shares = graph.get_shares(priority_id) if priority.entity_id == entity_id else []
 
     priority_data = _serialize_priority(priority, current_entity_id=entity_id, shares=shares)
-    priority_data["notes_raw"] = priority.notes or ""
+    priority_data["notes_raw"] = priority.description or ""
 
     return {
         "priority": priority_data,
@@ -323,17 +327,10 @@ async def update_priority(
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Value fields
-    success_looks_like: Annotated[str | None, Form()] = None,
-    obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    # Practice fields
-    rhythm_frequency: Annotated[str | None, Form()] = None,
-    rhythm_constraints: Annotated[str | None, Form()] = None,
-    generation_prompt: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
@@ -346,17 +343,17 @@ async def update_priority(
     if not priority:
         return JSONResponse({"error": "Priority not found"}, status_code=404)
 
+    # Track old status for event trigger
+    old_status = priority.status
+
     # Update fields
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
-    if isinstance(priority, Value):
-        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -366,12 +363,23 @@ async def update_priority(
                 priority.due_date = None
         else:
             priority.due_date = None
-    elif isinstance(priority, Practice):
-        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
 
     graph.save_priority(priority)
+
+    # Fire event trigger if status changed
+    if priority.status != old_status and entity_id:
+        priority_data = {
+            "id": priority.id,
+            "name": priority.name,
+            "priority_type": priority.priority_type.value,
+        }
+        on_priority_status_changed(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            new_status=priority.status.value,
+            priority_data=priority_data,
+            created_by=user.id if user else None,
+        )
 
     # Handle parent link changes
     current_parents = graph.parents.get(priority_id, set())
@@ -416,7 +424,7 @@ async def change_priority_type(
     # Copy common fields
     new_priority.status = old_priority.status
     new_priority.agent_context = old_priority.agent_context
-    new_priority.notes = old_priority.notes
+    new_priority.description = old_priority.description
     new_priority.rank = old_priority.rank
     new_priority.created_at = old_priority.created_at
     new_priority.updated_at = now
@@ -439,19 +447,14 @@ async def update_priority_properties(
     # Task assignment settings
     auto_assign_owner: Annotated[str | None, Form()] = None,
     auto_assign_creator: Annotated[str | None, Form()] = None,
-    # Value fields
-    success_looks_like: Annotated[str | None, Form()] = None,
-    obsolete_when: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    # Practice fields
-    rhythm_frequency: Annotated[str | None, Form()] = None,
-    rhythm_constraints: Annotated[str | None, Form()] = None,
-    generation_prompt: Annotated[str | None, Form()] = None,
     # Parent link
     parent_id: Annotated[str | None, Form()] = None,
+    # Practice actions (chip editor serialized JSON)
+    actions_config: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update priority properties including notes."""
@@ -466,11 +469,14 @@ async def update_priority_properties(
     if not name.strip():
         return JSONResponse({"error": "Name is required"}, status_code=400)
 
+    # Track old status for event trigger
+    old_status = priority.status
+
     # Update common fields
     priority.name = name.strip()
     priority.status = PriorityStatus(status)
     priority.agent_context = agent_context.strip() if agent_context else None
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
     # Update task assignment settings (checkboxes: "on" if checked, None if not)
@@ -478,10 +484,7 @@ async def update_priority_properties(
     priority.auto_assign_creator = auto_assign_creator == "on"
 
     # Update type-specific fields
-    if isinstance(priority, Value):
-        priority.success_looks_like = success_looks_like.strip() if success_looks_like else None
-        priority.obsolete_when = obsolete_when.strip() if obsolete_when else None
-    elif isinstance(priority, Goal):
+    if isinstance(priority, Goal):
         priority.complete_when = complete_when.strip() if complete_when else None
         priority.progress = progress.strip() if progress else None
         if due_date:
@@ -491,12 +494,39 @@ async def update_priority_properties(
                 priority.due_date = None
         else:
             priority.due_date = None
-    elif isinstance(priority, Practice):
-        priority.rhythm_frequency = rhythm_frequency.strip() if rhythm_frequency else None
-        priority.rhythm_constraints = rhythm_constraints.strip() if rhythm_constraints else None
-        priority.generation_prompt = generation_prompt.strip() if generation_prompt else None
+
+    # For Practice priorities, update actions_config if provided.
+    # The web layer assembles JSON from chip form fields server-side.
+    if isinstance(priority, Practice):
+        if actions_config is not None:
+            stripped = actions_config.strip()
+            # Check if config has no actions (clear case)
+            if stripped:
+                try:
+                    parsed = json.loads(stripped)
+                    actions = parsed.get("practice", {}).get("actions", [])
+                    priority.actions_config = stripped if actions else None
+                except (json.JSONDecodeError, AttributeError):
+                    priority.actions_config = stripped
+            else:
+                priority.actions_config = None
 
     graph.save_priority(priority)
+
+    # Fire event trigger if status changed
+    if priority.status != old_status and entity_id:
+        priority_data = {
+            "id": priority.id,
+            "name": priority.name,
+            "priority_type": priority.priority_type.value,
+        }
+        on_priority_status_changed(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            new_status=priority.status.value,
+            priority_data=priority_data,
+            created_by=user.id if user else None,
+        )
 
     # Handle parent link changes
     current_parents = graph.parents.get(priority_id, set())
@@ -517,8 +547,8 @@ async def update_priority_properties(
     child_ids = graph.children.get(priority_id, set())
     all_priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
-    priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id)
-    priority_data["notes_raw"] = priority.notes or ""
+    priority_data = _serialize_priority(priority, render_markdown=True, current_entity_id=entity_id, include_action_cards=True)
+    priority_data["notes_raw"] = priority.description or ""
 
     return {
         "priority": priority_data,
@@ -544,7 +574,7 @@ async def update_priority_notes(
     if not priority:
         return JSONResponse({"error": "Priority not found"}, status_code=404)
 
-    priority.notes = notes.strip() if notes else None
+    priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
     graph.save_priority(priority)
 
@@ -555,7 +585,7 @@ async def update_priority_notes(
         "item_type": "priority",
         "item_id": priority.id,
         "notes": priority_data.get("notes", ""),
-        "notes_raw": priority.notes or "",
+        "notes_raw": priority.description or "",
     }
 
 
@@ -574,13 +604,18 @@ async def delete_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Delete a priority and all its edges."""
+    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)
 
     if not graph.get(priority_id):
         return JSONResponse({"error": "Priority not found"}, status_code=404)
 
+    unlink_tasks_from_priority(priority_id)
     graph.delete(priority_id)
+    clear_graph_cache(entity_id)
     return {"success": True, "deleted_id": priority_id}
 
 
@@ -601,6 +636,7 @@ async def delete_priority_with_options(
     - "orphan": Move children to this priority's parent (or make them roots)
     - "cascade": Delete all children recursively
     """
+    from praxis_core.api.app import clear_graph_cache
     from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
@@ -657,6 +693,7 @@ async def delete_priority_with_options(
 
     # Delete the priority itself
     graph.delete(priority_id)
+    clear_graph_cache(entity_id)
 
     return {
         "success": True,

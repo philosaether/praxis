@@ -1,0 +1,17 @@
+practice:
+  name: Show Your Work
+  description: Don't just be about it, talk about it
+  actions:
+    - on:
+        event: priority_completion
+        when:
+          event:
+            type: goal
+            ancestor: Career
+        create:
+          - task:
+              name: "Write a case study for {{priority.name}}"
+              due: +30d
+              tags:
+                - writing
+                - deep_work

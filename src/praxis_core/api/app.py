@@ -23,6 +23,7 @@ from praxis_core.api.invite_endpoints import router as invite_router
 from praxis_core.api.friends_endpoints import router as friends_router
 from praxis_core.api.tag_endpoints import router as tag_router
 from praxis_core.api.rule_endpoints import router as rule_router
+from praxis_core.api.trigger_endpoints import router as trigger_router
 
 
 # ---------------------------------------------------------------------
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI):
     # Startup: seed default rules
     ensure_default_rules()
     yield
-    # Shutdown: nothing to clean up
+    # Shutdown: nothing to clean up currently
 
 
 # ---------------------------------------------------------------------
@@ -55,6 +56,14 @@ app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
 app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
 app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
+app.include_router(trigger_router, prefix="/api", tags=["triggers"])
+
+
+@app.post("/api/cache/invalidate")
+async def invalidate_cache(entity_id: str | None = None):
+    """Invalidate cached graph for an entity (or all if entity_id is None)."""
+    clear_graph_cache(entity_id)
+    return {"success": True, "entity_id": entity_id}
 
 
 # ---------------------------------------------------------------------
@@ -119,18 +128,19 @@ def serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    include_action_cards: bool = False,
 ) -> dict:
     """Convert a Priority to JSON-serializable dict.
 
     Args:
         p: Priority object
-        render_markdown: Whether to render notes as markdown
+        render_markdown: Whether to render description as markdown
         current_entity_id: Current user's entity_id for ownership check
         shares: List of share dicts from graph.get_shares() for share indicators
     """
-    notes = p.notes
-    if render_markdown and notes:
-        notes = render_md(notes)
+    description = p.description
+    if render_markdown and description:
+        description = render_md(description)
 
     data = {
         "id": p.id,
@@ -140,7 +150,7 @@ def serialize_priority(
         "substatus": p.substatus,
         "entity_id": p.entity_id,
         "agent_context": p.agent_context,
-        "notes": notes,
+        "notes": description,  # Keep JSON key as 'notes' for frontend compatibility
         "rank": p.rank,
         "auto_assign_owner": p.auto_assign_owner,
         "auto_assign_creator": p.auto_assign_creator,
@@ -162,17 +172,20 @@ def serialize_priority(
             data["shares"] = []
 
     # Add type-specific fields
-    if isinstance(p, Value):
-        data["success_looks_like"] = p.success_looks_like
-        data["obsolete_when"] = p.obsolete_when
-    elif isinstance(p, Goal):
+    if isinstance(p, Goal):
         data["complete_when"] = p.complete_when
         data["progress"] = p.progress
         data["due_date"] = fmt_date(p.due_date)
     elif isinstance(p, Practice):
-        data["rhythm_frequency"] = p.rhythm_frequency
-        data["rhythm_constraints"] = p.rhythm_constraints
-        data["generation_prompt"] = p.generation_prompt
+        data["actions_config"] = p.actions_config
+        data["last_triggered_at"] = fmt_date(p.last_triggered_at)
+        if include_action_cards:
+            if p.actions_config:
+                from praxis_web.helpers.action_renderer import actions_to_card_data
+                data["action_cards"] = actions_to_card_data(p.actions_config)
+            else:
+                data["action_cards"] = []
+    # Value and Initiative have no type-specific fields
 
     return data
 
@@ -190,15 +203,15 @@ def serialize_task(
     - can_toggle: User can toggle done/undone
     - can_delete: User can delete the task
     """
-    notes = t.notes
-    if render_markdown and notes:
-        notes = render_md(notes)
+    description = t.description
+    if render_markdown and description:
+        description = render_md(description)
 
     data = {
         "id": t.id,
         "name": t.name,
         "status": t.status.value,
-        "notes": notes,
+        "notes": description,  # Keep JSON key as 'notes' for frontend compatibility
         "due_date": fmt_date(t.due_date),
         "created_at": fmt_datetime(t.created_at),
         "priority_id": t.priority_id,
@@ -217,6 +230,11 @@ def serialize_task(
             for s in t.subtasks
         ],
     }
+
+    # Outbox fields
+    data["is_in_outbox"] = t.is_in_outbox
+    if t.moved_to_outbox_at:
+        data["moved_to_outbox_at"] = fmt_datetime(t.moved_to_outbox_at)
 
     # Add permission flags if user context provided
     if current_user is not None:

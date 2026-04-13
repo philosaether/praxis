@@ -4,9 +4,13 @@
 
 Read these files first:
 - `~/Development/.claude/WORKFLOW.md` - How to work with Phil
-- `.claude/PROJECT_STATUS.md` - Project state
+- `.claude/PROJECT_STATUS.md` - What the project is, architecture, deployment
+- `.claude/decisions.md` - Architectural decisions (append-only log)
+- `.claude/in-progress.md` - What's being added/removed/blocked right now
 - `.claude/inbox/` - Files dropped for review
 - `~/Development/persona/goals.json` - Masterpiece context (Praxis is primary)
+
+**During the session:** When making significant decisions, append to decisions.md. When starting/finishing work, update in-progress.md.
 
 ## Project Purpose
 
@@ -50,9 +54,16 @@ When committing, remember to commit both:
 1. Code changes to praxis repo
 2. Documentation changes (PROJECT_STATUS.md, designs/, etc.) to praxis-architecture repo
 
+**Branch policy:** Use feature branches for multi-commit work in praxis repo. If about to commit to main, warn Phil first.
+
 ## Conventions
 
 - Minimal dependencies, explicit over implicit
 - Type hints throughout
 - Docstrings on public interfaces
 - Tests alongside implementation (when Phil's ready)
+
+## Related Repos
+
+- `~/Development/praxis-scratch/` — Archived code that might be useful later
+  - `sse-infrastructure/` — Server-Sent Events implementation (archived 2026-04-03 during triggers refactor). Could be useful for real-time collaboration or notifications.

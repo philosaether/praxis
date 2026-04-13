@@ -1,0 +1,80 @@
+{#
+Month Chip
+==========
+Month selector that adapts based on context.
+
+Params:
+  - name: Form field name (default: "month")
+  - value: Current value
+  - mode: "quarter" for nth month of quarter, "year" for calendar month
+
+For quarters: first month, second month, third month
+For years: January, February, ... December
+#}
+
+{% set name = name or 'month' %}
+{% set value = value or '' %}
+{% set mode = mode or 'year' %}
+{% set variant = 'interval' %}
+
+{% if mode == 'quarter' %}
+  {# (label, value, display) #}
+  {% set options = [
+    ('first month', 'first', 'the first month'),
+    ('second month', 'second', 'the second month'),
+    ('last month', 'last', 'the last month')
+  ] %}
+  {% set placeholder = 'a month' %}
+{% else %}
+  {# (label, value, display) #}
+  {% set options = [
+    ('January', 'january', 'January'),
+    ('February', 'february', 'February'),
+    ('March', 'march', 'March'),
+    ('April', 'april', 'April'),
+    ('May', 'may', 'May'),
+    ('June', 'june', 'June'),
+    ('July', 'july', 'July'),
+    ('August', 'august', 'August'),
+    ('September', 'september', 'September'),
+    ('October', 'october', 'October'),
+    ('November', 'november', 'November'),
+    ('December', 'december', 'December')
+  ] %}
+  {% set placeholder = 'a month' %}
+{% endif %}
+
+{# Find display value #}
+{% set display = placeholder %}
+{% for opt in options %}
+  {% if opt[1] == value %}
+    {% set display = opt[2] %}
+  {% endif %}
+{% endfor %}
+
+{% set is_placeholder = not value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="month" data-mode="{{ mode }}">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select month">
+    <div class="chip-popup__options chip-popup__options--month">
+      {% if mode == 'quarter' %}<span class="chip-popup__prefix">the</span>{% endif %}
+      {% for opt in options %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if value == opt[1] %} selected{% endif %}"
+              data-value="{{ opt[1] }}"
+              data-display="{{ opt[2] }}"
+              onclick="selectMonthOption(this)">{{ opt[0] }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</span>

@@ -1,0 +1,113 @@
+{#
+Day Chip
+========
+Day picker that adapts based on period context.
+
+Params:
+  - name: Form field name (default: "days")
+  - value: Comma-separated day values (e.g., "monday,thursday") or date value (e.g., "15", "first monday")
+  - period: Context period - "weeks" for simple weekday picker, "months"/"quarters"/"years" for date/weekday toggle
+
+For weeks: simple multi-select day-of-week
+For months+: toggle between date mode (1st, 15th, last) and weekday mode (first Monday, etc.)
+#}
+
+{% set name = name or 'days' %}
+{% set value = value or '' %}
+{% set period = period or 'weeks' %}
+{% set variant = 'day' %}
+
+{# Determine if we need extended mode (date/weekday toggle) #}
+{% set extended_mode = period in ['months', 'quarters', 'years'] %}
+
+{# Parse value - for weeks it's comma-separated days, for months+ it could be a date or weekday pattern #}
+{% set selected_days = value.split(',') if value and not extended_mode else [] %}
+{% set selected_days = selected_days | map('trim') | list %}
+
+{# Generate display #}
+{% if extended_mode %}
+  {% set display = value if value else 'a day' %}
+{% elif selected_days %}
+  {% set display = selected_days | join(', ') %}
+{% else %}
+  {% set display = 'one or more days' %}
+{% endif %}
+
+{% set is_placeholder = not value %}
+
+{% set all_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="day">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select days" data-period="{{ period }}">
+    {% if extended_mode %}
+    {# Monthly/Quarterly/Yearly mode - Date vs Weekday toggle #}
+    <div class="chip-popup__tabs">
+      <button type="button" class="chip-popup__tab chip-popup__tab--active" data-mode="date" onclick="switchDayMode(this, 'date')">Date</button>
+      <button type="button" class="chip-popup__tab" data-mode="weekday" onclick="switchDayMode(this, 'weekday')">Weekday</button>
+    </div>
+
+    {# Date mode: specific day of month #}
+    <div class="chip-popup__mode chip-popup__mode--date chip-popup__mode--active">
+      <div class="chip-popup__options chip-popup__options--dates">
+        <span class="chip-popup__prefix">the</span>
+        {% for date in [('1st', '1st'), ('15th', '15th'), ('last day', 'last')] %}
+        <button type="button"
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--day{% if value == date[1] %} selected{% endif %}"
+                data-value="{{ date[1] }}"
+                onclick="selectDateOption(this)">{{ date[0] }}</button>
+        {% endfor %}
+      </div>
+      <div class="chip-popup__date-grid">
+        {% for d in range(1, 29) %}
+        <button type="button"
+                class="chip-popup__date-btn{% if value == d|string %} selected{% endif %}"
+                data-value="{{ d }}"
+                onclick="selectDateOption(this)">{{ d }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Weekday mode: nth weekday of month #}
+    <div class="chip-popup__mode chip-popup__mode--weekday">
+      <div class="chip-popup__ordinal-row">
+        <span class="chip-popup__prefix">the</span>
+        {% for ord in ['first', 'second', 'third', 'fourth', 'last'] %}
+        <button type="button"
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--interval{% if ord in value %} selected{% endif %}"
+                data-ordinal="{{ ord }}"
+                onclick="selectOrdinalOption(this)">{{ ord }}</button>
+        {% endfor %}
+      </div>
+      <div class="chip-popup__options chip-popup__options--days">
+        {% for day in all_days %}
+        <button type="button"
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--day{% if day in value %} selected{% endif %}"
+                data-weekday="{{ day }}"
+                onclick="selectWeekdayOption(this)">{{ day[:3] | capitalize }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% else %}
+    {# Weekly mode - simple multi-select #}
+    <div class="chip-popup__options chip-popup__options--days">
+      {% for day in all_days %}
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--day{% if day in selected_days %} selected{% endif %}"
+              data-value="{{ day }}"
+              onclick="toggleDayOption(this)"><span class="chip-popup__check">{% if day in selected_days %}&#10003;{% endif %}</span>{{ day[:3] | capitalize }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</span>

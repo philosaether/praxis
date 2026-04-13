@@ -33,8 +33,12 @@ class RuleContext:
     days_since_touched: float = 0.0
     days_since_created: float = 0.0
     days_since_tag_completion: float | None = None  # For recency conditions
+    days_since_last_engaged: float | None = None  # From priority.last_engaged_at
     priority_depth: int = 0
     task_tags: set[str] | None = None
+
+    # Input for computing days_since_last_engaged
+    last_engaged_at: datetime | None = None
 
     # Base scores (set by scoring algorithm before rule evaluation)
     base_importance: float = 0.0
@@ -62,6 +66,11 @@ class RuleContext:
             # Use created_at as proxy for touched until we have updated_at
             self.days_since_touched = self.days_since_created
 
+        # Priority engagement recency
+        if self.last_engaged_at:
+            delta = self.now - self.last_engaged_at
+            self.days_since_last_engaged = delta.total_seconds() / 86400
+
     def get_formula_variables(self) -> dict:
         """Return variables available for formula evaluation."""
         return {
@@ -71,6 +80,7 @@ class RuleContext:
             "days_since_touched": self.days_since_touched,
             "days_since_created": self.days_since_created,
             "days_since_tag_completion": self.days_since_tag_completion or 0,
+            "days_since_last_engaged": self.days_since_last_engaged if self.days_since_last_engaged is not None else 999,
             "priority_depth": self.priority_depth,
             "base_importance": self.base_importance,
             "base_urgency": self.base_urgency,
@@ -187,6 +197,21 @@ def evaluate_condition(condition: RuleCondition, ctx: RuleContext) -> bool:
             # For now, return False (condition doesn't match)
             return False
 
+        case ConditionType.ENGAGEMENT_RECENCY:
+            days_threshold = params.get("days", 7)
+            operator = params.get("operator", "gte")
+            if ctx.days_since_last_engaged is None:
+                return True  # Never engaged = always matches
+            match operator:
+                case "gte":
+                    return ctx.days_since_last_engaged >= days_threshold
+                case "lte":
+                    return ctx.days_since_last_engaged <= days_threshold
+                case "eq":
+                    return abs(ctx.days_since_last_engaged - days_threshold) < 0.5
+                case _:
+                    return False
+
         case ConditionType.TASK_PROPERTY:
             prop = params.get("property")
             value = params.get("value")
@@ -280,6 +305,7 @@ def evaluate_rules(
     base_importance: float = 0.0,
     base_urgency: float = 0.0,
     priority_depth: int = 0,
+    last_engaged_at: datetime | None = None,
     now: datetime | None = None,
 ) -> RuleResult:
     """
@@ -292,6 +318,7 @@ def evaluate_rules(
         base_importance: Pre-rule importance score
         base_urgency: Pre-rule urgency score
         priority_depth: Depth of task's priority in the tree
+        last_engaged_at: When the task's parent priority was last engaged with
         now: Current timestamp (defaults to now)
 
     Returns:
@@ -307,6 +334,7 @@ def evaluate_rules(
         base_importance=base_importance,
         base_urgency=base_urgency,
         priority_depth=priority_depth,
+        last_engaged_at=last_engaged_at,
     )
 
     result = RuleResult()
