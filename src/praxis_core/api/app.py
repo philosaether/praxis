@@ -25,6 +25,12 @@ from praxis_core.api.tag_endpoints import router as tag_router
 from praxis_core.api.rule_endpoints import router as rule_router
 from praxis_core.api.trigger_endpoints import router as trigger_router
 
+# Agent API (JSON-first, operation-focused)
+from praxis_core.agent_api.priorities import router as agent_priority_router
+from praxis_core.agent_api.tasks import router as agent_task_router
+from praxis_core.agent_api.rules import router as agent_rule_router
+from praxis_core.agent_api.graph import router as agent_graph_router
+
 
 # ---------------------------------------------------------------------
 # App Lifespan
@@ -57,6 +63,12 @@ app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
 app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
 app.include_router(trigger_router, prefix="/api", tags=["triggers"])
+
+# Agent API
+app.include_router(agent_priority_router, prefix="/agent/priorities", tags=["agent-priorities"])
+app.include_router(agent_task_router, prefix="/agent/tasks", tags=["agent-tasks"])
+app.include_router(agent_rule_router, prefix="/agent/rules", tags=["agent-rules"])
+app.include_router(agent_graph_router, prefix="/agent/graph", tags=["agent-graph"])
 
 
 @app.post("/api/cache/invalidate")
