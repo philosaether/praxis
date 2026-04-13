@@ -725,7 +725,9 @@ def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | N
             subject = fields.get("event_subject") or "any"
             outcome = fields.get("event_outcome") or "created"
 
-            if outcome == "completed":
+            if outcome == "created":
+                event_type = "task_creation" if subject == "task" else "priority_creation"
+            elif outcome == "completed":
                 event_type = "task_completion" if subject == "task" else "priority_completion"
             elif outcome.startswith("status_change:"):
                 event_type = "task_status_change" if subject == "task" else "priority_status_change"

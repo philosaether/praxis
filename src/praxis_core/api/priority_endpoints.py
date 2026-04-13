@@ -604,13 +604,18 @@ async def delete_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Delete a priority and all its edges."""
+    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)
 
     if not graph.get(priority_id):
         return JSONResponse({"error": "Priority not found"}, status_code=404)
 
+    unlink_tasks_from_priority(priority_id)
     graph.delete(priority_id)
+    clear_graph_cache(entity_id)
     return {"success": True, "deleted_id": priority_id}
 
 
@@ -631,6 +636,7 @@ async def delete_priority_with_options(
     - "orphan": Move children to this priority's parent (or make them roots)
     - "cascade": Delete all children recursively
     """
+    from praxis_core.api.app import clear_graph_cache
     from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
@@ -687,6 +693,7 @@ async def delete_priority_with_options(
 
     # Delete the priority itself
     graph.delete(priority_id)
+    clear_graph_cache(entity_id)
 
     return {
         "success": True,

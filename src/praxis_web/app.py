@@ -182,10 +182,23 @@ async def action_card_partial(
     idx: int = 99,
 ):
     """Return a blank action card HTML fragment for client-side insertion."""
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+
     action = {
         "trigger_type": trigger_type,
         "action_type": action_type,
     }
+
+    priority_tree = None
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_token:
+        result = validate_session(session_token)
+        if result:
+            _, user = result
+            graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+            graph.load()
+            priority_tree = _build_priority_tree(graph)
+
     return templates.TemplateResponse(
         request,
         "partials/actions/action_card.html",
@@ -196,6 +209,7 @@ async def action_card_partial(
             "priority_name": practice_name,
             "editable": editable == "true",
             "mode": mode,
+            "priority_tree": priority_tree,
         }
     )
 
