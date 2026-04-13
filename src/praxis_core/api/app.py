@@ -177,7 +177,6 @@ def serialize_priority(
         data["progress"] = p.progress
         data["due_date"] = fmt_date(p.due_date)
     elif isinstance(p, Practice):
-        data["trigger_config"] = p.trigger_config
         data["actions_config"] = p.actions_config
         data["last_triggered_at"] = fmt_date(p.last_triggered_at)
         if include_action_cards:
@@ -231,6 +230,11 @@ def serialize_task(
             for s in t.subtasks
         ],
     }
+
+    # Outbox fields
+    data["is_in_outbox"] = t.is_in_outbox
+    if t.moved_to_outbox_at:
+        data["moved_to_outbox_at"] = fmt_datetime(t.moved_to_outbox_at)
 
     # Add permission flags if user context provided
     if current_user is not None:

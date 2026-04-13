@@ -110,11 +110,7 @@
                         onclick="openShareModal('{{ priority.id }}', {{ priority.name|tojson|e }})">
                     Share
                 </button>
-                <button type="button"
-                        class="btn btn-danger"
-                        onclick="showDeleteConfirmation('{{ priority.id }}', {{ priority.name|tojson|e }})">
-                    Delete
-                </button>
+                {% include "partials/components/delete_priority_btn.html" %}
                 {% endif %}
             </div>
         </div>

@@ -1,5 +1,6 @@
 """Priority API endpoints."""
 
+import json
 from datetime import datetime
 from typing import Annotated
 
@@ -16,7 +17,7 @@ from praxis_core.model import (
     User,
 )
 from praxis_core.api.auth import get_current_user_optional
-from praxis_core.triggers import on_priority_status_changed
+from praxis_core.triggers import on_priority_status_changed, on_priority_created
 
 
 router = APIRouter()
@@ -154,7 +155,6 @@ async def create_priority_full(
                 priority.due_date = datetime.fromisoformat(due_date)
             except ValueError:
                 priority.due_date = None
-    # Practice: trigger_config is set separately via trigger UI, not in create form
 
     graph.add(priority)
 
@@ -164,6 +164,19 @@ async def create_priority_full(
             graph.link(priority.id, parent_id.strip())
         except ValueError:
             pass
+
+    # Fire creation event
+    if entity_id:
+        on_priority_created(
+            priority_id=priority.id,
+            entity_id=entity_id,
+            priority_data={
+                "id": priority.id,
+                "name": priority.name,
+                "priority_type": priority.priority_type.value,
+            },
+            created_by=user.id if user else None,
+        )
 
     # Return full detail data for rendering
     parent_ids = graph.parents.get(priority.id, set())
@@ -350,7 +363,6 @@ async def update_priority(
                 priority.due_date = None
         else:
             priority.due_date = None
-    # Practice: trigger_config is set separately via trigger UI
 
     graph.save_priority(priority)
 
@@ -486,8 +498,18 @@ async def update_priority_properties(
     # For Practice priorities, update actions_config if provided.
     # The web layer assembles JSON from chip form fields server-side.
     if isinstance(priority, Practice):
-        if actions_config and actions_config.strip():
-            priority.actions_config = actions_config.strip()
+        if actions_config is not None:
+            stripped = actions_config.strip()
+            # Check if config has no actions (clear case)
+            if stripped:
+                try:
+                    parsed = json.loads(stripped)
+                    actions = parsed.get("practice", {}).get("actions", [])
+                    priority.actions_config = stripped if actions else None
+                except (json.JSONDecodeError, AttributeError):
+                    priority.actions_config = stripped
+            else:
+                priority.actions_config = None
 
     graph.save_priority(priority)
 
@@ -582,13 +604,18 @@ async def delete_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Delete a priority and all its edges."""
+    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)
 
     if not graph.get(priority_id):
         return JSONResponse({"error": "Priority not found"}, status_code=404)
 
+    unlink_tasks_from_priority(priority_id)
     graph.delete(priority_id)
+    clear_graph_cache(entity_id)
     return {"success": True, "deleted_id": priority_id}
 
 
@@ -609,6 +636,7 @@ async def delete_priority_with_options(
     - "orphan": Move children to this priority's parent (or make them roots)
     - "cascade": Delete all children recursively
     """
+    from praxis_core.api.app import clear_graph_cache
     from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
@@ -665,6 +693,7 @@ async def delete_priority_with_options(
 
     # Delete the priority itself
     graph.delete(priority_id)
+    clear_graph_cache(entity_id)
 
     return {
         "success": True,

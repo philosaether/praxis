@@ -370,6 +370,9 @@ a:hover {
 .mode-nav-icon--rules::before {
   content: "⚖";
 }
+.mode-nav-icon--outbox::before {
+  content: "🗑";
+}
 .mode-nav-icon--triggers::before {
   content: "⏰";
 }

@@ -182,10 +182,23 @@ async def action_card_partial(
     idx: int = 99,
 ):
     """Return a blank action card HTML fragment for client-side insertion."""
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+
     action = {
         "trigger_type": trigger_type,
         "action_type": action_type,
     }
+
+    priority_tree = None
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_token:
+        result = validate_session(session_token)
+        if result:
+            _, user = result
+            graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+            graph.load()
+            priority_tree = _build_priority_tree(graph)
+
     return templates.TemplateResponse(
         request,
         "partials/actions/action_card.html",
@@ -196,6 +209,7 @@ async def action_card_partial(
             "priority_name": practice_name,
             "editable": editable == "true",
             "mode": mode,
+            "priority_tree": priority_tree,
         }
     )
 
@@ -560,9 +574,11 @@ async def render_full_page(
 
         # Fetch tasks for task modes (needed for default list if no initial_list_html)
         tasks_data = {"tasks": []}
-        if mode in ["tasks", "inbox"] and not initial_list_html:
+        if mode in ["tasks", "inbox", "outbox"] and not initial_list_html:
             if mode == "inbox":
                 tasks_response = await client.get("/api/tasks/inbox")
+            elif mode == "outbox":
+                tasks_response = await client.get("/api/tasks", params={"outbox": "true"})
             else:
                 tasks_response = await client.get("/api/tasks")
             tasks_data = tasks_response.json()
@@ -577,6 +593,7 @@ async def render_full_page(
             "priority_types": priorities_data["priority_types"],
             "user_tags": tags_data.get("tags", []),
             "default_mode": mode,
+            "outbox_mode": mode == "outbox",
             "initial_list_html": initial_list_html,
             "initial_detail_html": initial_detail_html,
         }
@@ -618,6 +635,21 @@ async def tasks_inbox_page(request: Request):
             {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
         )
     return await render_full_page(request, mode="inbox")
+
+
+@app.get("/tasks/outbox", response_class=HTMLResponse)
+async def tasks_outbox_page(request: Request):
+    """Outbox view - completed tasks awaiting deletion."""
+    if is_htmx_request(request):
+        async with api_client(request) as client:
+            response = await client.get("/api/tasks", params={"outbox": "true"})
+            data = response.json()
+        return templates.TemplateResponse(
+            request,
+            "partials/task_rows.html",
+            {"tasks": data["tasks"], "priorities": data.get("priorities", []), "outbox_mode": True}
+        )
+    return await render_full_page(request, mode="outbox")
 
 
 @app.get("/priorities", response_class=HTMLResponse)
@@ -986,10 +1018,20 @@ async def priority_edit(request: Request, priority_id: str):
     # For Practice priorities, render action cards for the editor
     if data["priority"].get("priority_type") == "practice":
         from praxis_web.helpers.action_renderer import actions_to_card_data
+        from praxis_core.persistence import get_connection, PriorityGraph, validate_session
         actions_config = data["priority"].get("actions_config")
         data["action_cards"] = actions_to_card_data(actions_config) if actions_config else []
         data["priority_name"] = data["priority"].get("name", "")
         data["editable"] = True
+        # Build priority tree for the ancestor picker chip
+        session_token = request.cookies.get(SESSION_COOKIE_NAME)
+        if session_token:
+            result = validate_session(session_token)
+            if result:
+                _, user = result
+                graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+                graph.load()
+                data["priority_tree"] = _build_priority_tree(graph)
 
     return templates.TemplateResponse(
         request,
@@ -1046,10 +1088,11 @@ async def priority_save_properties(request: Request, priority_id: str):
 
     # Assemble actions_config JSON from chip form fields (action_N_field).
     # This replaces the old client-side serializeActionCards() approach.
+    # Always send actions_config so deletions persist (empty string clears).
     from praxis_web.helpers.action_renderer import assemble_actions_config
     actions_config = assemble_actions_config(data, data.get("name", ""))
-    if actions_config:
-        data["actions_config"] = actions_config
+    # Send valid empty JSON when no actions (empty string gets swallowed by FastAPI)
+    data["actions_config"] = actions_config or '{"practice": {"name": "", "actions": []}}'
 
     async with api_client(request) as client:
         response = await client.post(
@@ -1110,176 +1153,30 @@ async def priority_save_notes(request: Request, priority_id: str):
     )
 
 
-@app.get("/priorities/{priority_id}/trigger/edit", response_class=HTMLResponse)
-async def priority_trigger_edit(request: Request, priority_id: str):
-    """Show trigger editor form for a Practice."""
-    async with api_client(request) as client:
-        response = await client.get(f"/api/priorities/{priority_id}")
-        if response.status_code == 404:
-            return HTMLResponse(
-                content="<div class='error'>Priority not found</div>",
-                status_code=404
-            )
-        data = response.json()
-
-    priority = data["priority"]
-
-    # Parse existing trigger config if present
-    trigger = None
-    if priority.get("trigger_config"):
-        import json
-        try:
-            from praxis_core.model.practice_triggers import PracticeTrigger
-            pt = PracticeTrigger.from_json(priority["trigger_config"])
-            # Flatten to simple dict for template
-            trigger = {
-                "interval": pt.event.params.get("interval"),
-                "at": pt.event.params.get("at", "09:00"),
-                "day": pt.event.params.get("day"),
-                "task_name": pt.task_template.name_pattern if pt.task_template else "",
-                "task_notes": pt.task_template.notes_pattern if pt.task_template else "",
-                "due": pt.task_template.due_date_offset if pt.task_template else "",
-                "enabled": pt.enabled,
-            }
-        except Exception:
-            trigger = None
-
-    return templates.TemplateResponse(
-        request,
-        "partials/trigger_editor.html",
-        {"priority": priority, "trigger": trigger}
-    )
-
-
-@app.post("/priorities/{priority_id}/trigger", response_class=HTMLResponse)
-async def priority_trigger_save(request: Request, priority_id: str):
-    """Save trigger configuration for a Practice."""
-    form_data = await request.form()
-
-    # Build trigger config from form data
-    interval = form_data.get("interval")
-    at_time = form_data.get("at", "09:00")
-    day = form_data.get("day")
-    task_name = form_data.get("task_name", "")
-    task_notes = form_data.get("task_notes", "")
-    due = form_data.get("due", "")
-    enabled = form_data.get("enabled") == "on"
-
-    if not interval:
-        return HTMLResponse(
-            content="<div class='error'>Please select a schedule</div>",
-            status_code=400
-        )
-
-    if not task_name.strip():
-        return HTMLResponse(
-            content="<div class='error'>Task name is required</div>",
-            status_code=400
-        )
-
-    # Build PracticeTrigger
-    from praxis_core.model.practice_triggers import (
-        PracticeTrigger, TriggerEvent, TriggerEventType, TaskTemplate
-    )
-
-    event_params = {"interval": interval, "at": at_time}
-    if interval == "weekly" and day:
-        event_params["day"] = day
-
-    trigger = PracticeTrigger(
-        event=TriggerEvent(type=TriggerEventType.SCHEDULE, params=event_params),
-        task_template=TaskTemplate(
-            name_pattern=task_name.strip(),
-            notes_pattern=task_notes.strip() if task_notes.strip() else None,
-            due_date_offset=due if due else None,
-        ),
-        enabled=enabled,
-    )
-
-    # Save to database via direct update
-    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
-
-    session_token = request.cookies.get(SESSION_COOKIE_NAME)
-    if not session_token:
-        return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
-    result = validate_session(session_token)
-    if not result:
-        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
-    _, user = result
-
-    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
-    graph.load()
-
-    priority = graph.get(priority_id)
-    if not priority:
-        return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
-
-    if priority.entity_id != user.entity_id:
-        return HTMLResponse(content="<div class='error'>Permission denied</div>", status_code=403)
-
-    # Update trigger config
-    priority.trigger_config = trigger.to_json()
-    from datetime import datetime
-    priority.updated_at = datetime.now()
-    graph.save_priority(priority)
-
-    # Return updated priority view
-    async with api_client(request) as client:
-        response = await client.get(f"/api/priorities/{priority_id}")
-        data = response.json()
-
-    return templates.TemplateResponse(
-        request,
-        "partials/priority_view.html",
-        data
-    )
-
-
-@app.delete("/priorities/{priority_id}/trigger", response_class=HTMLResponse)
-async def priority_trigger_delete(request: Request, priority_id: str):
-    """Remove trigger configuration from a Practice."""
-    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
-
-    session_token = request.cookies.get(SESSION_COOKIE_NAME)
-    if not session_token:
-        return HTMLResponse(content="<div class='error'>Authentication required</div>", status_code=401)
-    result = validate_session(session_token)
-    if not result:
-        return HTMLResponse(content="<div class='error'>Invalid session</div>", status_code=401)
-    _, user = result
-
-    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
-    graph.load()
-
-    priority = graph.get(priority_id)
-    if not priority:
-        return HTMLResponse(content="<div class='error'>Priority not found</div>", status_code=404)
-
-    if priority.entity_id != user.entity_id:
-        return HTMLResponse(content="<div class='error'>Permission denied</div>", status_code=403)
-
-    # Clear trigger config
-    priority.trigger_config = None
-    priority.last_triggered_at = None
-    from datetime import datetime
-    priority.updated_at = datetime.now()
-    graph.save_priority(priority)
-
-    # Return updated priority view
-    async with api_client(request) as client:
-        response = await client.get(f"/api/priorities/{priority_id}")
-        data = response.json()
-
-    return templates.TemplateResponse(
-        request,
-        "partials/priority_view.html",
-        data
-    )
+# Old trigger editor endpoints (trigger_config) removed.
+# Practice actions are now authored via the chip sentence builder
+# and stored in actions_config. See actions_editor.html.
 
 
 # -----------------------------------------------------------------------------
 # Routes: Practice Actions (DSL v2)
 # -----------------------------------------------------------------------------
+
+def _build_priority_tree(graph) -> list[dict]:
+    """Build a nested priority tree for the priority picker chip."""
+    roots = graph.roots()
+
+    def build_node(priority):
+        child_ids = graph.children.get(priority.id, set())
+        children = []
+        for cid in sorted(child_ids):
+            child = graph.nodes.get(cid)
+            if child:
+                children.append(build_node(child))
+        return {"name": priority.name, "children": children}
+
+    return [build_node(r) for r in sorted(roots, key=lambda p: p.name)]
+
 
 @app.get("/priorities/{priority_id}/actions", response_class=HTMLResponse)
 async def priority_actions_editor(request: Request, priority_id: str):
@@ -1307,6 +1204,7 @@ async def priority_actions_editor(request: Request, priority_id: str):
     action_cards = actions_to_card_data(priority.actions_config)
     actions_yaml = actions_to_yaml(priority.actions_config)
     editable = priority.entity_id == user.entity_id
+    priority_tree = _build_priority_tree(graph)
 
     return templates.TemplateResponse(
         request,
@@ -1317,6 +1215,7 @@ async def priority_actions_editor(request: Request, priority_id: str):
             "actions_yaml": actions_yaml,
             "editable": editable,
             "priority_name": priority.name,
+            "priority_tree": priority_tree,
         }
     )
 
@@ -1795,6 +1694,88 @@ async def priority_actions_yaml_get(request: Request, priority_id: str):
     return HTMLResponse(html)
 
 
+@app.post("/priorities/{priority_id}/actions/to-yaml", response_class=HTMLResponse)
+async def priority_actions_to_yaml(request: Request, priority_id: str):
+    """Convert current chip form values to YAML editor HTML (no DB save)."""
+    from praxis_core.persistence import validate_session
+    from praxis_web.helpers.action_renderer import assemble_actions_config, actions_to_yaml
+
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse("<p class='error'>Authentication required</p>")
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse("<p class='error'>Invalid session</p>")
+
+    form_data = dict(await request.form())
+    actions_config = assemble_actions_config(form_data, form_data.get("name", ""))
+    yaml_content = actions_to_yaml(actions_config)
+
+    html = f'''
+    <div class="actions-editor-yaml" id="actions-editor-{priority_id}">
+        <textarea name="yaml" rows="12" class="property-input yaml-input"
+                  hx-post="/priorities/{priority_id}/actions/yaml"
+                  hx-trigger="blur changed"
+                  hx-target="#yaml-status-{priority_id}"
+                  hx-swap="innerHTML">{yaml_content}</textarea>
+        <span id="yaml-status-{priority_id}" class="yaml-status"></span>
+    </div>
+    '''
+    return HTMLResponse(html)
+
+
+@app.post("/priorities/{priority_id}/actions/to-chips", response_class=HTMLResponse)
+async def priority_actions_to_chips(request: Request, priority_id: str):
+    """Convert YAML text to chip editor HTML (no DB save)."""
+    from praxis_core.persistence import get_connection, PriorityGraph, validate_session
+    from praxis_web.helpers.action_renderer import (
+        yaml_to_actions_config, actions_to_card_data, actions_to_yaml,
+    )
+
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not session_token:
+        return HTMLResponse("<p class='error'>Authentication required</p>")
+    result = validate_session(session_token)
+    if not result:
+        return HTMLResponse("<p class='error'>Invalid session</p>")
+    _, user = result
+
+    form_data = dict(await request.form())
+    yaml_content = form_data.get("yaml", "")
+
+    try:
+        actions_config = yaml_to_actions_config(yaml_content)
+    except ValueError:
+        # Invalid YAML — fall back to DB state
+        graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+        graph.load()
+        priority = graph.get(priority_id)
+        actions_config = priority.actions_config if priority else None
+
+    action_cards = actions_to_card_data(actions_config)
+    actions_yaml = actions_to_yaml(actions_config)
+
+    graph = PriorityGraph(get_connection, entity_id=user.entity_id)
+    graph.load()
+    priority = graph.get(priority_id)
+    editable = priority.entity_id == user.entity_id if priority else False
+
+    priority_tree = _build_priority_tree(graph)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/actions/actions_editor.html",
+        {
+            "priority": {"id": priority_id, "name": priority.name if priority else "", "actions_config": actions_config},
+            "action_cards": action_cards,
+            "actions_yaml": actions_yaml,
+            "editable": editable,
+            "priority_name": priority.name if priority else "",
+            "priority_tree": priority_tree,
+        }
+    )
+
+
 @app.post("/priorities/{priority_id}/actions/yaml", response_class=HTMLResponse)
 async def priority_actions_yaml_save(
     request: Request,
@@ -2114,10 +2095,16 @@ async def task_toggle_done(request: Request, task_id: str):
             return HTMLResponse(content="", status_code=404)
         data = response.json()
 
+    task = data["task"]
+
+    # Task moved to outbox — remove row from list immediately
+    if task.get("is_in_outbox"):
+        return HTMLResponse(content="")
+
     return templates.TemplateResponse(
         request,
         "partials/task_row_single.html",
-        {"task": data["task"]}
+        {"task": task}
     )
 
 

@@ -1,0 +1,9 @@
+{# Delete priority button — shared between view and edit modes. #}
+<button type="button"
+        class="btn btn-danger"
+        hx-delete="/priorities/{{ priority.id }}"
+        hx-swap="none"
+        hx-confirm="Delete '{{ priority.name }}'? Linked tasks will be moved to inbox."
+        hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'}); htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'}); }">
+    Delete
+</button>

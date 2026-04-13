@@ -49,6 +49,10 @@ class Task:
     # Priority link
     priority_id: str | None = None
 
+    # Outbox (soft delete before permanent removal)
+    is_in_outbox: bool = False
+    moved_to_outbox_at: datetime | None = None
+
     # Inferred/joined fields
     priority_name: str | None = None
     priority_type: str | None = None

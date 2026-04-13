@@ -22,7 +22,7 @@ from .engine_v2 import (
     ExecutionContext,
     execute_action,
 )
-from .models_v2 import PracticeAction
+from praxis_core.dsl import PracticeAction
 
 
 # -----------------------------------------------------------------------------
@@ -272,12 +272,7 @@ def _gather_collation_targets(spec: CollateSpec, practice_id: str | None) -> lis
             )
 
         if shorthand == "descendants" and practice_id:
-            # Would need recursive query - for now, just direct children
-            return list_tasks(
-                priority_id=practice_id,
-                include_done=False,
-                entity_id=entity_id,
-            )
+            return _gather_descendant_tasks(practice_id, entity_id)
 
         if shorthand.startswith("tagged:"):
             tag_name = shorthand.split(":", 1)[1].strip()
@@ -288,39 +283,136 @@ def _gather_collation_targets(spec: CollateSpec, practice_id: str | None) -> lis
             )
 
     # Handle complex filtering (match_any, match_all, exclude)
-    # For now, simplified implementation
+    task_sets = []
+
     if spec.match_any:
-        all_tasks = []
-        for filter_item in spec.match_any:
-            if "tag" in filter_item:
-                tasks = list_tasks(
-                    include_done=False,
-                    entity_id=entity_id,
-                    tag_names=[filter_item["tag"]],
-                )
-                all_tasks.extend(tasks)
-            if "ancestor" in filter_item:
-                # Would need to resolve ancestor name to ID
-                # For now, skip
-                pass
+        any_tasks = _gather_match_any(spec.match_any, entity_id, practice_id)
+        task_sets.append(any_tasks)
 
-        # Deduplicate by ID
-        seen = set()
-        unique_tasks = []
-        for t in all_tasks:
-            if t.id not in seen:
-                seen.add(t.id)
-                unique_tasks.append(t)
+    if spec.match_all:
+        all_tasks = _gather_match_all(spec.match_all, entity_id, practice_id)
+        task_sets.append(all_tasks)
 
-        # Apply exclude filters
-        if spec.exclude:
-            for exclude_item in spec.exclude:
-                if exclude_item.get("status") == "done":
-                    unique_tasks = [t for t in unique_tasks if t.status.value != "done"]
+    # Combine: if both match_any and match_all, intersect them
+    if not task_sets:
+        return []
+    if len(task_sets) == 1:
+        result = task_sets[0]
+    else:
+        # Intersect by task ID
+        id_sets = [set(t.id for t in ts) for ts in task_sets]
+        common_ids = id_sets[0].intersection(*id_sets[1:])
+        by_id = {t.id: t for ts in task_sets for t in ts}
+        result = [by_id[tid] for tid in common_ids]
 
-        return unique_tasks
+    # Apply exclude filters
+    if spec.exclude:
+        result = _apply_excludes(result, spec.exclude)
 
+    return result
+
+
+def _get_collation_graph(entity_id: str | None) -> PriorityGraph:
+    """Load graph once for collation operations."""
+    graph = PriorityGraph(get_connection, entity_id=entity_id)
+    graph.load()
+    return graph
+
+
+def _gather_descendant_tasks(priority_id: str, entity_id: str | None, graph: PriorityGraph | None = None) -> list[Task]:
+    """Gather tasks from a priority and all its descendants."""
+    if not graph:
+        graph = _get_collation_graph(entity_id)
+
+    descendant_ids = graph.descendants(priority_id)
+    all_priority_ids = list({priority_id} | descendant_ids)
+
+    return list_tasks(priority_ids=all_priority_ids, include_done=False, entity_id=entity_id)
+
+
+def _resolve_ancestor_name(name: str, entity_id: str | None, name_map: dict[str, str] | None = None, graph: PriorityGraph | None = None) -> str | None:
+    """Resolve a priority name to its ID. Pass name_map to avoid repeated scans."""
+    if name_map is not None:
+        return name_map.get(name.lower())
+    if not graph:
+        graph = _get_collation_graph(entity_id)
+    for p in graph.nodes.values():
+        if p.name.lower() == name.lower():
+            return p.id
+    return None
+
+
+def _build_name_map(graph: PriorityGraph) -> dict[str, str]:
+    """Build a lowercase name → ID lookup from the graph."""
+    return {p.name.lower(): p.id for p in graph.nodes.values()}
+
+
+def _execute_filter(f: dict, entity_id: str | None, graph: PriorityGraph, name_map: dict[str, str]) -> list[Task]:
+    """Execute a single collation filter and return matching tasks."""
+    if "tag" in f:
+        return list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]])
+    if "ancestor" in f:
+        ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id, name_map=name_map)
+        if ancestor_id:
+            return _gather_descendant_tasks(ancestor_id, entity_id, graph)
+    if "priority_id" in f:
+        return list_tasks(priority_id=f["priority_id"], include_done=False, entity_id=entity_id)
     return []
+
+
+def _gather_match_any(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
+    """OR logic: gather tasks matching any of the filters."""
+    graph = _get_collation_graph(entity_id)
+    name_map = _build_name_map(graph)
+    all_tasks = []
+    for f in filters:
+        all_tasks.extend(_execute_filter(f, entity_id, graph, name_map))
+
+    # Deduplicate
+    seen = set()
+    unique = []
+    for t in all_tasks:
+        if t.id not in seen:
+            seen.add(t.id)
+            unique.append(t)
+    return unique
+
+
+def _gather_match_all(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
+    """AND logic: gather tasks matching all filters (intersection)."""
+    graph = _get_collation_graph(entity_id)
+    name_map = _build_name_map(graph)
+    sets = []
+    all_by_id: dict[str, Task] = {}
+    for f in filters:
+        tasks = _execute_filter(f, entity_id, graph, name_map)
+        for t in tasks:
+            all_by_id[t.id] = t
+        sets.append({t.id for t in tasks})
+
+    if not sets:
+        return []
+
+    # Intersect all ID sets
+    common_ids = sets[0]
+    for s in sets[1:]:
+        common_ids &= s
+
+    return [all_by_id[tid] for tid in common_ids]
+
+
+def _apply_excludes(tasks: list[Task], excludes: list[dict]) -> list[Task]:
+    """Filter out tasks matching any exclude criterion."""
+    result = tasks
+    for ex in excludes:
+        if "status" in ex:
+            result = [t for t in result if t.status.value != ex["status"]]
+        if "tag" in ex:
+            # Would need tag lookup per task — for now, skip
+            pass
+        if "priority_id" in ex:
+            result = [t for t in result if t.priority_id != ex["priority_id"]]
+    return result
 
 
 # -----------------------------------------------------------------------------
@@ -345,7 +437,11 @@ def execute_and_persist(
     Returns:
         Dict with counts: {tasks: N, priorities: N, collations: N}
     """
-    # Execute the action to get specs
+    # Execute the action to get specs.
+    # NOTE: entities created here must NOT fire event triggers (on_task_created,
+    # on_priority_created) or infinite loops are possible. The persistence
+    # functions (create_task, create_priority_from_spec) don't fire events —
+    # events are only fired from API endpoints. Keep it that way.
     result = execute_action(action, ctx)
 
     if not result.success:

@@ -189,7 +189,10 @@ def priority_to_row_values(priority: Priority) -> tuple:
 
     elif isinstance(priority, Practice):
         actions_config = priority.actions_config
-        # Note: last_triggered_at is NOT included here - it's managed by trigger system
+
+    last_triggered_at = None
+    if isinstance(priority, Practice) and priority.last_triggered_at:
+        last_triggered_at = priority.last_triggered_at.isoformat()
 
     now = datetime.now().isoformat()
     return (
@@ -208,6 +211,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         due_date,
         progress,
         actions_config,
+        last_triggered_at,
         priority.created_at.isoformat() if priority.created_at else now,
         priority.updated_at.isoformat() if priority.updated_at else now,
     )
@@ -300,9 +304,9 @@ class PriorityGraph:
                     agent_context, description, rank,
                     auto_assign_owner, auto_assign_creator,
                     complete_when, due_date, progress,
-                    actions_config,
+                    actions_config, last_triggered_at,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -318,6 +322,7 @@ class PriorityGraph:
                     due_date = excluded.due_date,
                     progress = excluded.progress,
                     actions_config = excluded.actions_config,
+                    last_triggered_at = excluded.last_triggered_at,
                     updated_at = CURRENT_TIMESTAMP
             """, values)
             conn.commit()
@@ -401,14 +406,15 @@ class PriorityGraph:
         for child_id in list(self.children.get(priority_id, set())):
             self.unlink(child_id, priority_id)
 
-        # Remove from in-memory graph
+        # Delete from database BEFORE in-memory cleanup
+        # so a FK constraint failure doesn't leave the graph inconsistent
+        with self.connection_factory() as conn:
+            conn.execute("DELETE FROM priorities WHERE id = ?", (priority_id,))
+
+        # Remove from in-memory graph (only reached if DB delete succeeded)
         del self.nodes[priority_id]
         self.parents.pop(priority_id, None)
         self.children.pop(priority_id, None)
-
-        # Delete from database
-        with self.connection_factory() as conn:
-            conn.execute("DELETE FROM priorities WHERE id = ?", (priority_id,))
 
         return True
 

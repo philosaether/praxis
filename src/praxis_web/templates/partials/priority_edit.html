@@ -170,11 +170,7 @@
                     </button>
                 </div>
                 <div class="actions-right">
-                    <button type="button"
-                            class="btn btn-danger"
-                            onclick="showDeleteConfirmation('{{ priority.id }}', {{ priority.name|tojson|e }})">
-                        Delete
-                    </button>
+                    {% include "partials/components/delete_priority_btn.html" %}
                 </div>
             </div>
 
@@ -225,18 +221,24 @@ function toggleActionsYamlMode(event, priorityId) {
     actionsYamlMode = !actionsYamlMode;
 
     if (actionsYamlMode) {
-        // Switch to YAML mode
+        // Switch to YAML: collect current chip values and convert
         toggle.textContent = 'edit as plain english';
-        htmx.ajax('GET', `/priorities/${priorityId}/actions/yaml`, {
+        const form = container.closest('form');
+        const formData = new FormData(form);
+        htmx.ajax('POST', `/priorities/${priorityId}/actions/to-yaml`, {
             target: container,
-            swap: 'innerHTML'
+            swap: 'innerHTML',
+            values: Object.fromEntries(formData)
         });
     } else {
-        // Switch back to visual mode
+        // Switch to chips: collect current YAML and convert
         toggle.textContent = 'edit as code';
-        htmx.ajax('GET', `/priorities/${priorityId}/actions`, {
+        const textarea = container.querySelector('textarea[name="yaml"]');
+        const yamlContent = textarea ? textarea.value : '';
+        htmx.ajax('POST', `/priorities/${priorityId}/actions/to-chips`, {
             target: container,
-            swap: 'innerHTML'
+            swap: 'innerHTML',
+            values: { yaml: yamlContent }
         });
     }
 }

@@ -31,8 +31,10 @@ class EventType(StrEnum):
     """Types of events that can trigger automation."""
 
     TASK_COMPLETION = "task_completion"
+    TASK_CREATION = "task_creation"
     TASK_STATUS_CHANGE = "task_status_change"
     PRIORITY_COMPLETION = "priority_completion"
+    PRIORITY_CREATION = "priority_creation"
     PRIORITY_STATUS_CHANGE = "priority_status_change"
 
 

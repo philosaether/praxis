@@ -14,15 +14,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
-from .models_v2 import (
+from praxis_core.dsl import (
     PracticeConfig,
     PracticeAction,
     Condition,
     CreateAction,
     CollateAction,
-    TaskTemplate,
-    PriorityTemplate,
 )
+from praxis_core.dsl.actions import TaskTemplate, PriorityTemplate
 
 
 # -----------------------------------------------------------------------------
@@ -247,11 +246,17 @@ def _next_weekday(day_name: str, now: datetime) -> datetime | None:
 # Condition Evaluation
 # -----------------------------------------------------------------------------
 
-def evaluate_condition(condition: Condition, ctx: ExecutionContext) -> bool:
-    """Evaluate a single condition."""
-    params = condition.params
+def evaluate_condition(condition, ctx: ExecutionContext) -> bool:
+    """Evaluate a single condition.
 
-    if condition.type == "event":
+    Accepts either dsl.conditions.Condition (.condition_type) or
+    models_v2.Condition (.type) for backwards compatibility.
+    """
+    params = condition.params
+    # Support both dsl.conditions.Condition and models_v2.Condition
+    ctype = str(getattr(condition, 'condition_type', None) or getattr(condition, 'type', ''))
+
+    if ctype == "event" or getattr(condition, 'subject', None) == "event":
         # Check event properties
         if ctx.event_priority:
             if "type" in params:
@@ -265,7 +270,7 @@ def evaluate_condition(condition: Condition, ctx: ExecutionContext) -> bool:
                 pass
         return True
 
-    if condition.type == "capacity":
+    if ctype == "capacity":
         # Check capacity thresholds
         cap_name = params.get("name") or params.get("id", "")
         cap_value = ctx.capacities.get(cap_name, 0.0)
@@ -287,7 +292,7 @@ def evaluate_condition(condition: Condition, ctx: ExecutionContext) -> bool:
                 return False
         return True
 
-    if condition.type == "day":
+    if ctype == "day":
         # Check day of week
         current_day = ctx.now.strftime("%A").lower()
         days = params.get("value", "")
@@ -295,7 +300,7 @@ def evaluate_condition(condition: Condition, ctx: ExecutionContext) -> bool:
             days = [d.strip().lower() for d in days.split(",")]
         return current_day in days
 
-    if condition.type == "time":
+    if ctype == "time":
         # Check time window
         time_range = params.get("value", "")
         if " to " in time_range:
@@ -385,7 +390,7 @@ def _execute_task_template(template: TaskTemplate, ctx: ExecutionContext) -> Tas
     """Execute a task template to produce a TaskSpec."""
     return TaskSpec(
         name=expand_template(template.name, ctx),
-        notes=expand_template(template.notes, ctx) if template.notes else None,
+        notes=expand_template(template.description, ctx) if template.description else None,
         due_date=parse_due_date(template.due, ctx.now),
         tags=list(template.tags),
         priority_id=template.priority_id,
@@ -405,7 +410,7 @@ def _execute_priority_template(template: PriorityTemplate, ctx: ExecutionContext
     return PrioritySpec(
         name=expand_template(template.name, ctx),
         type=template.type,
-        notes=expand_template(template.notes, ctx) if template.notes else None,
+        notes=expand_template(template.description, ctx) if template.description else None,
         due_date=parse_due_date(template.due, ctx.now),
         tags=list(template.tags),
         entity_id=ctx.entity_id,
