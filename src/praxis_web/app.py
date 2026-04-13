@@ -22,6 +22,27 @@ from typing import Annotated
 
 app = FastAPI(title="Praxis Web")
 
+# Agent API (mounted directly — no proxy, shared auth)
+from praxis_core.agent_api.priorities import router as agent_priority_router
+from praxis_core.agent_api.tasks import router as agent_task_router
+from praxis_core.agent_api.rules import router as agent_rule_router
+from praxis_core.agent_api.graph import router as agent_graph_router
+
+app.include_router(agent_priority_router, prefix="/agent/priorities", tags=["agent"])
+app.include_router(agent_task_router, prefix="/agent/tasks", tags=["agent"])
+app.include_router(agent_rule_router, prefix="/agent/rules", tags=["agent"])
+app.include_router(agent_graph_router, prefix="/agent/graph", tags=["agent"])
+
+
+@app.post("/agent/auth/login")
+async def agent_login(request: Request):
+    """Agent login — returns bearer token. Proxies to internal API."""
+    body = await request.json()
+    async with httpx.AsyncClient(base_url=API_URL, timeout=30.0) as client:
+        response = await client.post("/api/auth/login", json=body)
+        return Response(content=response.content, status_code=response.status_code,
+                        media_type="application/json")
+
 # Config
 API_URL = os.getenv("PRAXIS_API_URL", "http://localhost:8000")
 SESSION_COOKIE_NAME = "praxis_session"
