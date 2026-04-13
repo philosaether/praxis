@@ -43,6 +43,9 @@ class Priority:
     auto_assign_owner: bool = True    # Assign new tasks to priority owner
     auto_assign_creator: bool = False  # Assign new tasks to task creator
 
+    # Engagement tracking (updated when child tasks are completed)
+    last_engaged_at: datetime | None = None
+
     # Metadata
     created_at: datetime | None = None
     updated_at: datetime | None = None

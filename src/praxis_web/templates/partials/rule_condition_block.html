@@ -8,6 +8,7 @@
         <option value="tag_missing" {% if condition.type == 'tag_missing' %}selected{% endif %}>Missing tag</option>
         <option value="due_date_proximity" {% if condition.type == 'due_date_proximity' %}selected{% endif %}>Due date</option>
         <option value="staleness" {% if condition.type == 'staleness' %}selected{% endif %}>Staleness</option>
+        <option value="engagement_recency" {% if condition.type == 'engagement_recency' %}selected{% endif %}>Priority not engaged</option>
     </select>
     <div class="block-fields" id="condition-fields-{{ idx }}">
         {% if condition.type == 'time_window' %}
@@ -38,7 +39,11 @@
         {% elif condition.type == 'staleness' %}
         <span class="block-label">untouched for</span>
         <input type="number" name="conditions[{{ idx }}][days]" value="{{ condition.params.days or 3 }}" class="block-input block-input-sm" min="1">
-        <span class="block-label">days</span>
+        <span class="block-label">+ days</span>
+        {% elif condition.type == 'engagement_recency' %}
+        <span class="block-label">not engaged for</span>
+        <input type="number" name="conditions[{{ idx }}][days]" value="{{ condition.params.days or 7 }}" class="block-input block-input-sm" min="1">
+        <span class="block-label">+ days</span>
         {% endif %}
     </div>
     <button type="button" class="block-delete" onclick="this.closest('.rule-block').remove()">×</button>

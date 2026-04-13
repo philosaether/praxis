@@ -15,6 +15,7 @@ class ConditionType(StrEnum):
     DUE_DATE_PROXIMITY = "due_date_proximity"  # {within_hours: 24} or {overdue: true}
     STALENESS = "staleness"               # {days_untouched: 5, operator: "gte"}
     RECENCY = "recency"                   # {tag: "x", days_since: 2, operator: "gte"}
+    ENGAGEMENT_RECENCY = "engagement_recency"  # {days: 7, operator: "gte"} - priority not engaged
     TASK_PROPERTY = "task_property"       # {property: "assigned_to", value: "me"}
 
 
