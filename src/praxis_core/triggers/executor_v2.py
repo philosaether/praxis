@@ -325,17 +325,15 @@ def _gather_descendant_tasks(priority_id: str, entity_id: str | None, graph: Pri
         graph = _get_collation_graph(entity_id)
 
     descendant_ids = graph.descendants(priority_id)
-    all_priority_ids = {priority_id} | descendant_ids
+    all_priority_ids = list({priority_id} | descendant_ids)
 
-    all_tasks = []
-    for pid in all_priority_ids:
-        tasks = list_tasks(priority_id=pid, include_done=False, entity_id=entity_id)
-        all_tasks.extend(tasks)
-    return all_tasks
+    return list_tasks(priority_ids=all_priority_ids, include_done=False, entity_id=entity_id)
 
 
-def _resolve_ancestor_name(name: str, entity_id: str | None, graph: PriorityGraph | None = None) -> str | None:
-    """Resolve a priority name to its ID."""
+def _resolve_ancestor_name(name: str, entity_id: str | None, name_map: dict[str, str] | None = None, graph: PriorityGraph | None = None) -> str | None:
+    """Resolve a priority name to its ID. Pass name_map to avoid repeated scans."""
+    if name_map is not None:
+        return name_map.get(name.lower())
     if not graph:
         graph = _get_collation_graph(entity_id)
     for p in graph.nodes.values():
@@ -344,12 +342,17 @@ def _resolve_ancestor_name(name: str, entity_id: str | None, graph: PriorityGrap
     return None
 
 
-def _execute_filter(f: dict, entity_id: str | None, graph: PriorityGraph) -> list[Task]:
+def _build_name_map(graph: PriorityGraph) -> dict[str, str]:
+    """Build a lowercase name → ID lookup from the graph."""
+    return {p.name.lower(): p.id for p in graph.nodes.values()}
+
+
+def _execute_filter(f: dict, entity_id: str | None, graph: PriorityGraph, name_map: dict[str, str]) -> list[Task]:
     """Execute a single collation filter and return matching tasks."""
     if "tag" in f:
         return list_tasks(include_done=False, entity_id=entity_id, tag_names=[f["tag"]])
     if "ancestor" in f:
-        ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id, graph)
+        ancestor_id = _resolve_ancestor_name(f["ancestor"], entity_id, name_map=name_map)
         if ancestor_id:
             return _gather_descendant_tasks(ancestor_id, entity_id, graph)
     if "priority_id" in f:
@@ -360,9 +363,10 @@ def _execute_filter(f: dict, entity_id: str | None, graph: PriorityGraph) -> lis
 def _gather_match_any(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
     """OR logic: gather tasks matching any of the filters."""
     graph = _get_collation_graph(entity_id)
+    name_map = _build_name_map(graph)
     all_tasks = []
     for f in filters:
-        all_tasks.extend(_execute_filter(f, entity_id, graph))
+        all_tasks.extend(_execute_filter(f, entity_id, graph, name_map))
 
     # Deduplicate
     seen = set()
@@ -377,10 +381,11 @@ def _gather_match_any(filters: list[dict], entity_id: str | None, practice_id: s
 def _gather_match_all(filters: list[dict], entity_id: str | None, practice_id: str | None) -> list[Task]:
     """AND logic: gather tasks matching all filters (intersection)."""
     graph = _get_collation_graph(entity_id)
+    name_map = _build_name_map(graph)
     sets = []
     all_by_id: dict[str, Task] = {}
     for f in filters:
-        tasks = _execute_filter(f, entity_id, graph)
+        tasks = _execute_filter(f, entity_id, graph, name_map)
         for t in tasks:
             all_by_id[t.id] = t
         sets.append({t.id for t in tasks})

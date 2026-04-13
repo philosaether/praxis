@@ -1,5 +1,6 @@
 """Priority API endpoints."""
 
+import json
 from datetime import datetime
 from typing import Annotated
 
@@ -502,7 +503,6 @@ async def update_priority_properties(
             # Check if config has no actions (clear case)
             if stripped:
                 try:
-                    import json
                     parsed = json.loads(stripped)
                     actions = parsed.get("practice", {}).get("actions", [])
                     priority.actions_config = stripped if actions else None

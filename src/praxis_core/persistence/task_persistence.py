@@ -270,6 +270,7 @@ def get_task(task_id: str) -> Task | None:
 
 def list_tasks(
     priority_id: str | None = None,
+    priority_ids: list[str] | None = None,  # Batch filter: tasks under any of these priorities
     status: TaskStatus | None = None,
     include_done: bool = True,
     entity_id: str | None = None,
@@ -337,6 +338,10 @@ def list_tasks(
 
             if inbox_only:
                 query += " AND t.priority_id IS NULL"
+            elif priority_ids:
+                placeholders = ", ".join("?" for _ in priority_ids)
+                query += f" AND t.priority_id IN ({placeholders})"
+                params.extend(priority_ids)
             elif priority_id:
                 query += " AND t.priority_id = ?"
                 params.append(priority_id)

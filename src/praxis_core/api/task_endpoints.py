@@ -427,6 +427,11 @@ async def restore_task(
     if not task.is_in_outbox:
         return JSONResponse({"error": "Task is not in outbox"}, status_code=400)
 
+    graph = _get_graph(user.entity_id if user else None)
+    permission = get_task_permission(task, user, graph)
+    if not can_toggle_task(permission):
+        return JSONResponse({"error": "Permission denied"}, status_code=403)
+
     restored = restore_from_outbox(task_id)
     return {"task": _serialize_task(restored, current_user=user)}
 
