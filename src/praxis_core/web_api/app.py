@@ -1,7 +1,7 @@
 """
 FastAPI application for Praxis Core API.
 
-Run with: uvicorn praxis_core.api.app:app --reload
+Run with: uvicorn praxis_core.web_api.app:app --reload
 """
 
 from contextlib import asynccontextmanager
@@ -16,14 +16,14 @@ from praxis_core.model import (
 )
 from praxis_core.persistence import get_connection, PriorityGraph, ensure_default_rules
 
-from praxis_core.api.priority_endpoints import router as priority_router
-from praxis_core.api.task_endpoints import router as task_router
-from praxis_core.api.auth_endpoints import router as auth_router
-from praxis_core.api.invite_endpoints import router as invite_router
-from praxis_core.api.friends_endpoints import router as friends_router
-from praxis_core.api.tag_endpoints import router as tag_router
-from praxis_core.api.rule_endpoints import router as rule_router
-from praxis_core.api.trigger_endpoints import router as trigger_router
+from praxis_core.web_api.priority_endpoints import router as priority_router
+from praxis_core.web_api.task_endpoints import router as task_router
+from praxis_core.web_api.auth_endpoints import router as auth_router
+from praxis_core.web_api.invite_endpoints import router as invite_router
+from praxis_core.web_api.friends_endpoints import router as friends_router
+from praxis_core.web_api.tag_endpoints import router as tag_router
+from praxis_core.web_api.rule_endpoints import router as rule_router
+from praxis_core.web_api.trigger_endpoints import router as trigger_router
 
 # Agent API (JSON-first, operation-focused)
 from praxis_core.agent_api.priorities import router as agent_priority_router
@@ -267,7 +267,7 @@ def serialize_task(
 
     # Add permission flags if user context provided
     if current_user is not None:
-        from praxis_core.api.task_endpoints import (
+        from praxis_core.web_api.task_endpoints import (
             get_task_permission,
             can_edit_task,
             can_toggle_task,

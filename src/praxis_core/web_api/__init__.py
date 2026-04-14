@@ -1,6 +1,6 @@
 """Praxis Core API."""
 
-from praxis_core.api.app import (
+from praxis_core.web_api.app import (
     app,
     get_graph,
     serialize_priority,

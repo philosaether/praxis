@@ -18,7 +18,7 @@ from praxis_core.persistence import (
     get_tags_for_tasks,
 )
 from praxis_core.prioritization import rank_tasks
-from praxis_core.api.auth import get_current_user, get_current_user_optional
+from praxis_core.web_api.auth import get_current_user, get_current_user_optional
 from praxis_core.triggers import on_task_completed
 
 
@@ -32,19 +32,19 @@ router = APIRouter()
 
 def _get_graph(entity_id: str | None = None):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import get_graph
+    from praxis_core.web_api.app import get_graph
     return get_graph(entity_id=entity_id)
 
 
 def _serialize_priority(p):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import serialize_priority
+    from praxis_core.web_api.app import serialize_priority
     return serialize_priority(p)
 
 
 def _serialize_task(t, render_markdown: bool = False, current_user=None, graph=None):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import serialize_task
+    from praxis_core.web_api.app import serialize_task
     return serialize_task(t, render_markdown=render_markdown, current_user=current_user, graph=graph)
 
 

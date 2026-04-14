@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from praxis_core.model import Practice, PriorityType, User
 from praxis_core.dsl import PracticeConfig, PracticeAction, should_schedule_fire
 from praxis_core.persistence import create_task, get_connection, PriorityGraph
-from praxis_core.api.auth import get_current_user_optional
+from praxis_core.web_api.auth import get_current_user_optional
 
 
 logger = logging.getLogger(__name__)
@@ -22,13 +22,13 @@ CRON_API_KEY = os.environ.get("CRON_API_KEY", "")
 
 def _get_graph(entity_id: str | None = None):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import get_graph
+    from praxis_core.web_api.app import get_graph
     return get_graph(entity_id=entity_id)
 
 
 def _serialize_task(t, render_markdown: bool = False, current_user=None, graph=None):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import serialize_task
+    from praxis_core.web_api.app import serialize_task
     return serialize_task(t, render_markdown=render_markdown, current_user=current_user, graph=graph)
 
 

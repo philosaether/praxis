@@ -21,7 +21,7 @@ from praxis_core.persistence.tag_persistence import (
     remove_tag_from_priority,
     get_tags_for_priority,
 )
-from praxis_core.api.auth import get_current_user, get_current_user_optional
+from praxis_core.web_api.auth import get_current_user, get_current_user_optional
 
 
 router = APIRouter()

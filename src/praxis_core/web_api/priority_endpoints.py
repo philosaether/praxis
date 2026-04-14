@@ -16,7 +16,7 @@ from praxis_core.model import (
     Initiative,
     User,
 )
-from praxis_core.api.auth import get_current_user_optional
+from praxis_core.web_api.auth import get_current_user_optional
 from praxis_core.triggers import on_priority_status_changed, on_priority_created
 
 
@@ -25,7 +25,7 @@ router = APIRouter()
 
 def _get_graph(entity_id: str | None = None):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import get_graph
+    from praxis_core.web_api.app import get_graph
     return get_graph(entity_id=entity_id)
 
 
@@ -37,7 +37,7 @@ def _serialize_priority(
     include_action_cards: bool = False,
 ):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import serialize_priority
+    from praxis_core.web_api.app import serialize_priority
     return serialize_priority(
         p,
         render_markdown=render_markdown,
@@ -49,7 +49,7 @@ def _serialize_priority(
 
 def _serialize_task(t, render_markdown: bool = False, current_user=None, graph=None):
     """Import here to avoid circular import."""
-    from praxis_core.api.app import serialize_task
+    from praxis_core.web_api.app import serialize_task
     return serialize_task(t, render_markdown=render_markdown, current_user=current_user, graph=graph)
 
 
@@ -604,7 +604,7 @@ async def delete_priority(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Delete a priority and all its edges."""
-    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.web_api.app import clear_graph_cache
     from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
@@ -636,7 +636,7 @@ async def delete_priority_with_options(
     - "orphan": Move children to this priority's parent (or make them roots)
     - "cascade": Delete all children recursively
     """
-    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.web_api.app import clear_graph_cache
     from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
@@ -806,7 +806,7 @@ async def share_priority(
     graph.share_with_user(priority_id, request_data.user_id, request_data.permission)
 
     # Clear the target user's graph cache so they see the shared priority
-    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.web_api.app import clear_graph_cache
     from praxis_core.persistence import get_connection
     with get_connection() as conn:
         row = conn.execute(

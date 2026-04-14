@@ -87,7 +87,7 @@ def run_api_server(config: PraxisHomeConfig):
     """Run the API server."""
     os.environ["PRAXIS_DB_PATH"] = config.db_path
     uvicorn.run(
-        "praxis_core.api.app:app",
+        "praxis_core.web_api.app:app",
         host=config.api_host,
         port=config.api_port,
         log_level="info",

@@ -10,7 +10,7 @@ from praxis_core.persistence.user_persistence import (
     validate_invitation,
     revoke_invitation,
 )
-from praxis_core.api.auth import get_current_user
+from praxis_core.web_api.auth import get_current_user
 
 
 router = APIRouter()

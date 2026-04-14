@@ -8,7 +8,7 @@ from praxis_core.persistence.user_persistence import (
     list_friends,
     remove_friend,
 )
-from praxis_core.api.auth import get_current_user
+from praxis_core.web_api.auth import get_current_user
 
 
 router = APIRouter()

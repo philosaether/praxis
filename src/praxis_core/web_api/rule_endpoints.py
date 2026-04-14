@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse, Response
 from praxis_core.model import User
 from praxis_core.model.rules import ConditionType, EffectTarget, EffectOperator, RuleCondition, RuleEffect
 from praxis_core.persistence import list_rules, get_rule, toggle_rule, restore_default_rules, create_rule, update_rule, delete_rule
-from praxis_core.api.auth import get_current_user, get_current_user_optional
+from praxis_core.web_api.auth import get_current_user, get_current_user_optional
 from praxis_core.rules import serialize_rules, serialize_rule, parse_rules, DSLParseError
 
 
