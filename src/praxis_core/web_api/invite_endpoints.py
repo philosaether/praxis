@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from praxis_core.model import User
-from praxis_core.persistence.user_persistence import (
+from praxis_core.persistence.invite_repo import (
     create_invitation,
     list_invitations,
     validate_invitation,

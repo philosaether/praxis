@@ -12,7 +12,7 @@ from praxis_core.persistence import (
     delete_session,
     delete_user_sessions,
 )
-from praxis_core.persistence.user_persistence import (
+from praxis_core.persistence.invite_repo import (
     validate_invitation,
     accept_invitation,
 )
