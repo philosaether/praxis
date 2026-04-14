@@ -319,7 +319,7 @@ async def midnight_cron(
             })
 
     # Outbox cleanup: hard-delete tasks in outbox for > 7 days
-    from praxis_core.persistence.task_persistence import purge_old_outbox_tasks
+    from praxis_core.persistence.task_repo import purge_old_outbox_tasks
     try:
         purged = purge_old_outbox_tasks(days=7)
         results["outbox_purged"] = purged

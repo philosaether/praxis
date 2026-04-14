@@ -375,7 +375,7 @@ async def toggle_task(
 
     new_status = TaskStatus.QUEUED if task.status == TaskStatus.DONE else TaskStatus.DONE
     if new_status == TaskStatus.QUEUED and task.is_in_outbox:
-        from praxis_core.persistence.task_persistence import restore_from_outbox
+        from praxis_core.persistence.task_repo import restore_from_outbox
         restore_from_outbox(task_id)
     else:
         update_task_status(task_id, new_status)
@@ -420,7 +420,7 @@ async def restore_task(
     user: User | None = Depends(get_current_user_optional),
 ):
     """Restore a task from the outbox back to the queue."""
-    from praxis_core.persistence.task_persistence import restore_from_outbox
+    from praxis_core.persistence.task_repo import restore_from_outbox
     task = get_task(task_id)
     if not task:
         return JSONResponse({"error": "Task not found"}, status_code=404)

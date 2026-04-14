@@ -159,8 +159,8 @@ def migrate(config: PraxisHomeConfig | None = None):
 
     # Import after setting env var
     from praxis_core.persistence import get_user_by_username, get_connection
-    from praxis_core.persistence.task_persistence import ensure_schema as ensure_task_schema
-    from praxis_core.persistence.priority_persistence import PriorityGraph
+    from praxis_core.persistence.task_repo import ensure_schema as ensure_task_schema
+    from praxis_core.persistence.priority_tree import PriorityTree as PriorityGraph
 
     print("Praxis Home Migration")
     print("=" * 40)

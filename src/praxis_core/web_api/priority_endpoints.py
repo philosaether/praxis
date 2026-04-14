@@ -605,7 +605,7 @@ async def delete_priority(
 ):
     """Delete a priority and all its edges."""
     from praxis_core.web_api.app import clear_graph_cache
-    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+    from praxis_core.persistence.task_repo import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)
@@ -637,7 +637,7 @@ async def delete_priority_with_options(
     - "cascade": Delete all children recursively
     """
     from praxis_core.web_api.app import clear_graph_cache
-    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+    from praxis_core.persistence.task_repo import unlink_tasks_from_priority
 
     entity_id = user.entity_id if user else None
     graph = _get_graph(entity_id)

@@ -10,8 +10,9 @@ from ulid import ULID
 
 from praxis_core.model.tasks import Task
 from praxis_core.model.priorities import Priority, Goal, Practice, PriorityType, PriorityStatus
-from praxis_core.persistence.task_persistence import create_task, list_tasks
-from praxis_core.persistence.priority_persistence import PriorityGraph
+from praxis_core.persistence.task_repo import create_task
+from praxis_core.persistence.task_queries import list_tasks
+from praxis_core.persistence.priority_tree import PriorityTree as PriorityGraph
 from praxis_core.persistence.database import get_connection
 
 from .engine_v2 import (
@@ -250,7 +251,7 @@ def execute_collation(
     task_names = [t.name for t in matching_tasks]
     if task_names:
         notes = "Batched tasks:\n" + "\n".join(f"- {name}" for name in task_names)
-        from praxis_core.persistence.task_persistence import update_task
+        from praxis_core.persistence.task_repo import update_task
         update_task(batch_task.id, notes=notes)
 
     return batch_task

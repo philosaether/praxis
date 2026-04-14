@@ -21,6 +21,17 @@ from praxis_core.dsl import (
 
 _ACTION_FIELD_RE = re.compile(r"^action_(\d+)_(.+)$")
 
+DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+CADENCE_UNIT_MAP = {"d": "days", "w": "weeks", "m": "months", "q": "quarters", "y": "years"}
+
+CADENCE_UNIT_REVERSE = {"days": "d", "weeks": "w", "months": "m", "quarters": "q", "years": "y"}
+
+EVENT_PHRASES = {
+    "task_completion": "When a task is completed",
+    "priority_completion": "When a priority is completed",
+}
+
 
 def render_schedule_phrase(schedule: Schedule) -> dict:
     """Render a schedule as a phrase with editable chip data.
@@ -41,8 +52,7 @@ def render_schedule_phrase(schedule: Schedule) -> dict:
         if not effective_day and freq.endswith('w') and interval.beginning:
             try:
                 dt = datetime.fromisoformat(interval.beginning)
-                day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-                effective_day = day_names[dt.weekday()]
+                effective_day = DAY_NAMES[dt.weekday()]
             except ValueError:
                 pass
         if effective_day:
@@ -260,11 +270,7 @@ def render_action_sentence(action: PracticeAction | dict) -> dict:
         all_chips.extend(schedule_info["chips"])
     elif action.trigger.event:
         event_type = action.trigger.event.type.value
-        event_phrases = {
-            "task_completion": "When a task is completed",
-            "priority_completion": "When a priority is completed",
-        }
-        phrase = event_phrases.get(event_type, f"On {event_type}")
+        phrase = EVENT_PHRASES.get(event_type, f"On {event_type}")
         parts.append({"text": phrase, "type": "event"})
         all_chips.append({"type": "event", "value": event_type, "label": phrase.lower()})
 
@@ -351,11 +357,7 @@ def render_action_summary(action: PracticeAction | dict) -> str:
         parts.append(schedule_info["text"])
     elif action.trigger.event:
         event_type = action.trigger.event.type.value
-        event_phrases = {
-            "task_completion": "When a task is completed",
-            "priority_completion": "When a priority is completed",
-        }
-        parts.append(event_phrases.get(event_type, f"On {event_type}"))
+        parts.append(EVENT_PHRASES.get(event_type, f"On {event_type}"))
 
     # Task creation (simplified)
     if action.create and action.create.items:
@@ -420,8 +422,7 @@ def action_to_card_data(action: PracticeAction | dict) -> dict:
             m = re.match(r"(\d+)([dwmqy])", freq)
             if m:
                 data["cadence_count"] = m.group(1)
-                unit_map = {"d": "days", "w": "weeks", "m": "months", "q": "quarters", "y": "years"}
-                data["cadence_period"] = unit_map.get(m.group(2), "weeks")
+                data["cadence_period"] = CADENCE_UNIT_MAP.get(m.group(2), "weeks")
             # Use stored day value (works for all period types)
             if sched.day:
                 data["cadence_day"] = sched.day
@@ -429,8 +430,7 @@ def action_to_card_data(action: PracticeAction | dict) -> dict:
                 # Fallback for old data without stored day: derive from beginning
                 try:
                     dt = datetime.fromisoformat(sched.interval.beginning)
-                    day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-                    data["cadence_day"] = day_names[dt.weekday()]
+                    data["cadence_day"] = DAY_NAMES[dt.weekday()]
                 except ValueError:
                     pass
         if sched.at:
@@ -603,9 +603,8 @@ def _align_beginning_to_day(beginning: str, days_selected: str, period: str, sta
     begin_dt = datetime.fromisoformat(beginning)
 
     if period == "weeks":
-        day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-        if first_day in day_names:
-            target_weekday = day_names.index(first_day)
+        if first_day in DAY_NAMES:
+            target_weekday = DAY_NAMES.index(first_day)
             current_weekday = begin_dt.weekday()
             delta = (target_weekday - current_weekday) % 7
             if delta == 0 and start and start != "immediately":
@@ -681,8 +680,7 @@ def assemble_actions_config(form_data: dict, practice_name: str = "") -> str | N
                 count = fields.get("count", "")
                 period = fields.get("period", "")
                 if count and period:
-                    period_unit = {"days": "d", "weeks": "w", "months": "m", "quarters": "q", "years": "y"}
-                    freq = f"{count}{period_unit.get(period, 'w')}"
+                    freq = f"{count}{CADENCE_UNIT_REVERSE.get(period, 'w')}"
                 else:
                     freq = fields.get("cadence_frequency", "2w")
 

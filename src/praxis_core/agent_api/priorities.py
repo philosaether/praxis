@@ -226,7 +226,7 @@ async def update_priority(
 @router.delete("/{priority_id}")
 async def delete_priority(priority_id: str, user: User = Depends(get_current_user)):
     """Delete a priority."""
-    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+    from praxis_core.persistence.task_repo import unlink_tasks_from_priority
 
     graph = _get_graph(user.entity_id)
     if not graph.get(priority_id):
