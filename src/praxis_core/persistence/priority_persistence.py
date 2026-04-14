@@ -259,8 +259,10 @@ class PriorityGraph:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Migrate: add last_engaged_at if missing
+            # Migrate schema
             columns = {row["name"] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()}
+            if "notes" in columns and "description" not in columns:
+                conn.execute("ALTER TABLE priorities RENAME COLUMN notes TO description")
             if "last_engaged_at" not in columns:
                 conn.execute("ALTER TABLE priorities ADD COLUMN last_engaged_at TEXT")
 
