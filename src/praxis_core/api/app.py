@@ -36,11 +36,28 @@ from praxis_core.agent_api.graph import router as agent_graph_router
 # App Lifespan
 # ---------------------------------------------------------------------
 
+import logging
+_log = logging.getLogger("praxis.api")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle app startup and shutdown."""
     # Startup: seed default rules
     ensure_default_rules()
+
+    # Diagnostics
+    conn = get_connection()
+    cols = [row[1] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()]
+    missing = [c for c in ("description", "last_engaged_at", "agent_context") if c not in cols]
+    if missing:
+        _log.warning("DB schema missing columns on priorities: %s", missing)
+    else:
+        _log.info("DB schema OK")
+
+    all_routes = [r.path for r in app.routes if hasattr(r, 'path')]
+    _log.info("Core API: %d routes registered", len(all_routes))
+
     yield
     # Shutdown: nothing to clean up currently
 
