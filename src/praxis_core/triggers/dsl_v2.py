@@ -7,21 +7,11 @@ Parses YAML into PracticeConfig models.
 import yaml
 from typing import Any
 
-from .models_v2 import (
-    PracticeConfig,
-    PracticeAction,
-    ActionTrigger,
-    Schedule,
-    Cadence,
-    Event,
-    EventType,
-    Condition,
-    CreateAction,
-    TaskTemplate,
-    PriorityTemplate,
-    CollateAction,
-    CollateTarget,
-)
+from praxis_core.dsl.practice_config import PracticeConfig, PracticeAction
+from praxis_core.dsl.triggers import Trigger, Schedule, Cadence, Event, EventType
+from praxis_core.dsl.conditions import Condition
+from praxis_core.dsl.actions import CreateAction, CollateAction, CollateTarget
+from praxis_core.dsl.templates import TaskTemplate, PriorityTemplate
 
 
 class DSLParseError(Exception):

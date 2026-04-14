@@ -10,7 +10,7 @@ Determines when scheduled triggers should fire based on:
 from datetime import datetime, timedelta
 import re
 
-from .models_v2 import Schedule, Cadence
+from praxis_core.dsl.triggers import Schedule, Cadence
 
 
 def should_schedule_fire(
