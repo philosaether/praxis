@@ -37,7 +37,7 @@ try:
     app.include_router(agent_rule_router, prefix="/agent/rules", tags=["agent"])
     app.include_router(agent_graph_router, prefix="/agent/graph", tags=["agent"])
     _agent_routes = [r for r in app.routes if hasattr(r, 'path') and '/agent' in r.path]
-    _log.info("Agent API: %d routes mounted", len(_agent_routes))
+    _log.warning("Agent API: %d routes mounted", len(_agent_routes))
 except Exception:
     _log.exception("Failed to load agent API")
 
@@ -47,14 +47,14 @@ async def _startup_diagnostics():
     """Log diagnostic info for debugging deployment issues."""
     all_routes = [r.path for r in app.routes if hasattr(r, 'path')]
     agent_routes = [p for p in all_routes if '/agent' in p]
-    _log.info("=== STARTUP DIAGNOSTICS ===")
-    _log.info("Total routes: %d | Agent routes: %d", len(all_routes), len(agent_routes))
-    _log.info("API_URL: %s | ENV: %s | PORT: %s",
-              os.getenv("PRAXIS_API_URL", "(default)"),
-              os.getenv("PRAXIS_ENV", "(default)"),
-              os.getenv("PORT", "(default)"))
+    _log.warning("=== STARTUP DIAGNOSTICS ===")
+    _log.warning("Total routes: %d | Agent routes: %d", len(all_routes), len(agent_routes))
+    _log.warning("API_URL: %s | ENV: %s | PORT: %s",
+                 os.getenv("PRAXIS_API_URL", "(default)"),
+                 os.getenv("PRAXIS_ENV", "(default)"),
+                 os.getenv("PORT", "(default)"))
     if agent_routes:
-        _log.info("Agent paths: %s", ", ".join(sorted(set(agent_routes))))
+        _log.warning("Agent paths: %s", ", ".join(sorted(set(agent_routes))))
     else:
         _log.warning("NO AGENT ROUTES REGISTERED")
     # Check DB schema
@@ -66,10 +66,10 @@ async def _startup_diagnostics():
         if missing:
             _log.warning("DB schema missing columns: %s", missing)
         else:
-            _log.info("DB schema OK (priorities table has all expected columns)")
+            _log.warning("DB schema OK (priorities table has all expected columns)")
     except Exception:
         _log.exception("DB schema check failed")
-    _log.info("=== END DIAGNOSTICS ===")
+    _log.warning("=== END DIAGNOSTICS ===")
 
 
 @app.post("/agent/auth/login")

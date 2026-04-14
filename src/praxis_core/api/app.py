@@ -53,10 +53,10 @@ async def lifespan(app: FastAPI):
     if missing:
         _log.warning("DB schema missing columns on priorities: %s", missing)
     else:
-        _log.info("DB schema OK")
+        _log.warning("DB schema OK")
 
     all_routes = [r.path for r in app.routes if hasattr(r, 'path')]
-    _log.info("Core API: %d routes registered", len(all_routes))
+    _log.warning("Core API: %d routes registered", len(all_routes))
 
     yield
     # Shutdown: nothing to clean up currently
