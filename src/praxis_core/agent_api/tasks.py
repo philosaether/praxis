@@ -74,36 +74,31 @@ def _serialize(t, tags: set[str] | None = None, score_data: dict | None = None) 
 @router.post("")
 async def create_task_endpoint(body: CreateTaskRequest, user: User = Depends(get_current_user)):
     """Create a task."""
-    import traceback
-    try:
-        parsed_due = None
-        if body.due_date:
-            try:
-                parsed_due = datetime.fromisoformat(body.due_date)
-            except ValueError:
-                pass
+    parsed_due = None
+    if body.due_date:
+        try:
+            parsed_due = datetime.fromisoformat(body.due_date)
+        except ValueError:
+            pass
 
-        # Determine entity_id from priority or user
-        entity_id = user.entity_id
-        if body.priority_id:
-            graph = _get_graph(user.entity_id)
-            priority = graph.get(body.priority_id)
-            if priority:
-                entity_id = priority.entity_id
+    # Determine entity_id from priority or user
+    entity_id = user.entity_id
+    if body.priority_id:
+        graph = _get_graph(user.entity_id)
+        priority = graph.get(body.priority_id)
+        if priority:
+            entity_id = priority.entity_id
 
-        task = create_task(
-            name=body.name,
-            description=body.description,
-            due_date=parsed_due,
-            priority_id=body.priority_id,
-            entity_id=entity_id,
-            assigned_to=user.id,
-            created_by=user.id,
-        )
-        return _serialize(task)
-    except Exception as e:
-        from fastapi.responses import JSONResponse
-        return JSONResponse({"error": str(e), "traceback": traceback.format_exc()}, status_code=500)
+    task = create_task(
+        name=body.name,
+        description=body.description,
+        due_date=parsed_due,
+        priority_id=body.priority_id,
+        entity_id=entity_id,
+        assigned_to=user.id,
+        created_by=user.id,
+    )
+    return _serialize(task)
 
 
 @router.get("")

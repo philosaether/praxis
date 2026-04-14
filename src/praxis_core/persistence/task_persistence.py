@@ -83,6 +83,9 @@ def ensure_schema() -> None:
 def _migrate_outbox(conn: sqlite3.Connection) -> None:
     """Add outbox columns if they don't exist."""
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+    # Rename notes -> description if needed
+    if "notes" in columns and "description" not in columns:
+        conn.execute("ALTER TABLE tasks RENAME COLUMN notes TO description")
     if "is_in_outbox" not in columns:
         conn.execute("ALTER TABLE tasks ADD COLUMN is_in_outbox INTEGER DEFAULT 0")
         conn.execute("ALTER TABLE tasks ADD COLUMN moved_to_outbox_at TEXT")
