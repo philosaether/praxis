@@ -259,12 +259,26 @@ class PriorityGraph:
             # Ensure schema exists
             conn.executescript(PRIORITIES_SCHEMA)
 
-            # Migrate schema
+            # Migrate schema — add any columns missing from older DBs
             columns = {row["name"] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()}
             if "notes" in columns and "description" not in columns:
                 conn.execute("ALTER TABLE priorities RENAME COLUMN notes TO description")
-            if "last_engaged_at" not in columns:
-                conn.execute("ALTER TABLE priorities ADD COLUMN last_engaged_at TEXT")
+            for col, col_type in [
+                ("substatus", "TEXT"),
+                ("agent_context", "TEXT"),
+                ("description", "TEXT"),
+                ("rank", "INTEGER"),
+                ("auto_assign_owner", "INTEGER NOT NULL DEFAULT 1"),
+                ("auto_assign_creator", "INTEGER NOT NULL DEFAULT 0"),
+                ("complete_when", "TEXT"),
+                ("due_date", "TEXT"),
+                ("progress", "TEXT"),
+                ("actions_config", "TEXT"),
+                ("last_triggered_at", "TEXT"),
+                ("last_engaged_at", "TEXT"),
+            ]:
+                if col not in columns:
+                    conn.execute(f"ALTER TABLE priorities ADD COLUMN {col} {col_type}")
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:
