@@ -68,7 +68,7 @@ def register_task_commands(app: typer.Typer) -> None:
     ) -> None:
         """Add a new task."""
         # Import here to avoid circular import
-        from praxis_core.cli.app import get_graph
+        from praxis_home.cli.app import get_graph
 
         # Validate priority if provided
         if priority:

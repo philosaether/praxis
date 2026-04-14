@@ -10,8 +10,8 @@ from rich import print as rprint
 from praxis_core import __version__
 from praxis_core.persistence import get_connection, PriorityGraph
 
-from praxis_core.cli.task_commands import register_task_commands
-from praxis_core.cli.priority_commands import priority_app
+from praxis_home.cli.task_commands import register_task_commands
+from praxis_home.cli.priority_commands import priority_app
 
 
 # ---------------------------------------------------------------------

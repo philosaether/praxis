@@ -22,7 +22,7 @@ priority_app = typer.Typer(
 
 def _get_graph():
     """Import here to avoid circular import."""
-    from praxis_core.cli.app import get_graph
+    from praxis_home.cli.app import get_graph
     return get_graph()
 
 

@@ -31,7 +31,7 @@ from praxis_core.persistence import (
     delete_task,
     seed_database,
 )
-from praxis_core.cli import app as cli_app
+from praxis_home.cli import app as cli_app
 from praxis_core.web_api import app as api_app
 
 __all__ = [
