@@ -2,7 +2,7 @@
 
 from praxis_core.rules.defaults import get_default_rules
 from praxis_core.rules.engine import evaluate_rules, RuleContext
-from praxis_core.rules.dsl import (
+from praxis_core.rules.parser import (
     parse_rules,
     serialize_rules,
     serialize_rule,

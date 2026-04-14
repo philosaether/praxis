@@ -139,8 +139,8 @@ def _execute_action(
     created_by: int | None = None,
 ) -> dict:
     """Execute a single practice action via v2 engine + executor."""
-    from praxis_core.triggers.engine_v2 import ExecutionContext
-    from praxis_core.triggers.executor_v2 import execute_and_persist
+    from praxis_core.practices.engine_v2 import ExecutionContext
+    from praxis_core.practices.executor_v2 import execute_and_persist
 
     ctx = ExecutionContext(
         now=now,

@@ -19,7 +19,7 @@ from praxis_core.persistence import (
 )
 from praxis_core.prioritization import rank_tasks
 from praxis_core.web_api.auth import get_current_user, get_current_user_optional
-from praxis_core.triggers import on_task_completed
+from praxis_core.practices import on_task_completed
 
 
 def _get_active_rules(entity_id: str | None):

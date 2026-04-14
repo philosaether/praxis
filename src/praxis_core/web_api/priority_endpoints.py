@@ -17,7 +17,7 @@ from praxis_core.model import (
     User,
 )
 from praxis_core.web_api.auth import get_current_user_optional
-from praxis_core.triggers import on_priority_status_changed, on_priority_created
+from praxis_core.practices import on_priority_status_changed, on_priority_created
 
 
 router = APIRouter()

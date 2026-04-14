@@ -9,13 +9,13 @@ The v2 engine (engine_v2, executor_v2) handles all execution.
 DSL models live in praxis_core.dsl.
 """
 
-from praxis_core.triggers.engine_v2 import (
+from praxis_core.practices.engine_v2 import (
     ExecutionContext,
     ExecutionResult,
     execute_action,
 )
-from praxis_core.triggers.executor_v2 import execute_and_persist
-from praxis_core.triggers.events import (
+from praxis_core.practices.executor_v2 import execute_and_persist
+from praxis_core.practices.events import (
     on_task_completed,
     on_task_created,
     on_priority_completed,
