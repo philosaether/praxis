@@ -14,16 +14,16 @@ from praxis_core.model import (
     Initiative,
     User,
 )
-from praxis_core.api.auth import get_current_user
+from praxis_core.web_api.auth import get_current_user
 
 
 def _get_graph(entity_id):
-    from praxis_core.api.app import get_graph
+    from praxis_core.web_api.app import get_graph
     return get_graph(entity_id)
 
 
 def _clear_cache(entity_id):
-    from praxis_core.api.app import clear_graph_cache
+    from praxis_core.web_api.app import clear_graph_cache
     clear_graph_cache(entity_id)
 
 router = APIRouter()
@@ -226,7 +226,7 @@ async def update_priority(
 @router.delete("/{priority_id}")
 async def delete_priority(priority_id: str, user: User = Depends(get_current_user)):
     """Delete a priority."""
-    from praxis_core.persistence.task_persistence import unlink_tasks_from_priority
+    from praxis_core.persistence.task_repo import unlink_tasks_from_priority
 
     graph = _get_graph(user.entity_id)
     if not graph.get(priority_id):

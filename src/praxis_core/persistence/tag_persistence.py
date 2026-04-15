@@ -6,7 +6,7 @@ from ulid import ULID
 
 from praxis_core.model.tags import Tag
 from praxis_core.persistence.database import get_connection
-from praxis_core.persistence.task_persistence import ensure_schema
+from praxis_core.persistence.task_repo import ensure_schema
 
 
 # ---------------------------------------------------------------------

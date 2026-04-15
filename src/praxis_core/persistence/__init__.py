@@ -5,28 +5,49 @@ from praxis_core.persistence.database import (
     DB_DIR,
     DB_PATH,
 )
-from praxis_core.persistence.priority_persistence import (
-    PriorityGraph,
+from praxis_core.persistence.priority_repo import (
     priority_from_row,
     priority_to_row_values,
     PRIORITIES_SCHEMA,
 )
-from praxis_core.persistence.task_persistence import (
+from praxis_core.persistence.priority_tree import PriorityTree
+from praxis_core.persistence.priority_sharing import (
+    ENTITY_SHARES_SCHEMA,
+    share,
+    unshare,
+    get_shares,
+    get_permission,
+    share_with_user,
+    unshare_user,
+)
+
+# Backward compatibility alias (PriorityGraph -> PriorityTree)
+PriorityGraph = PriorityTree
+
+from praxis_core.persistence.task_repo import (
     create_task,
     get_task,
-    list_tasks,
     update_task,
     update_task_status,
     delete_task,
+    restore_from_outbox,
+    purge_old_outbox_tasks,
+    unlink_tasks_from_priority,
+    clear_tasks,
+    seed_database,
+    ensure_schema as ensure_task_schema,
+    TASKS_SCHEMA,
+)
+from praxis_core.persistence.task_queries import (
+    list_tasks,
+)
+from praxis_core.persistence.subtask_repo import (
     create_subtask,
     toggle_subtask,
     delete_subtask,
     reorder_subtasks,
-    clear_tasks,
-    seed_database,
-    TASKS_SCHEMA,
 )
-from praxis_core.persistence.user_persistence import (
+from praxis_core.persistence.user_repo import (
     # Schema
     USERS_SCHEMA,
     # Password utils
@@ -41,13 +62,28 @@ from praxis_core.persistence.user_persistence import (
     list_users,
     update_user_password,
     delete_user,
-    # Session CRUD
+)
+from praxis_core.persistence.session_repo import (
     create_session,
     get_session,
     validate_session,
     delete_session,
     delete_user_sessions,
     cleanup_expired_sessions,
+)
+from praxis_core.persistence.invite_repo import (
+    create_invitation,
+    list_invitations,
+    get_invitation_by_token,
+    validate_invitation,
+    accept_invitation,
+    revoke_invitation,
+)
+from praxis_core.persistence.friend_repo import (
+    list_friends,
+    add_friend,
+    remove_friend,
+    are_friends,
 )
 from praxis_core.persistence.rule_persistence import (
     RULES_SCHEMA,
@@ -72,10 +108,19 @@ __all__ = [
     "DB_DIR",
     "DB_PATH",
     # Priority persistence
-    "PriorityGraph",
+    "PriorityTree",
+    "PriorityGraph",  # backward compatibility alias
     "priority_from_row",
     "priority_to_row_values",
     "PRIORITIES_SCHEMA",
+    # Priority sharing
+    "ENTITY_SHARES_SCHEMA",
+    "share",
+    "unshare",
+    "get_shares",
+    "get_permission",
+    "share_with_user",
+    "unshare_user",
     # Task persistence
     "create_task",
     "get_task",
@@ -83,6 +128,10 @@ __all__ = [
     "update_task",
     "update_task_status",
     "delete_task",
+    "restore_from_outbox",
+    "purge_old_outbox_tasks",
+    "unlink_tasks_from_priority",
+    "ensure_task_schema",
     "create_subtask",
     "toggle_subtask",
     "delete_subtask",
@@ -108,6 +157,18 @@ __all__ = [
     "delete_session",
     "delete_user_sessions",
     "cleanup_expired_sessions",
+    # Invitation persistence
+    "create_invitation",
+    "list_invitations",
+    "get_invitation_by_token",
+    "validate_invitation",
+    "accept_invitation",
+    "revoke_invitation",
+    # Friends persistence
+    "list_friends",
+    "add_friend",
+    "remove_friend",
+    "are_friends",
     # Rule persistence
     "RULES_SCHEMA",
     "create_rule",

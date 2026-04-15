@@ -17,11 +17,11 @@ from praxis_core.persistence import (
     get_tags_for_task,
     get_tags_for_tasks,
 )
-from praxis_core.api.auth import get_current_user
+from praxis_core.web_api.auth import get_current_user
 
 
 def _get_graph(entity_id):
-    from praxis_core.api.app import get_graph
+    from praxis_core.web_api.app import get_graph
     return get_graph(entity_id)
 
 router = APIRouter()
@@ -235,7 +235,7 @@ async def complete_task(task_id: str, user: User = Depends(get_current_user)):
     updated = update_task_status(task_id, TaskStatus.DONE)
 
     # Fire event triggers
-    from praxis_core.triggers import on_task_completed
+    from praxis_core.practices import on_task_completed
     if task.entity_id:
         on_task_completed(
             task_id=task_id,
