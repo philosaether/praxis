@@ -364,6 +364,7 @@ def update_task(
     status: TaskStatus | None = None,
     due_date: datetime | None = None,
     priority_id: str | None = None,
+    assigned_to: int | None = -1,  # -1 means "don't change", None means "unassign"
     notes: str | None = None,  # Deprecated, use description
 ) -> Task | None:
     """Update task fields. Returns updated task or None if not found."""
@@ -393,6 +394,9 @@ def update_task(
             updates.append("priority_id = ?")
             # Allow empty string to clear priority
             params.append(priority_id if priority_id else None)
+        if assigned_to != -1:
+            updates.append("assigned_to = ?")
+            params.append(assigned_to)
 
         if not updates:
             return get_task(task_id)

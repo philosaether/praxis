@@ -21,8 +21,8 @@
 </div>
 
 <script>
-    // Storage key for collapsed node state
-    const TREE_STATE_KEY = 'praxis-tree-collapsed';
+    // Storage key for collapsed node state (var for HTMX re-execution safety)
+    var TREE_STATE_KEY = 'praxis-tree-collapsed';
 
     // Get collapsed node IDs from storage
     window.getCollapsedNodes = function() {

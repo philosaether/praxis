@@ -307,10 +307,31 @@ async def get_task_for_edit(
     task_data = _serialize_task(task, render_markdown=False, current_user=user, graph=graph)
     task_data["notes_raw"] = task.description or ""
 
+    # Build assignable users list for shared priorities
+    assignable_users = []
+    if task.priority_id:
+        priority = graph.get(task.priority_id)
+        if priority:
+            from praxis_core.persistence.priority_sharing import get_shares
+            from praxis_core.persistence.database import get_connection as _get_conn
+            shares = get_shares(_get_conn, priority.id)
+            # Add priority owner
+            owner_user_id = _get_owner_user_id(priority.entity_id)
+            if owner_user_id:
+                from praxis_core.persistence.user_repo import get_user
+                owner = get_user(owner_user_id)
+                if owner:
+                    assignable_users.append({"id": owner.id, "username": owner.username})
+            # Add shared users
+            for share in shares:
+                if share.get("user_id") and share["user_id"] != owner_user_id:
+                    assignable_users.append({"id": share["user_id"], "username": share["username"]})
+
     return {
         "task": task_data,
         "priorities": [_serialize_priority(p) for p in priorities],
         "task_statuses": [s.value for s in TaskStatus],
+        "assignable_users": assignable_users,
         "edit_mode": True,
     }
 
@@ -323,6 +344,7 @@ async def update_task_endpoint(
     priority_id: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
+    assigned_to: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update a task and return updated data."""
@@ -344,6 +366,17 @@ async def update_task_endpoint(
         except ValueError:
             pass
 
+    # Parse assigned_to: "" or "__unassigned__" means unassign, absent means don't change
+    parsed_assigned_to = -1  # sentinel: don't change
+    if assigned_to is not None:
+        if assigned_to.strip() in ("", "__unassigned__"):
+            parsed_assigned_to = None  # unassign
+        else:
+            try:
+                parsed_assigned_to = int(assigned_to)
+            except ValueError:
+                pass
+
     update_task(
         task_id,
         name=name.strip(),
@@ -351,6 +384,7 @@ async def update_task_endpoint(
         priority_id=priority_id.strip() if priority_id else "",
         notes=notes.strip() if notes else "",
         due_date=parsed_due_date,
+        assigned_to=parsed_assigned_to,
     )
 
     # Return updated data
@@ -443,6 +477,7 @@ async def update_task_properties(
     priority_id: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
+    assigned_to: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update task properties and notes together."""
@@ -468,6 +503,17 @@ async def update_task_properties(
         except ValueError:
             pass
 
+    # Parse assigned_to
+    parsed_assigned_to = -1  # sentinel: don't change
+    if assigned_to is not None:
+        if assigned_to.strip() in ("", "__unassigned__"):
+            parsed_assigned_to = None
+        else:
+            try:
+                parsed_assigned_to = int(assigned_to)
+            except ValueError:
+                pass
+
     update_task(
         task_id,
         name=name.strip(),
@@ -475,6 +521,7 @@ async def update_task_properties(
         priority_id=priority_id.strip() if priority_id else "",
         notes=notes.strip() if notes else "",
         due_date=parsed_due_date,
+        assigned_to=parsed_assigned_to,
     )
 
     # Return updated task with both raw and rendered notes

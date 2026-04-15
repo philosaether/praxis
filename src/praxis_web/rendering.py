@@ -5,10 +5,12 @@ Provides the API client factory, template engine, HTMX detection,
 and the full-page rendering helper that wraps partials in the app shell.
 """
 
+import json
 import os
 import httpx
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup
 from pathlib import Path
 
 
@@ -21,6 +23,7 @@ PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["praxis_env"] = PRAXIS_ENV
+templates.env.filters["tojson"] = lambda v: json.dumps(v)
 
 
 def api_client(request: Request | None = None):

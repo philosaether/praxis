@@ -360,7 +360,7 @@
     };
 
     // Task Quick Add Modal
-    let currentQuickAddPriorityId = null;
+    var currentQuickAddPriorityId = null;
 
     window.openQuickAdd = async function(priorityId) {
         const backdrop = document.getElementById('quick-add-backdrop');
@@ -661,8 +661,9 @@
                     }
                 }
 
-                // Append to target container
+                // Append to target container and activate HTMX on the new node
                 targetContainer.appendChild(newNode);
+                htmx.process(newNode);
 
                 // Select the new node
                 const nodeContent = newNode.querySelector('.tree-node-content');
@@ -1066,8 +1067,8 @@
     // Import Rules Modal
     // -------------------------------------------------------------------------
 
-    let importYamlContent = null;
-    let importParsedRules = [];
+    var importYamlContent = null;
+    var importParsedRules = [];
 
     window.openImportModal = function() {
         document.getElementById('import-modal-backdrop').classList.add('open');
@@ -1208,7 +1209,7 @@
     };
 
     // Drag and drop support
-    const dropZone = document.getElementById('import-drop-zone');
+    var dropZone = document.getElementById('import-drop-zone');
     if (dropZone) {
         dropZone.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -1410,8 +1411,8 @@
     // Replaces SSE for real-time updates. Polls every 60s when tab is visible.
     // Combined with midnight cron and catch-up on app launch for trigger firing.
 
-    let pollInterval = null;
-    const POLL_INTERVAL_MS = 60000; // 60 seconds
+    var pollInterval = null;
+    var POLL_INTERVAL_MS = 60000; // 60 seconds
 
     async function checkTriggers() {
         // Fire any Practice triggers that are due
