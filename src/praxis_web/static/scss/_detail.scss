@@ -92,6 +92,28 @@
   }
 }
 
+.coworking-meta {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.meta-chip {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  background: $bg-tertiary;
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.assignee-chip {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  background: $bg-tertiary;
+  padding: 1px $spacing-xs;
+  border-radius: $radius-sm;
+}
+
 .detail-header {
   margin-bottom: $spacing-xl;
 
@@ -303,9 +325,9 @@ textarea.property-input {
   }
 
   &.shared-with-me {
-    background: rgba($info, 0.1);
-    border: 1px solid rgba($info, 0.3);
-    color: $info;
+    background: rgba(#3d8c5c, 0.1);
+    border: 1px solid rgba(#3d8c5c, 0.3);
+    color: #3d8c5c;
   }
 
   &.shared-by-me {

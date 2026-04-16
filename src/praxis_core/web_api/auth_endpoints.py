@@ -237,3 +237,15 @@ async def get_users(user: User = Depends(get_current_user)):
         for u in all_users
         if u.id != user.id and u.is_active
     ]
+
+
+@router.get("/users/search")
+async def search_users_endpoint(
+    q: str = "",
+    user: User = Depends(get_current_user),
+):
+    """Search users by username prefix. Excludes friends and pending requests."""
+    if not q.strip():
+        return []
+    from praxis_core.persistence.user_repo import search_users
+    return search_users(q.strip(), user.id)

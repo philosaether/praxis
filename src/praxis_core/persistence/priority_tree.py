@@ -71,14 +71,28 @@ class PriorityTree:
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:
-                # Load owned priorities AND shared priorities
+                # Load owned priorities AND shared priorities (including descendants)
                 rows = conn.execute("""
                     SELECT * FROM priorities WHERE entity_id = ?
                     UNION
                     SELECT p.* FROM priorities p
                     JOIN entity_shares es ON p.id = es.priority_id
                     WHERE es.shared_with_entity_id = ?
-                """, (self.entity_id, self.entity_id)).fetchall()
+                    UNION
+                    SELECT p.* FROM priorities p
+                    WHERE p.id IN (
+                        WITH RECURSIVE descendants(id, depth) AS (
+                            SELECT pe.child_id, 1 FROM priority_edges pe
+                            JOIN entity_shares es ON pe.parent_id = es.priority_id
+                            WHERE es.shared_with_entity_id = ?
+                            UNION ALL
+                            SELECT pe.child_id, d.depth + 1 FROM priority_edges pe
+                            JOIN descendants d ON pe.parent_id = d.id
+                            WHERE d.depth < 50
+                        )
+                        SELECT id FROM descendants
+                    )
+                """, (self.entity_id, self.entity_id, self.entity_id)).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM priorities").fetchall()
 
@@ -341,9 +355,9 @@ class PriorityTree:
         """Share a priority with another entity."""
         priority_sharing.share(self.connection_factory, priority_id, target_entity_id, permission)
 
-    def share_with_user(self, priority_id: str, user_id: int, permission: str = "contributor") -> None:
+    def share_with_user(self, priority_id: str, user_id: int, permission: str = "contributor", allow_adoption: bool = False) -> None:
         """Share a priority with a user (via their personal entity)."""
-        priority_sharing.share_with_user(self.connection_factory, priority_id, user_id, permission)
+        priority_sharing.share_with_user(self.connection_factory, priority_id, user_id, permission, allow_adoption)
 
     def unshare(self, priority_id: str, target_entity_id: str) -> bool:
         """Remove sharing for a priority with an entity."""

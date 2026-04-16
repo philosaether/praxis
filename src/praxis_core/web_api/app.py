@@ -21,6 +21,7 @@ from praxis_core.web_api.task_endpoints import router as task_router
 from praxis_core.web_api.auth_endpoints import router as auth_router
 from praxis_core.web_api.invite_endpoints import router as invite_router
 from praxis_core.web_api.friends_endpoints import router as friends_router
+from praxis_core.web_api.friend_request_endpoints import router as friend_request_router
 from praxis_core.web_api.tag_endpoints import router as tag_router
 from praxis_core.web_api.rule_endpoints import router as rule_router
 from praxis_core.web_api.trigger_endpoints import router as trigger_router
@@ -77,6 +78,7 @@ app.include_router(priority_router, prefix="/api/priorities", tags=["priorities"
 app.include_router(task_router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(invite_router, prefix="/api/invites", tags=["invites"])
 app.include_router(friends_router, prefix="/api/friends", tags=["friends"])
+app.include_router(friend_request_router, prefix="/api/friend-requests", tags=["friend-requests"])
 app.include_router(tag_router, prefix="/api/tags", tags=["tags"])
 app.include_router(rule_router, prefix="/api/rules", tags=["rules"])
 app.include_router(trigger_router, prefix="/api", tags=["triggers"])
@@ -193,6 +195,18 @@ def serialize_priority(
         data["is_owner"] = is_owner
         data["is_shared_with_me"] = not is_owner
 
+        # Check if adopted (placed in own tree) and if adoption is allowed
+        if not is_owner:
+            from praxis_core.persistence.priority_placement_repo import get_placement
+            from praxis_core.persistence.priority_sharing import can_adopt
+            from praxis_core.persistence.database import get_connection as _get_conn
+            placement = get_placement(p.id, current_entity_id)
+            data["is_adopted"] = placement is not None
+            data["can_adopt"] = can_adopt(_get_conn, p.id, current_entity_id)
+        else:
+            data["is_adopted"] = False
+            data["can_adopt"] = False
+
         if shares is not None:
             data["share_count"] = len(shares)
             data["shares"] = shares
@@ -259,6 +273,17 @@ def serialize_task(
             for s in t.subtasks
         ],
     }
+
+    # Resolve assignee/creator usernames
+    # TODO(beta): N+1 queries — batch-load usernames for task lists
+    if t.assigned_to or t.created_by:
+        from praxis_core.persistence.user_repo import get_user as _get_user
+        if t.assigned_to:
+            assignee = _get_user(t.assigned_to)
+            data["assigned_to_username"] = assignee.username if assignee else None
+        if t.created_by:
+            creator = _get_user(t.created_by)
+            data["created_by_username"] = creator.username if creator else None
 
     # Outbox fields
     data["is_in_outbox"] = t.is_in_outbox

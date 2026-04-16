@@ -7,30 +7,9 @@ Extracted from app.py to keep the main module manageable.
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
+from praxis_web.rendering import templates as _templates, api_client as _api_client, is_htmx_request as _is_htmx_request, render_full_page as _render_full_page
+
 router = APIRouter()
-
-
-# These are injected by the main app after import — see app.py include_router setup.
-# We access them through request.app.state or pass them in; but since these are
-# module-level helpers defined in app.py, we import them at the top of the function
-# or receive them via a setup function.
-#
-# To keep things simple: we use a late-binding pattern where the main app calls
-# configure() after import to hand us the shared dependencies.
-
-_templates = None
-_api_client = None
-_is_htmx_request = None
-_render_full_page = None
-
-
-def configure(*, templates, api_client, is_htmx_request, render_full_page):
-    """Inject shared dependencies from the main app module."""
-    global _templates, _api_client, _is_htmx_request, _render_full_page
-    _templates = templates
-    _api_client = api_client
-    _is_htmx_request = is_htmx_request
-    _render_full_page = render_full_page
 
 
 # -----------------------------------------------------------------------------
@@ -239,6 +218,17 @@ async def task_save_properties(request: Request, task_id: str):
             )
         data = response.json()
 
+    # Check if the task left the current user's queue (reassigned to someone else)
+    task = data["task"]
+    task_assigned_away = False
+    if task.get("assigned_to"):
+        async with _api_client(request) as client:
+            me_response = await client.get("/api/auth/me")
+            if me_response.status_code == 200:
+                current_user_id = me_response.json().get("id")
+                if current_user_id and task["assigned_to"] != current_user_id:
+                    task_assigned_away = True
+
     # Render view mode (confirms save was successful)
     view_html = _templates.TemplateResponse(
         request,
@@ -246,12 +236,16 @@ async def task_save_properties(request: Request, task_id: str):
         data
     ).body.decode()
 
-    # Render OOB row update
-    row_html = _templates.TemplateResponse(
-        request,
-        "partials/task_row_single.html",
-        {"task": data["task"], "oob": True}
-    ).body.decode()
+    if task_assigned_away:
+        # Remove the row from the list via empty OOB swap
+        row_html = f'<div id="task-row-{task["id"]}" hx-swap-oob="true"></div>'
+    else:
+        # Render OOB row update
+        row_html = _templates.TemplateResponse(
+            request,
+            "partials/task_row_single.html",
+            {"task": task, "oob": True}
+        ).body.decode()
 
     return HTMLResponse(content=view_html + row_html)
 

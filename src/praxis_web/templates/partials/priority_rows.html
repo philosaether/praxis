@@ -6,15 +6,11 @@
      hx-swap="innerHTML"
      hx-push-url="true"
      onclick="selectRow(this)">
-    <div class="name">
-        {{ p.name }}
-        {% if p.is_shared_with_me %}
-        <span class="share-indicator shared-with-me" title="Shared with you">&#x1F517;</span>
-        {% elif p.share_count and p.share_count > 0 %}
-        <span class="share-indicator shared-by-me" title="Shared with {{ p.share_count }} other(s)">&#x1F91D;</span>
-        {% endif %}
-    </div>
+    <div class="name">{{ p.name }}</div>
     <div class="meta">
+        {% if p.is_shared_with_me or (p.share_count and p.share_count > 0) %}
+        <span class="share-badge" title="{% if p.is_shared_with_me %}Shared with you{% else %}Shared{% endif %}">&#x263A;</span>
+        {% endif %}
         <span class="type-badge {{ p.priority_type }}">{{ p.priority_type|upper }}</span>
         <span class="status-indicator {% if p.status == 'active' %}active{% endif %}">
             {{ p.status }}

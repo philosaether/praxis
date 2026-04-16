@@ -92,9 +92,10 @@ async def priorities_page(request: Request):
         return node
 
     roots = [nest_children(root) for root in tree_data["roots"]]
+    shared_roots = [nest_children(root) for root in tree_data.get("shared_roots", [])]
 
     detail_html = templates.get_template("partials/priority_tree_pane.html").render(
-        roots=roots
+        roots=roots, shared_roots=shared_roots
     )
 
     return await render_full_page(request, mode="priorities", initial_list_html=list_html, initial_detail_html=detail_html)

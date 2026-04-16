@@ -92,6 +92,8 @@ def ensure_schema() -> None:
     from praxis_core.persistence.session_repo import SESSIONS_SCHEMA
     from praxis_core.persistence.invite_repo import INVITES_SCHEMA
     from praxis_core.persistence.friend_repo import FRIENDS_SCHEMA
+    from praxis_core.persistence.friend_request_repo import FRIEND_REQUESTS_SCHEMA
+    from praxis_core.persistence.priority_placement_repo import PRIORITY_PLACEMENTS_SCHEMA
 
     with get_connection() as conn:
         # Entities must be created before users (foreign key dependency)
@@ -100,6 +102,8 @@ def ensure_schema() -> None:
         conn.executescript(SESSIONS_SCHEMA)
         conn.executescript(INVITES_SCHEMA)
         conn.executescript(FRIENDS_SCHEMA)
+        conn.executescript(FRIEND_REQUESTS_SCHEMA)
+        conn.executescript(PRIORITY_PLACEMENTS_SCHEMA)
     _schema_ensured = True
 
 
@@ -238,6 +242,40 @@ def list_users() -> list[User]:
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM users ORDER BY username").fetchall()
         return [_row_to_user(row) for row in rows]
+
+
+def search_users(query: str, current_user_id: int, limit: int = 20) -> list[dict]:
+    """
+    Search users by username prefix.
+    Excludes: current user, existing friends, users with pending requests in either direction.
+    """
+    ensure_schema()
+    search_pattern = query.strip() + "%"
+
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT u.id, u.username, u.created_at
+            FROM users u
+            WHERE u.username LIKE ? AND u.id != ? AND u.is_active = 1
+            AND u.id NOT IN (
+                SELECT friend_user_id FROM friends WHERE user_id = ?
+            )
+            AND u.id NOT IN (
+                SELECT to_user_id FROM friend_requests
+                WHERE from_user_id = ? AND status = 'pending'
+            )
+            AND u.id NOT IN (
+                SELECT from_user_id FROM friend_requests
+                WHERE to_user_id = ? AND status = 'pending'
+            )
+            ORDER BY u.username
+            LIMIT ?
+            """,
+            (search_pattern, current_user_id, current_user_id, current_user_id, current_user_id, limit)
+        ).fetchall()
+
+    return [dict(row) for row in rows]
 
 
 def update_user_password(user_id: int, new_password: str) -> bool:

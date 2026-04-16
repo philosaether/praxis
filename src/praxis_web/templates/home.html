@@ -42,6 +42,9 @@
                 onclick="setMode('friends')"
                 title="Friends">
             <span class="mode-nav-icon mode-nav-icon--friends"></span>
+            {% if notification_count and notification_count > 0 %}
+            <span class="notification-badge">{{ notification_count }}</span>
+            {% endif %}
         </button>
         <button class="mode-nav-btn {% if default_mode == 'rules' %}active{% endif %}"
                 id="rules-nav-btn"
@@ -360,7 +363,7 @@
     };
 
     // Task Quick Add Modal
-    let currentQuickAddPriorityId = null;
+    var currentQuickAddPriorityId = null;
 
     window.openQuickAdd = async function(priorityId) {
         const backdrop = document.getElementById('quick-add-backdrop');
@@ -597,6 +600,10 @@
         fetch('/priorities/' + priorityId + '/tree-node')
             .then(response => response.text())
             .then(html => {
+                // Remove empty state if present
+                const emptyState = treeContainer.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
+
                 // Create a temporary container to parse the HTML
                 const temp = document.createElement('div');
                 temp.innerHTML = html;
@@ -661,8 +668,9 @@
                     }
                 }
 
-                // Append to target container
+                // Append to target container and activate HTMX on the new node
                 targetContainer.appendChild(newNode);
+                htmx.process(newNode);
 
                 // Select the new node
                 const nodeContent = newNode.querySelector('.tree-node-content');
@@ -928,6 +936,7 @@
         sharePriorityId = priorityId;
         document.getElementById('share-priority-name').textContent = priorityName;
         document.getElementById('share-permission').value = 'contributor';
+        document.getElementById('share-allow-adoption').checked = false;
         document.getElementById('share-submit-btn').disabled = true;
 
         // Load friends for the dropdown (only friends can be shared with)
@@ -971,21 +980,24 @@
     };
 
     window.submitShare = function() {
-        const userId = document.getElementById('share-user').value;
-        const permission = document.getElementById('share-permission').value;
+        var userId = document.getElementById('share-user').value;
+        var permission = document.getElementById('share-permission').value;
+        var allowAdoption = document.getElementById('share-allow-adoption').checked;
 
         if (!userId || !sharePriorityId) return;
 
         fetch('/priorities/' + sharePriorityId + '/share', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: parseInt(userId), permission: permission })
+            body: JSON.stringify({ user_id: parseInt(userId), permission: permission, allow_adoption: allowAdoption })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                var refreshId = sharePriorityId;
                 closeShareModal();
-                // Could show a success message here
+                // Refresh the priority detail to update the share banner
+                htmx.ajax('GET', '/priorities/' + refreshId, {target: '#detail-pane', swap: 'innerHTML'});
             } else {
                 alert(data.error || 'Failed to share priority');
             }
@@ -994,6 +1006,43 @@
             console.error('Failed to share priority:', err);
             alert('Failed to share priority');
         });
+    };
+
+    // -------------------------------------------------------------------------
+    // Priority Adoption
+    // -------------------------------------------------------------------------
+
+    window.adoptPriority = function(priorityId) {
+        // For MVP, adopt as root (no parent picker yet)
+        fetch('/priorities/' + priorityId + '/adopt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parent_priority_id: null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh tree pane to show priority in owned section
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            } else {
+                alert(data.error || 'Failed to adopt priority');
+            }
+        })
+        .catch(err => console.error('Failed to adopt:', err));
+    };
+
+    window.unadoptPriority = function(priorityId) {
+        fetch('/priorities/' + priorityId + '/adopt', { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh tree pane to show priority back in "Shared with Me"
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            } else {
+                alert(data.error || 'Failed to unadopt priority');
+            }
+        })
+        .catch(err => console.error('Failed to unadopt:', err));
     };
 
     // Close share modal on Escape
@@ -1066,8 +1115,8 @@
     // Import Rules Modal
     // -------------------------------------------------------------------------
 
-    let importYamlContent = null;
-    let importParsedRules = [];
+    var importYamlContent = null;
+    var importParsedRules = [];
 
     window.openImportModal = function() {
         document.getElementById('import-modal-backdrop').classList.add('open');
@@ -1208,7 +1257,7 @@
     };
 
     // Drag and drop support
-    const dropZone = document.getElementById('import-drop-zone');
+    var dropZone = document.getElementById('import-drop-zone');
     if (dropZone) {
         dropZone.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -1410,8 +1459,8 @@
     // Replaces SSE for real-time updates. Polls every 60s when tab is visible.
     // Combined with midnight cron and catch-up on app launch for trigger firing.
 
-    let pollInterval = null;
-    const POLL_INTERVAL_MS = 60000; // 60 seconds
+    var pollInterval = null;
+    var POLL_INTERVAL_MS = 60000; // 60 seconds
 
     async function checkTriggers() {
         // Fire any Practice triggers that are due

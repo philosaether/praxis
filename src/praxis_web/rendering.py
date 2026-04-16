@@ -5,10 +5,12 @@ Provides the API client factory, template engine, HTMX detection,
 and the full-page rendering helper that wraps partials in the app shell.
 """
 
+import json
 import os
 import httpx
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup
 from pathlib import Path
 
 
@@ -21,6 +23,7 @@ PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["praxis_env"] = PRAXIS_ENV
+templates.env.filters["tojson"] = lambda v: json.dumps(v)
 
 
 def api_client(request: Request | None = None):
@@ -87,6 +90,10 @@ async def render_full_page(
                 tasks_response = await client.get("/api/tasks")
             tasks_data = tasks_response.json()
 
+        # Fetch friend request notification counts for badge
+        notif_response = await client.get("/api/friend-requests/notifications")
+        notif_data = notif_response.json() if notif_response.status_code == 200 else {"total": 0}
+
     return templates.TemplateResponse(
         request,
         "home.html",
@@ -100,5 +107,6 @@ async def render_full_page(
             "outbox_mode": mode == "outbox",
             "initial_list_html": initial_list_html,
             "initial_detail_html": initial_detail_html,
+            "notification_count": notif_data.get("total", 0),
         }
     )

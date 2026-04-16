@@ -23,6 +23,9 @@
             {% if task.due_date %}
             <span class="due-date">{{ task.due_date }}</span>
             {% endif %}
+            {% if task.assigned_to_username %}
+            <span class="assignee-chip">{{ task.assigned_to_username }}</span>
+            {% endif %}
         </div>
     </div>
     {% if task.can_toggle %}

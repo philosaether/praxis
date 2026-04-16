@@ -33,6 +33,21 @@
                 </select>
             </div>
 
+            <!-- Assigned To (only shown for shared priorities) -->
+            {% if assignable_users and assignable_users|length > 1 %}
+            <div class="property-row">
+                <label for="assigned_to">Assigned to</label>
+                <select id="assigned_to" name="assigned_to" class="property-input">
+                    <option value="__unassigned__">Unassigned</option>
+                    {% for u in assignable_users %}
+                    <option value="{{ u.id }}" {% if task.assigned_to == u.id %}selected{% endif %}>
+                        {{ u.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
             <!-- Due Date -->
             <div class="property-row">
                 <label for="due_date">Due Date</label>

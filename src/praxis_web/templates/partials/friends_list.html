@@ -1,26 +1,106 @@
-{# Friends list partial #}
-{# Expects: friends (list of friend dicts) #}
+{# Friends list with requests, notifications, search, and friend list #}
+{# Expects: friends, incoming_requests, outgoing_requests, accepted_notifications #}
 
-{% for friend in friends %}
-<div class="friend-row" id="friend-row-{{ friend.id }}">
-    <div class="friend-info">
-        <span class="friend-name">{{ friend.username }}</span>
-        {% if friend.email %}
-        <span class="friend-email">{{ friend.email }}</span>
-        {% endif %}
+{# --- Accepted Notifications --- #}
+{% if accepted_notifications %}
+<div class="friends-section">
+    {% for notif in accepted_notifications %}
+    <div class="notification-row accepted">
+        <span class="notification-text">
+            <strong>{{ notif.username }}</strong> accepted your friend request
+        </span>
     </div>
-    <button class="btn btn-sm btn-danger"
-            hx-delete="/friends/{{ friend.id }}"
-            hx-target="#friend-row-{{ friend.id }}"
-            hx-swap="outerHTML"
-            hx-confirm="Remove {{ friend.username }} from your friends?"
-            title="Remove friend">
-        Remove
-    </button>
+    {% endfor %}
 </div>
-{% else %}
+{% endif %}
+
+{# --- Incoming Requests --- #}
+{% if incoming_requests %}
+<div class="friends-section">
+    <div class="friends-section-header">friend requests</div>
+    {% for req in incoming_requests %}
+    <div class="friend-row request-row" id="request-row-{{ req.id }}">
+        <div class="friend-info">
+            <span class="friend-name">{{ req.username }}</span>
+        </div>
+        <div class="request-actions">
+            <button class="btn btn-sm btn-primary"
+                    hx-post="/friends/request/{{ req.id }}/accept"
+                    hx-target="#item-list"
+                    hx-swap="innerHTML">
+                Accept
+            </button>
+            <button class="btn btn-sm btn-secondary"
+                    hx-post="/friends/request/{{ req.id }}/decline"
+                    hx-target="#item-list"
+                    hx-swap="innerHTML">
+                Decline
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# --- User Search --- #}
+<div class="friends-section">
+    <div class="friends-section-header">find people</div>
+    <input type="text"
+           class="property-input search-input"
+           placeholder="search by username..."
+           name="q"
+           autocomplete="off"
+           hx-get="/friends/search"
+           hx-target="#search-results"
+           hx-swap="innerHTML"
+           hx-trigger="keyup changed delay:300ms"
+           hx-include="this">
+    <div id="search-results"></div>
+</div>
+
+{# --- Outgoing Requests --- #}
+{% if outgoing_requests %}
+<div class="friends-section">
+    <div class="friends-section-header">pending</div>
+    {% for req in outgoing_requests %}
+    <div class="friend-row request-row" id="outgoing-row-{{ req.id }}">
+        <div class="friend-info">
+            <span class="friend-name">{{ req.username }}</span>
+            <span class="friend-status">request sent</span>
+        </div>
+        <button class="btn btn-sm btn-secondary"
+                hx-post="/friends/request/{{ req.id }}/cancel"
+                hx-target="#item-list"
+                hx-swap="innerHTML">
+            Cancel
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# --- Friends List --- #}
+{% if friends %}
+<div class="friends-section">
+    <div class="friends-section-header">friends</div>
+    {% for friend in friends %}
+    <div class="friend-row" id="friend-row-{{ friend.id }}">
+        <div class="friend-info">
+            <span class="friend-name">{{ friend.username }}</span>
+        </div>
+        <button class="btn btn-sm btn-danger"
+                hx-delete="/friends/{{ friend.id }}"
+                hx-target="#friend-row-{{ friend.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Remove {{ friend.username }} from your friends?">
+            Remove
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% elif not incoming_requests and not outgoing_requests %}
 <div class="empty-state">
-    <h3>No friends yet</h3>
-    <p>Invite someone to share priorities with them</p>
+    <h3>no friends yet</h3>
+    <p>search for users above, or invite someone with the link below</p>
 </div>
-{% endfor %}
+{% endif %}

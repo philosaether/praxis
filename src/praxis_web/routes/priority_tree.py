@@ -24,7 +24,11 @@ async def priority_tree(request: Request):
     return templates.TemplateResponse(
         request,
         "partials/priority_tree.html",
-        {"roots": data["roots"], "children_map": data["children_map"]}
+        {
+            "roots": data["roots"],
+            "shared_roots": data.get("shared_roots", []),
+            "children_map": data["children_map"],
+        }
     )
 
 
@@ -47,11 +51,12 @@ async def priority_tree_pane(request: Request):
         return node
 
     roots = [nest_children(root) for root in data["roots"]]
+    shared_roots = [nest_children(root) for root in data.get("shared_roots", [])]
 
     return templates.TemplateResponse(
         request,
         "partials/priority_tree_pane.html",
-        {"roots": roots}
+        {"roots": roots, "shared_roots": shared_roots}
     )
 
 

@@ -54,7 +54,7 @@ def list_tasks(
         if entity_id is not None and assigned_to is not None:
             # Show tasks assigned to me OR my unassigned tasks OR tasks I created
             # (The created_by check ensures users see tasks they created on shared priorities)
-            query += " AND (t.assigned_to = ? OR (t.entity_id = ? AND t.assigned_to IS NULL) OR t.created_by = ?)"
+            query += " AND (t.assigned_to = ? OR (t.entity_id = ? AND t.assigned_to IS NULL) OR (t.created_by = ? AND t.assigned_to IS NULL))"
             params.extend([assigned_to, entity_id, assigned_to])
         elif entity_id is not None:
             query += " AND t.entity_id = ?"
