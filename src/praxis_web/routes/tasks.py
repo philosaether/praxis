@@ -218,6 +218,17 @@ async def task_save_properties(request: Request, task_id: str):
             )
         data = response.json()
 
+    # Check if the task left the current user's queue (reassigned to someone else)
+    task = data["task"]
+    task_assigned_away = False
+    if task.get("assigned_to"):
+        async with _api_client(request) as client:
+            me_response = await client.get("/api/auth/me")
+            if me_response.status_code == 200:
+                current_user_id = me_response.json().get("id")
+                if current_user_id and task["assigned_to"] != current_user_id:
+                    task_assigned_away = True
+
     # Render view mode (confirms save was successful)
     view_html = _templates.TemplateResponse(
         request,
@@ -225,12 +236,16 @@ async def task_save_properties(request: Request, task_id: str):
         data
     ).body.decode()
 
-    # Render OOB row update
-    row_html = _templates.TemplateResponse(
-        request,
-        "partials/task_row_single.html",
-        {"task": data["task"], "oob": True}
-    ).body.decode()
+    if task_assigned_away:
+        # Remove the row from the list via empty OOB swap
+        row_html = f'<div id="task-row-{task["id"]}" hx-swap-oob="true"></div>'
+    else:
+        # Render OOB row update
+        row_html = _templates.TemplateResponse(
+            request,
+            "partials/task_row_single.html",
+            {"task": task, "oob": True}
+        ).body.decode()
 
     return HTMLResponse(content=view_html + row_html)
 
