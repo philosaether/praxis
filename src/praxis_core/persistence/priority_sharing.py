@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS entity_shares (
     priority_id TEXT NOT NULL REFERENCES priorities(id) ON DELETE CASCADE,
     shared_with_entity_id TEXT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
     permission TEXT NOT NULL DEFAULT 'contributor',
+    allow_adoption INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (priority_id, shared_with_entity_id)
 );
@@ -33,10 +34,27 @@ CREATE INDEX IF NOT EXISTS idx_priority_shares_priority ON priority_shares(prior
 
 
 # ---------------------------------------------------------------------
+# Migrations
+# ---------------------------------------------------------------------
+
+_migrated = False
+
+def _migrate_allow_adoption(conn) -> None:
+    """Add allow_adoption column if missing (for existing DBs)."""
+    global _migrated
+    if _migrated:
+        return
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(entity_shares)").fetchall()}
+    if "allow_adoption" not in cols:
+        conn.execute("ALTER TABLE entity_shares ADD COLUMN allow_adoption INTEGER NOT NULL DEFAULT 0")
+    _migrated = True
+
+
+# ---------------------------------------------------------------------
 # Sharing Operations
 # ---------------------------------------------------------------------
 
-def share(connection_factory, priority_id: str, target_entity_id: str, permission: str = "contributor") -> None:
+def share(connection_factory, priority_id: str, target_entity_id: str, permission: str = "contributor", allow_adoption: bool = False) -> None:
     """
     Share a priority with another entity.
 
@@ -45,20 +63,23 @@ def share(connection_factory, priority_id: str, target_entity_id: str, permissio
         priority_id: The priority to share
         target_entity_id: The entity to share with (personal or organization)
         permission: One of 'viewer', 'contributor', 'editor'
+        allow_adoption: Whether the recipient can adopt this priority into their own tree
     """
     if permission not in ("viewer", "contributor", "editor"):
         raise ValueError(f"Invalid permission: {permission}")
 
     with connection_factory() as conn:
+        _migrate_allow_adoption(conn)
         conn.execute("""
-            INSERT INTO entity_shares (priority_id, shared_with_entity_id, permission)
-            VALUES (?, ?, ?)
+            INSERT INTO entity_shares (priority_id, shared_with_entity_id, permission, allow_adoption)
+            VALUES (?, ?, ?, ?)
             ON CONFLICT(priority_id, shared_with_entity_id) DO UPDATE SET
-                permission = excluded.permission
-        """, (priority_id, target_entity_id, permission))
+                permission = excluded.permission,
+                allow_adoption = excluded.allow_adoption
+        """, (priority_id, target_entity_id, permission, int(allow_adoption)))
 
 
-def share_with_user(connection_factory, priority_id: str, user_id: int, permission: str = "contributor") -> None:
+def share_with_user(connection_factory, priority_id: str, user_id: int, permission: str = "contributor", allow_adoption: bool = False) -> None:
     """
     Share a priority with a user (via their personal entity).
 
@@ -67,6 +88,7 @@ def share_with_user(connection_factory, priority_id: str, user_id: int, permissi
         priority_id: The priority to share
         user_id: The user to share with
         permission: One of 'viewer', 'contributor', 'editor'
+        allow_adoption: Whether the recipient can adopt this priority into their own tree
     """
     # Look up user's personal entity
     with connection_factory() as conn:
@@ -77,7 +99,7 @@ def share_with_user(connection_factory, priority_id: str, user_id: int, permissi
             raise ValueError(f"User {user_id} has no personal entity")
         target_entity_id = row["entity_id"]
 
-    share(connection_factory, priority_id, target_entity_id, permission)
+    share(connection_factory, priority_id, target_entity_id, permission, allow_adoption)
 
 
 def unshare(connection_factory, priority_id: str, target_entity_id: str) -> bool:
@@ -116,8 +138,9 @@ def get_shares(connection_factory, priority_id: str) -> list[dict]:
     For personal entities, includes the user info.
     """
     with connection_factory() as conn:
+        _migrate_allow_adoption(conn)
         rows = conn.execute("""
-            SELECT es.shared_with_entity_id, es.permission, es.created_at,
+            SELECT es.shared_with_entity_id, es.permission, es.allow_adoption, es.created_at,
                    e.name as entity_name, e.type as entity_type,
                    u.id as user_id, u.username
             FROM entity_shares es
@@ -133,6 +156,7 @@ def get_shares(connection_factory, priority_id: str) -> list[dict]:
                 "user_id": row["user_id"],
                 "username": row["username"],
                 "permission": row["permission"],
+                "allow_adoption": bool(row["allow_adoption"]),
                 "created_at": row["created_at"],
             }
             for row in rows
@@ -173,3 +197,14 @@ def get_permission(connection_factory, priority_id: str, entity_id: str, priorit
             return share_row["permission"]
 
     return None
+
+
+def can_adopt(connection_factory, priority_id: str, entity_id: str) -> bool:
+    """Check if an entity has adoption permission for a shared priority."""
+    with connection_factory() as conn:
+        _migrate_allow_adoption(conn)
+        row = conn.execute("""
+            SELECT allow_adoption FROM entity_shares
+            WHERE priority_id = ? AND shared_with_entity_id = ?
+        """, (priority_id, entity_id)).fetchone()
+        return bool(row and row["allow_adoption"])

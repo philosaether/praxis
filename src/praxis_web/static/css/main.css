@@ -4280,6 +4280,22 @@ body:has(.tree-node-drag) .tree-children:empty::after {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.more-options .property-row.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: none;
+  cursor: pointer;
+}
+.more-options .property-row.checkbox-row label input[type=checkbox] {
+  width: auto;
+}
+.more-options .property-row .property-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #7a7976;
+  margin-top: 2px;
+}
 .more-options .property-row input,
 .more-options .property-row select,
 .more-options .property-row textarea {

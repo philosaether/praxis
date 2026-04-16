@@ -798,6 +798,7 @@ async def move_priority(
 class ShareRequest(BaseModel):
     user_id: int
     permission: str = "contributor"  # viewer, contributor, editor
+    allow_adoption: bool = False
 
 
 @router.post("/{priority_id}/share")
@@ -836,7 +837,7 @@ async def share_priority(
         return JSONResponse({"error": "Cannot share with yourself"}, status_code=400)
 
     # Share via user's personal entity
-    graph.share_with_user(priority_id, request_data.user_id, request_data.permission)
+    graph.share_with_user(priority_id, request_data.user_id, request_data.permission, request_data.allow_adoption)
 
     # Clear the target user's graph cache so they see the shared priority
     from praxis_core.web_api.app import clear_graph_cache
@@ -958,6 +959,12 @@ async def adopt_priority(
         return JSONResponse({"error": "Cannot adopt your own priority"}, status_code=400)
     if permission is None:
         return JSONResponse({"error": "Priority not found or not shared with you"}, status_code=404)
+
+    # Check if adoption is allowed
+    from praxis_core.persistence.priority_sharing import can_adopt as check_adopt
+    from praxis_core.persistence.database import get_connection as _get_conn
+    if not check_adopt(_get_conn, priority_id, entity_id):
+        return JSONResponse({"error": "Adoption not allowed for this share"}, status_code=403)
 
     # Validate parent if provided — must be owned by the adopter
     if request_data.parent_priority_id:

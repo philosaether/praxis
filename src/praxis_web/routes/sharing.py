@@ -254,6 +254,7 @@ async def share_priority(request: Request, priority_id: str):
     data = await request.json()
     user_id = data.get("user_id")
     permission = data.get("permission", "contributor")
+    allow_adoption = data.get("allow_adoption", False)
 
     if not user_id:
         return Response(
@@ -265,7 +266,7 @@ async def share_priority(request: Request, priority_id: str):
     async with api_client(request) as client:
         response = await client.post(
             f"/api/priorities/{priority_id}/share",
-            json={"user_id": user_id, "permission": permission}
+            json={"user_id": user_id, "permission": permission, "allow_adoption": allow_adoption}
         )
 
         if response.status_code != 200:

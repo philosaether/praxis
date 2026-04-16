@@ -120,17 +120,17 @@
         <div class="share-status shared-with-me">
             <span class="share-badge">&#x263A;</span>
             <span>Shared with you</span>
-            {% if not priority.is_adopted %}
-            <button type="button"
-                    class="btn btn-sm btn-primary adopt-btn"
-                    onclick="adoptPriority('{{ priority.id }}')">
-                Adopt
-            </button>
-            {% else %}
+            {% if priority.is_adopted %}
             <button type="button"
                     class="btn btn-sm btn-secondary"
                     onclick="unadoptPriority('{{ priority.id }}')">
                 Return to shared
+            </button>
+            {% elif priority.can_adopt %}
+            <button type="button"
+                    class="btn btn-sm btn-primary adopt-btn"
+                    onclick="adoptPriority('{{ priority.id }}')">
+                Adopt
             </button>
             {% endif %}
         </div>

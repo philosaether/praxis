@@ -264,11 +264,12 @@
                 group: { name: 'priority-tree', pull: true, put: false },
                 animation: 150,
                 handle: '.tree-node-row',
-                draggable: '.tree-node',
+                draggable: '.tree-node:not(.no-adopt)',
                 ghostClass: 'tree-node-ghost',
                 chosenClass: 'tree-node-chosen',
                 dragClass: 'tree-node-drag',
                 sort: false,
+                filter: '.no-adopt',
             });
         }
 

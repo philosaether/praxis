@@ -354,9 +354,9 @@ class PriorityTree:
         """Share a priority with another entity."""
         priority_sharing.share(self.connection_factory, priority_id, target_entity_id, permission)
 
-    def share_with_user(self, priority_id: str, user_id: int, permission: str = "contributor") -> None:
+    def share_with_user(self, priority_id: str, user_id: int, permission: str = "contributor", allow_adoption: bool = False) -> None:
         """Share a priority with a user (via their personal entity)."""
-        priority_sharing.share_with_user(self.connection_factory, priority_id, user_id, permission)
+        priority_sharing.share_with_user(self.connection_factory, priority_id, user_id, permission, allow_adoption)
 
     def unshare(self, priority_id: str, target_entity_id: str) -> bool:
         """Remove sharing for a priority with an entity."""
