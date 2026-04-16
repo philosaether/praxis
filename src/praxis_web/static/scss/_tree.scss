@@ -183,6 +183,16 @@
   flex-shrink: 0;
 }
 
+.share-badge {
+  background: #3d8c5c;
+  color: $bg-primary;
+  padding: 0.1rem $spacing-xs;
+  border-radius: $radius-sm;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 .status-dim {
   color: $text-muted;
   font-size: $font-size-sm;

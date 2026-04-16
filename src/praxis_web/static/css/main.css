@@ -2772,15 +2772,15 @@ a:hover {
   border-left: 3px solid #735c00;
 }
 .priority-row.shared-with-me {
-  background: rgba(21, 101, 192, 0.03);
-  border-left: 2px solid rgba(21, 101, 192, 0.5);
+  background: rgba(61, 140, 92, 0.03);
+  border-left: 2px solid rgba(61, 140, 92, 0.5);
 }
 .priority-row.shared-with-me:hover {
-  background: rgba(21, 101, 192, 0.08);
+  background: rgba(61, 140, 92, 0.08);
 }
 .priority-row.shared-with-me.selected {
-  background: rgba(21, 101, 192, 0.1);
-  border-left: 3px solid #1565c0;
+  background: rgba(61, 140, 92, 0.1);
+  border-left: 3px solid #3d8c5c;
 }
 .priority-row .name {
   font-family: "Noto Serif", Georgia, "Times New Roman", serif;
@@ -2799,14 +2799,13 @@ a:hover {
 
 .share-indicator {
   font-size: 0.85em;
-  opacity: 0.7;
   cursor: help;
 }
 .share-indicator.shared-with-me {
-  color: #1565c0;
+  color: #3d8c5c;
 }
 .share-indicator.shared-by-me {
-  color: #2e7d32;
+  color: #3d8c5c;
 }
 
 .task-row {
@@ -3186,9 +3185,9 @@ textarea.property-input {
   font-size: 1.2em;
 }
 .share-status.shared-with-me {
-  background: rgba(21, 101, 192, 0.1);
-  border: 1px solid rgba(21, 101, 192, 0.3);
-  color: #1565c0;
+  background: rgba(61, 140, 92, 0.1);
+  border: 1px solid rgba(61, 140, 92, 0.3);
+  color: #3d8c5c;
 }
 .share-status.shared-by-me {
   background: rgba(46, 125, 50, 0.1);
@@ -3832,6 +3831,16 @@ textarea.property-input {
   font-size: 0.65rem;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+.share-badge {
+  background: #3d8c5c;
+  color: #fbf9f5;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .status-dim {

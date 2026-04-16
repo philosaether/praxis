@@ -12,5 +12,8 @@
         <span class="status-indicator {% if priority.status == 'active' %}active{% endif %}">
             {{ priority.status }}
         </span>
+        {% if priority.is_shared_with_me or (priority.share_count and priority.share_count > 0) %}
+        <span class="share-badge" title="{% if priority.is_shared_with_me %}Shared with you{% else %}Shared{% endif %}">&#x263A;</span>
+        {% endif %}
     </div>
 </div>

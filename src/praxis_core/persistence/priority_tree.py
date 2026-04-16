@@ -71,14 +71,27 @@ class PriorityTree:
 
             # Load priorities (filtered by entity_id if set)
             if self.entity_id is not None:
-                # Load owned priorities AND shared priorities
+                # Load owned priorities AND shared priorities (including descendants)
                 rows = conn.execute("""
                     SELECT * FROM priorities WHERE entity_id = ?
                     UNION
                     SELECT p.* FROM priorities p
                     JOIN entity_shares es ON p.id = es.priority_id
                     WHERE es.shared_with_entity_id = ?
-                """, (self.entity_id, self.entity_id)).fetchall()
+                    UNION
+                    SELECT p.* FROM priorities p
+                    WHERE p.id IN (
+                        WITH RECURSIVE descendants(id) AS (
+                            SELECT pe.child_id FROM priority_edges pe
+                            JOIN entity_shares es ON pe.parent_id = es.priority_id
+                            WHERE es.shared_with_entity_id = ?
+                            UNION ALL
+                            SELECT pe.child_id FROM priority_edges pe
+                            JOIN descendants d ON pe.parent_id = d.id
+                        )
+                        SELECT id FROM descendants
+                    )
+                """, (self.entity_id, self.entity_id, self.entity_id)).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM priorities").fetchall()
 
