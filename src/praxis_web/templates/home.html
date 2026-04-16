@@ -1006,6 +1006,43 @@
         });
     };
 
+    // -------------------------------------------------------------------------
+    // Priority Adoption
+    // -------------------------------------------------------------------------
+
+    window.adoptPriority = function(priorityId) {
+        // For MVP, adopt as root (no parent picker yet)
+        fetch('/priorities/' + priorityId + '/adopt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parent_priority_id: null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh tree pane to show priority in owned section
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            } else {
+                alert(data.error || 'Failed to adopt priority');
+            }
+        })
+        .catch(err => console.error('Failed to adopt:', err));
+    };
+
+    window.unadoptPriority = function(priorityId) {
+        fetch('/priorities/' + priorityId + '/adopt', { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh tree pane to show priority back in "Shared with Me"
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            } else {
+                alert(data.error || 'Failed to unadopt priority');
+            }
+        })
+        .catch(err => console.error('Failed to unadopt:', err));
+    };
+
     // Close share modal on Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {

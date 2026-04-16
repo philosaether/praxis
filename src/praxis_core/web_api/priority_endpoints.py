@@ -250,6 +250,34 @@ async def priority_tree(
     owned_roots = [r for r in serialized_roots if r.get("is_owner", True)]
     shared_roots = [r for r in serialized_roots if r.get("is_shared_with_me")]
 
+    # Apply placements: move adopted priorities from shared_roots into the owned tree
+    if entity_id:
+        from praxis_core.persistence.priority_placement_repo import list_placements
+        placements = {p["priority_id"]: p for p in list_placements(entity_id)}
+
+        if placements:
+            adopted_ids = set(placements.keys())
+
+            # Remove adopted priorities from shared_roots
+            still_shared = [r for r in shared_roots if r["id"] not in adopted_ids]
+
+            # Add adopted priorities to owned_roots or children_map based on placement
+            for root in shared_roots:
+                if root["id"] in adopted_ids:
+                    p = placements[root["id"]]
+                    root["is_adopted"] = True
+                    root["adopted_rank"] = p["rank"]
+                    if p["parent_priority_id"]:
+                        # Add as child of the specified parent
+                        if p["parent_priority_id"] not in children_map:
+                            children_map[p["parent_priority_id"]] = []
+                        children_map[p["parent_priority_id"]].append(root)
+                    else:
+                        # Add as a root
+                        owned_roots.append(root)
+
+            shared_roots = still_shared
+
     return {
         "roots": owned_roots,
         "shared_roots": shared_roots,
@@ -820,6 +848,9 @@ async def share_priority(
         if row and row["entity_id"]:
             clear_graph_cache(row["entity_id"])
 
+    # Also clear owner's cache so share count updates
+    clear_graph_cache(entity_id)
+
     return {
         "success": True,
         "priority_id": priority_id,
@@ -846,13 +877,27 @@ async def unshare_priority(
     if permission != "owner":
         return JSONResponse({"error": "Only the owner can unshare this priority"}, status_code=403)
 
+    # Fork adopted priority before unsharing (preserves adopter's data)
+    from praxis_core.persistence.priority_placement_repo import fork_on_unshare
+    from praxis_core.persistence.user_repo import get_user
+    target_user = get_user(target_user_id)
+    forked_id = None
+    if target_user and target_user.entity_id:
+        forked_id = fork_on_unshare(priority_id, target_user.entity_id, target_user_id)
+
     # Unshare via user's personal entity
     removed = graph.unshare_user(priority_id, target_user_id)
+
+    # Clear target user's graph cache so they see the forked copy
+    if target_user and target_user.entity_id:
+        from praxis_core.web_api.app import clear_graph_cache
+        clear_graph_cache(target_user.entity_id)
 
     return {
         "success": removed,
         "priority_id": priority_id,
         "removed_user_id": target_user_id,
+        "forked_priority_id": forked_id,
     }
 
 
@@ -883,3 +928,73 @@ async def get_priority_shares(
         "priority_id": priority_id,
         "shares": shares,
     }
+
+
+# -------------------------------------------------------------------------
+# Priority Adoption (Placement)
+# -------------------------------------------------------------------------
+
+class AdoptRequest(BaseModel):
+    parent_priority_id: str | None = None
+    rank: int | None = None
+
+
+@router.post("/{priority_id}/adopt")
+async def adopt_priority(
+    priority_id: str,
+    request_data: AdoptRequest,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Adopt a shared priority into your own tree."""
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    entity_id = user.entity_id
+    graph = _get_graph(entity_id)
+
+    # Must be a shared priority (not owned)
+    permission = graph.get_permission(priority_id, entity_id)
+    if permission == "owner":
+        return JSONResponse({"error": "Cannot adopt your own priority"}, status_code=400)
+    if permission is None:
+        return JSONResponse({"error": "Priority not found or not shared with you"}, status_code=404)
+
+    # Validate parent if provided — must be owned by the adopter
+    if request_data.parent_priority_id:
+        parent = graph.get(request_data.parent_priority_id)
+        if not parent or parent.entity_id != entity_id:
+            return JSONResponse({"error": "Parent priority must be one of your own"}, status_code=400)
+
+    from praxis_core.persistence.priority_placement_repo import adopt_priority as do_adopt
+    result = do_adopt(
+        priority_id=priority_id,
+        entity_id=entity_id,
+        parent_priority_id=request_data.parent_priority_id,
+        rank=request_data.rank,
+    )
+
+    from praxis_core.web_api.app import clear_graph_cache
+    clear_graph_cache(entity_id)
+
+    return {"success": True, **result}
+
+
+@router.delete("/{priority_id}/adopt")
+async def unadopt_priority(
+    priority_id: str,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Remove adoption, returning the priority to 'Shared with Me'."""
+    if not user:
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    from praxis_core.persistence.priority_placement_repo import unadopt_priority as do_unadopt
+    removed = do_unadopt(priority_id, user.entity_id)
+
+    if not removed:
+        return JSONResponse({"error": "No adoption found"}, status_code=404)
+
+    from praxis_core.web_api.app import clear_graph_cache
+    clear_graph_cache(user.entity_id)
+
+    return {"success": True}

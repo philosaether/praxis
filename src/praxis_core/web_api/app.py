@@ -195,6 +195,14 @@ def serialize_priority(
         data["is_owner"] = is_owner
         data["is_shared_with_me"] = not is_owner
 
+        # Check if adopted (placed in own tree)
+        if not is_owner:
+            from praxis_core.persistence.priority_placement_repo import get_placement
+            placement = get_placement(p.id, current_entity_id)
+            data["is_adopted"] = placement is not None
+        else:
+            data["is_adopted"] = False
+
         if shares is not None:
             data["share_count"] = len(shares)
             data["shares"] = shares

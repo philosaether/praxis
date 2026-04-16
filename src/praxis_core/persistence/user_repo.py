@@ -93,6 +93,7 @@ def ensure_schema() -> None:
     from praxis_core.persistence.invite_repo import INVITES_SCHEMA
     from praxis_core.persistence.friend_repo import FRIENDS_SCHEMA
     from praxis_core.persistence.friend_request_repo import FRIEND_REQUESTS_SCHEMA
+    from praxis_core.persistence.priority_placement_repo import PRIORITY_PLACEMENTS_SCHEMA
 
     with get_connection() as conn:
         # Entities must be created before users (foreign key dependency)
@@ -102,6 +103,7 @@ def ensure_schema() -> None:
         conn.executescript(INVITES_SCHEMA)
         conn.executescript(FRIENDS_SCHEMA)
         conn.executescript(FRIEND_REQUESTS_SCHEMA)
+        conn.executescript(PRIORITY_PLACEMENTS_SCHEMA)
     _schema_ensured = True
 
 

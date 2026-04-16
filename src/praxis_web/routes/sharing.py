@@ -153,6 +153,59 @@ async def search_users_partial(request: Request, q: str = ""):
 
 
 # ---------------------------------------------------------------------------
+# Priority Adoption
+# ---------------------------------------------------------------------------
+
+@router.post("/priorities/{priority_id}/adopt", response_class=HTMLResponse)
+async def adopt_priority(request: Request, priority_id: str):
+    """Adopt a shared priority into your own tree."""
+    data = await request.json()
+    parent_priority_id = data.get("parent_priority_id")
+
+    async with api_client(request) as client:
+        response = await client.post(
+            f"/api/priorities/{priority_id}/adopt",
+            json={"parent_priority_id": parent_priority_id}
+        )
+
+        if response.status_code != 200:
+            try:
+                error_data = response.json()
+            except Exception:
+                error_data = {"detail": response.text or "Failed to adopt"}
+            return Response(
+                content=json.dumps({"success": False, "error": error_data.get("detail", "Failed to adopt")}),
+                media_type="application/json",
+                status_code=response.status_code
+            )
+
+        return Response(
+            content=json.dumps({"success": True}),
+            media_type="application/json"
+        )
+
+
+@router.delete("/priorities/{priority_id}/adopt", response_class=HTMLResponse)
+async def unadopt_priority(request: Request, priority_id: str):
+    """Remove adoption, return to Shared with Me."""
+    async with api_client(request) as client:
+        response = await client.delete(f"/api/priorities/{priority_id}/adopt")
+
+        if response.status_code != 200:
+            error_data = response.json() if response.content else {}
+            return Response(
+                content=json.dumps({"success": False, "error": error_data.get("detail", "Failed")}),
+                media_type="application/json",
+                status_code=response.status_code
+            )
+
+        return Response(
+            content=json.dumps({"success": True}),
+            media_type="application/json"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Invites
 # ---------------------------------------------------------------------------
 
