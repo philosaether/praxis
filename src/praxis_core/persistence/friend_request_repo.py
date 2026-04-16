@@ -156,20 +156,30 @@ def accept_request(request_id: str, user_id: int) -> bool:
     now = datetime.now().isoformat()
 
     with get_connection() as conn:
+        # Use UPDATE with WHERE status='pending' to atomically claim the request
+        cursor = conn.execute(
+            """UPDATE friend_requests SET status = 'accepted', resolved_at = ?
+               WHERE id = ? AND to_user_id = ? AND status = 'pending'""",
+            (now, request_id, user_id)
+        )
+        if cursor.rowcount == 0:
+            return False
+
         row = conn.execute(
-            "SELECT from_user_id, to_user_id, status FROM friend_requests WHERE id = ?",
+            "SELECT from_user_id, to_user_id FROM friend_requests WHERE id = ?",
             (request_id,)
         ).fetchone()
 
-        if row is None or row["to_user_id"] != user_id or row["status"] != "pending":
-            return False
-
+        # Create friendship inside the same connection context
         conn.execute(
-            "UPDATE friend_requests SET status = 'accepted', resolved_at = ? WHERE id = ?",
-            (now, request_id)
+            "INSERT OR IGNORE INTO friends (user_id, friend_user_id, created_at) VALUES (?, ?, ?)",
+            (row["from_user_id"], row["to_user_id"], now)
+        )
+        conn.execute(
+            "INSERT OR IGNORE INTO friends (user_id, friend_user_id, created_at) VALUES (?, ?, ?)",
+            (row["to_user_id"], row["from_user_id"], now)
         )
 
-    add_friend(row["from_user_id"], row["to_user_id"])
     return True
 
 

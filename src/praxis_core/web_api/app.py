@@ -275,6 +275,7 @@ def serialize_task(
     }
 
     # Resolve assignee/creator usernames
+    # TODO(beta): N+1 queries — batch-load usernames for task lists
     if t.assigned_to or t.created_by:
         from praxis_core.persistence.user_repo import get_user as _get_user
         if t.assigned_to:

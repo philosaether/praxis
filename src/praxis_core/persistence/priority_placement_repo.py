@@ -181,44 +181,44 @@ def fork_on_unshare(priority_id: str, adopter_entity_id: str, adopter_user_id: i
     now = datetime.now().isoformat()
 
     with get_connection() as conn:
-        # Collect the priority and all descendants via edge table
-        def collect_descendants(pid):
-            """Recursively collect priority IDs in the subtree."""
-            ids = [pid]
-            children = conn.execute(
-                "SELECT child_id FROM priority_edges WHERE parent_id = ?", (pid,)
-            ).fetchall()
-            for child in children:
-                ids.extend(collect_descendants(child["child_id"]))
-            return ids
+        # Collect descendants via CTE (single query instead of N+1)
+        descendant_rows = conn.execute("""
+            WITH RECURSIVE descendants(id, depth) AS (
+                SELECT ? AS id, 0 AS depth
+                UNION ALL
+                SELECT pe.child_id, d.depth + 1 FROM priority_edges pe
+                JOIN descendants d ON pe.parent_id = d.id
+                WHERE d.depth < 50
+            )
+            SELECT id FROM descendants
+        """, (priority_id,)).fetchall()
+        source_ids = [r["id"] for r in descendant_rows]
 
-        source_ids = collect_descendants(priority_id)
-
-        # Collect parent edges for the subtree
-        edge_map = {}  # child_id -> parent_id (within subtree)
-        for sid in source_ids:
-            parent_row = conn.execute(
-                "SELECT parent_id FROM priority_edges WHERE child_id = ? AND parent_id IN ({})".format(
-                    ",".join("?" * len(source_ids))
-                ),
-                (sid, *source_ids)
-            ).fetchone()
-            if parent_row:
-                edge_map[sid] = parent_row["parent_id"]
+        # Batch-load all edges within the subtree (single query)
+        placeholders = ",".join("?" * len(source_ids))
+        edge_rows = conn.execute(
+            f"""SELECT child_id, parent_id FROM priority_edges
+                WHERE child_id IN ({placeholders}) AND parent_id IN ({placeholders})""",
+            source_ids + source_ids
+        ).fetchall()
+        edge_map = {r["child_id"]: r["parent_id"] for r in edge_rows}
 
         # Map old IDs to new IDs
         id_map = {old_id: str(ULID()) for old_id in source_ids}
 
+        # Batch-load all source priorities (single query)
+        priority_rows = conn.execute(
+            f"SELECT * FROM priorities WHERE id IN ({placeholders})", source_ids
+        ).fetchall()
+        priorities_by_id = {r["id"]: dict(r) for r in priority_rows}
+
         # Copy each priority
         for old_id in source_ids:
             new_id = id_map[old_id]
-            source = conn.execute(
-                "SELECT * FROM priorities WHERE id = ?", (old_id,)
-            ).fetchone()
+            source = priorities_by_id.get(old_id)
             if not source:
                 continue
 
-            source = dict(source)
             conn.execute(
                 """INSERT INTO priorities (id, entity_id, name, priority_type, status,
                    description, rank, created_at, updated_at,
@@ -236,10 +236,11 @@ def fork_on_unshare(priority_id: str, adopter_entity_id: str, adopter_user_id: i
 
         # Recreate edges within the copied subtree
         for child_id, parent_id in edge_map.items():
-            conn.execute(
-                "INSERT INTO priority_edges (child_id, parent_id) VALUES (?, ?)",
-                (id_map[child_id], id_map[parent_id])
-            )
+            if child_id in id_map and parent_id in id_map:
+                conn.execute(
+                    "INSERT INTO priority_edges (child_id, parent_id) VALUES (?, ?)",
+                    (id_map[child_id], id_map[parent_id])
+                )
 
         # Connect the root copy to the placement parent (if any)
         if placement["parent_priority_id"]:
@@ -248,31 +249,32 @@ def fork_on_unshare(priority_id: str, adopter_entity_id: str, adopter_user_id: i
                 (id_map[priority_id], placement["parent_priority_id"])
             )
 
-        # Copy tasks belonging to the adopter
-        for old_id in source_ids:
-            new_id = id_map[old_id]
-            tasks = conn.execute(
-                """SELECT * FROM tasks WHERE priority_id = ?
-                   AND (assigned_to = ? OR created_by = ? OR entity_id = ?)""",
-                (old_id, adopter_user_id, adopter_user_id, adopter_entity_id)
-            ).fetchall()
+        # Batch-load all tasks belonging to the adopter across all source priorities (single query)
+        all_tasks = conn.execute(
+            f"""SELECT * FROM tasks WHERE priority_id IN ({placeholders})
+                AND (assigned_to = ? OR created_by = ? OR entity_id = ?)""",
+            source_ids + [adopter_user_id, adopter_user_id, adopter_entity_id]
+        ).fetchall()
 
-            for task in tasks:
-                task = dict(task)
-                new_task_id = str(ULID())
-                conn.execute(
-                    """INSERT INTO tasks (id, entity_id, name, status, description,
-                       due_date, priority_id, assigned_to, created_by,
-                       created_at, is_in_outbox, moved_to_outbox_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        new_task_id, adopter_entity_id, task["name"], task["status"],
-                        task.get("description"), task.get("due_date"), new_id,
-                        task.get("assigned_to"), task.get("created_by"),
-                        task.get("created_at", now),
-                        task.get("is_in_outbox", 0), task.get("moved_to_outbox_at"),
-                    )
+        for task in all_tasks:
+            task = dict(task)
+            new_task_id = str(ULID())
+            new_priority_id = id_map.get(task["priority_id"])
+            if not new_priority_id:
+                continue
+            conn.execute(
+                """INSERT INTO tasks (id, entity_id, name, status, description,
+                   due_date, priority_id, assigned_to, created_by,
+                   created_at, is_in_outbox, moved_to_outbox_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    new_task_id, adopter_entity_id, task["name"], task["status"],
+                    task.get("description"), task.get("due_date"), new_priority_id,
+                    task.get("assigned_to"), task.get("created_by"),
+                    task.get("created_at", now),
+                    task.get("is_in_outbox", 0), task.get("moved_to_outbox_at"),
                 )
+            )
 
         # Update placement to point at the new copy
         new_root_id = id_map[priority_id]

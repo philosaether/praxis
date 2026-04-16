@@ -81,13 +81,14 @@ class PriorityTree:
                     UNION
                     SELECT p.* FROM priorities p
                     WHERE p.id IN (
-                        WITH RECURSIVE descendants(id) AS (
-                            SELECT pe.child_id FROM priority_edges pe
+                        WITH RECURSIVE descendants(id, depth) AS (
+                            SELECT pe.child_id, 1 FROM priority_edges pe
                             JOIN entity_shares es ON pe.parent_id = es.priority_id
                             WHERE es.shared_with_entity_id = ?
                             UNION ALL
-                            SELECT pe.child_id FROM priority_edges pe
+                            SELECT pe.child_id, d.depth + 1 FROM priority_edges pe
                             JOIN descendants d ON pe.parent_id = d.id
+                            WHERE d.depth < 50
                         )
                         SELECT id FROM descendants
                     )

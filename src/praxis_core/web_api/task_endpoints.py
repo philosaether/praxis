@@ -58,6 +58,18 @@ def _get_owner_user_id(entity_id: str) -> int | None:
         return row["id"] if row else None
 
 
+def _parse_assigned_to(value: str | None) -> int:
+    """Parse assigned_to form value. Returns -1 (don't change), None (unassign), or user ID."""
+    if value is None:
+        return -1
+    if value.strip() in ("", "__unassigned__"):
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return -1
+
+
 # -----------------------------------------------------------------------------
 # Task Permission Helpers
 # -----------------------------------------------------------------------------
@@ -366,16 +378,7 @@ async def update_task_endpoint(
         except ValueError:
             pass
 
-    # Parse assigned_to: "" or "__unassigned__" means unassign, absent means don't change
-    parsed_assigned_to = -1  # sentinel: don't change
-    if assigned_to is not None:
-        if assigned_to.strip() in ("", "__unassigned__"):
-            parsed_assigned_to = None  # unassign
-        else:
-            try:
-                parsed_assigned_to = int(assigned_to)
-            except ValueError:
-                pass
+    parsed_assigned_to = _parse_assigned_to(assigned_to)
 
     update_task(
         task_id,
@@ -503,16 +506,7 @@ async def update_task_properties(
         except ValueError:
             pass
 
-    # Parse assigned_to
-    parsed_assigned_to = -1  # sentinel: don't change
-    if assigned_to is not None:
-        if assigned_to.strip() in ("", "__unassigned__"):
-            parsed_assigned_to = None
-        else:
-            try:
-                parsed_assigned_to = int(assigned_to)
-            except ValueError:
-                pass
+    parsed_assigned_to = _parse_assigned_to(assigned_to)
 
     update_task(
         task_id,
