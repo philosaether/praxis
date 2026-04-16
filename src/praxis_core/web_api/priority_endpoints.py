@@ -246,8 +246,13 @@ async def priority_tree(
             for c in sorted(children, key=_sort_key)
         ]
 
+    serialized_roots = [_serialize_priority(r, current_entity_id=entity_id) for r in roots]
+    owned_roots = [r for r in serialized_roots if r.get("is_owner", True)]
+    shared_roots = [r for r in serialized_roots if r.get("is_shared_with_me")]
+
     return {
-        "roots": [_serialize_priority(r, current_entity_id=entity_id) for r in roots],
+        "roots": owned_roots,
+        "shared_roots": shared_roots,
         "children_map": children_map,
     }
 

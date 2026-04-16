@@ -92,6 +92,28 @@
   }
 }
 
+.coworking-meta {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.meta-chip {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  background: $bg-tertiary;
+  padding: 2px $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.assignee-chip {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  background: $bg-tertiary;
+  padding: 1px $spacing-xs;
+  border-radius: $radius-sm;
+}
+
 .detail-header {
   margin-bottom: $spacing-xl;
 

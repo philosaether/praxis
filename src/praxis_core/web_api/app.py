@@ -262,6 +262,16 @@ def serialize_task(
         ],
     }
 
+    # Resolve assignee/creator usernames
+    if t.assigned_to or t.created_by:
+        from praxis_core.persistence.user_repo import get_user as _get_user
+        if t.assigned_to:
+            assignee = _get_user(t.assigned_to)
+            data["assigned_to_username"] = assignee.username if assignee else None
+        if t.created_by:
+            creator = _get_user(t.created_by)
+            data["created_by_username"] = creator.username if creator else None
+
     # Outbox fields
     data["is_in_outbox"] = t.is_in_outbox
     if t.moved_to_outbox_at:

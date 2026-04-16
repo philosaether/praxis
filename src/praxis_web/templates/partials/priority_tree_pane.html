@@ -18,6 +18,19 @@
         </div>
         {% endfor %}
     </div>
+
+    {% if shared_roots %}
+    <div class="tree-section-divider">
+        <span class="tree-section-label">shared with me</span>
+    </div>
+    <div class="tree-container" id="shared-priority-tree">
+        {% for root in shared_roots %}
+            {% with node=root, depth=0 %}
+                {% include "partials/priority_tree_node.html" %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 
 <script>

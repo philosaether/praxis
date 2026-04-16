@@ -2977,6 +2977,28 @@ a:hover {
   opacity: 0.85;
 }
 
+.coworking-meta {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.meta-chip {
+  font-size: 0.85rem;
+  color: #7a7976;
+  background: #ebe8e2;
+  padding: 2px 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.assignee-chip {
+  font-size: 0.75rem;
+  color: #7a7976;
+  background: #ebe8e2;
+  padding: 1px 0.25rem;
+  border-radius: 0.25rem;
+}
+
 .detail-header {
   margin-bottom: 1.5rem;
 }
@@ -3688,6 +3710,19 @@ textarea.property-input {
   font-family: "Noto Serif", Georgia, "Times New Roman", serif;
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+.tree-section-divider {
+  margin: 1rem 0 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(208, 197, 175, 0.4);
+}
+
+.tree-section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a7976;
 }
 
 .tree-container {

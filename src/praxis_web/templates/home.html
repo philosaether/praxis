@@ -600,6 +600,10 @@
         fetch('/priorities/' + priorityId + '/tree-node')
             .then(response => response.text())
             .then(html => {
+                // Remove empty state if present
+                const emptyState = treeContainer.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
+
                 // Create a temporary container to parse the HTML
                 const temp = document.createElement('div');
                 temp.innerHTML = html;
@@ -988,8 +992,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                var refreshId = sharePriorityId;
                 closeShareModal();
-                // Could show a success message here
+                // Refresh the priority detail to update the share banner
+                htmx.ajax('GET', '/priorities/' + refreshId, {target: '#detail-pane', swap: 'innerHTML'});
             } else {
                 alert(data.error || 'Failed to share priority');
             }

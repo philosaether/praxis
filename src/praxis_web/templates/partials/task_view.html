@@ -21,6 +21,16 @@
             {% endif %}
         </div>
 
+        <!-- Coworking metadata (only shown when creator != assignee) -->
+        {% if task.assigned_to_username and task.assigned_to != task.created_by %}
+        <div class="coworking-meta">
+            {% if task.created_by_username %}
+            <span class="meta-chip">created by {{ task.created_by_username }}</span>
+            {% endif %}
+            <span class="meta-chip">assigned to {{ task.assigned_to_username }}</span>
+        </div>
+        {% endif %}
+
         <!-- Tags -->
         <div class="task-tags-section">
             <div id="task-tags-{{ task.id }}" class="task-tags"
