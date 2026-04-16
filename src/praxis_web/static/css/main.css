@@ -351,6 +351,22 @@ a:hover {
   border-radius: 0 0.25rem 0.25rem 0;
 }
 
+.notification-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  color: #fbf9f5;
+  background: #735c00;
+  border-radius: 8px;
+}
+
 .mode-nav-icon {
   font-size: 1.25rem;
   line-height: 1;
@@ -369,9 +385,6 @@ a:hover {
 }
 .mode-nav-icon--rules::before {
   content: "⚖";
-}
-.mode-nav-icon--outbox::before {
-  content: "🗑";
 }
 .mode-nav-icon--triggers::before {
   content: "⏰";
@@ -608,6 +621,56 @@ a:hover {
 }
 
 .friend-email {
+  font-size: 0.85rem;
+  color: #7a7976;
+}
+
+.friend-status {
+  font-size: 0.85rem;
+  color: #7a7976;
+  font-style: italic;
+}
+
+.friends-section {
+  margin-bottom: 0.75rem;
+}
+
+.friends-section-header {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a7976;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
+}
+
+.request-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.notification-row {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
+}
+.notification-row.accepted {
+  background: rgba(115, 92, 0, 0.05);
+}
+
+.notification-text {
+  font-size: 0.85rem;
+  color: #4a4a48;
+}
+
+.friend-request-sent {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #7a7976;
+  font-style: italic;
+}
+
+.search-empty {
+  padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
   color: #7a7976;
 }
@@ -1510,91 +1573,6 @@ a:hover {
   opacity: 1;
 }
 
-/* Action Card */
-.action-card {
-  border: 1px solid #d0c5af;
-  border-radius: 0.75rem;
-  background: white;
-  margin-bottom: 0.75rem;
-}
-.action-card__header {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  background: #f5f3ef;
-  border-bottom: 1px solid #e8e4dc;
-}
-.action-card__badge {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-}
-.action-card__btn--change {
-  margin-right: auto;
-}
-.action-card__badge--schedule {
-  background: #ece0f5;
-  color: #7c5cad;
-}
-.action-card__badge--event {
-  background: #d6f0ee;
-  color: #2a7d75;
-}
-.action-card__badge--create {
-  background: #f5dfe0;
-  color: #994d5a;
-}
-.action-card__badge--collate {
-  background: #f5ecd6;
-  color: #7d6b3a;
-}
-.action-card__controls {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-}
-.action-card__btn {
-  background: none;
-  border: none;
-  font-size: 0.75rem;
-  color: #7a7976;
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  border-radius: 0.25rem;
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-}
-.action-card__btn:hover {
-  background: #ebe8e2;
-  color: #4a4a48;
-}
-.action-card__btn--delete {
-  color: #a04050;
-}
-.action-card__btn--delete:hover {
-  background: #fde8e8;
-  color: #8c0d27;
-}
-
-/* View mode: display sentence */
-.action-card__summary {
-  padding: 0.75rem;
-}
-.action-card--view .chip-trigger {
-  background: transparent;
-  padding: 0;
-  cursor: default;
-}
-.action-card--view .chip-trigger:hover {
-  border-color: transparent;
-}
-
-/* Edit mode: chip sentence */
-.action-card__editor {
-  padding: 0.75rem;
-}
-
 .add-action-btn {
   margin-top: 0.5rem;
 }
@@ -1614,13 +1592,12 @@ a:hover {
 }
 
 .yaml-status {
-  font-size: 0.8rem;
-  opacity: 0.7;
+  font-size: 0.85rem;
 }
-.yaml-status--saved {
+.yaml-status.success {
   color: #2e7d32;
 }
-.yaml-status--error {
+.yaml-status.error {
   color: #8c0d27;
 }
 
@@ -1739,67 +1716,6 @@ a:hover {
   height: 100%;
   background: #d4af37;
   transition: width 0.3s ease;
-}
-
-/* Compact wizard (chipset-era replacement) */
-.wizard-modal--compact {
-  max-width: 380px;
-}
-.wizard-modal--compact .modal-body {
-  padding: 1rem;
-}
-
-.wizard-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-.wizard-grid__heading {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #7a7976;
-}
-.wizard-grid__group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-.wizard-grid__option {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  width: 100%;
-  padding: 0.625rem 0.75rem;
-  background: #f5f3ef;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-.wizard-grid__option:hover {
-  background: #ebe8e2;
-  border-color: #d0c5af;
-}
-.wizard-grid__icon {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.wizard-grid__icon--create {
-  background: #994d5a;
-}
-.wizard-grid__icon--collate {
-  background: #7d6b3a;
-}
-.wizard-grid__label {
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.95rem;
-  color: #1b1c1a;
 }
 
 .sentence-builder {
@@ -2139,42 +2055,6 @@ a:hover {
   box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
 }
 
-.chip-trigger--collate {
-  background: #f5ecd6;
-  color: #7d6b3a;
-}
-.chip-trigger--collate:hover {
-  border-color: #7d6b3a;
-}
-.chip-trigger--collate:focus, .chip-trigger--collate[aria-expanded=true] {
-  border-color: #7d6b3a;
-  box-shadow: 0 0 0 2px rgba(125, 107, 58, 0.2);
-}
-
-.chip-trigger--event {
-  background: #d6f0ee;
-  color: #2a7d75;
-}
-.chip-trigger--event:hover {
-  border-color: #2a7d75;
-}
-.chip-trigger--event:focus, .chip-trigger--event[aria-expanded=true] {
-  border-color: #2a7d75;
-  box-shadow: 0 0 0 2px rgba(42, 125, 117, 0.2);
-}
-
-.chip-trigger--task {
-  background: #f5dfe0;
-  color: #994d5a;
-}
-.chip-trigger--task:hover {
-  border-color: #994d5a;
-}
-.chip-trigger--task:focus, .chip-trigger--task[aria-expanded=true] {
-  border-color: #994d5a;
-  box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
-}
-
 .chip-add {
   display: inline-flex;
   align-items: center;
@@ -2370,15 +2250,6 @@ a:hover {
   color: #7a7976;
 }
 
-.chip-clause--active > .chip-clause__placeholder {
-  display: none;
-}
-/* When a clause has explicit placeholder text, hide the chip content when inactive.
-   Clauses without placeholder text (e.g. time chip) show the chip itself as the placeholder. */
-.chip-clause:not(.chip-clause--active) > .chip-clause__placeholder:not(:empty) ~ .chip-clause__content {
-  display: none;
-}
-
 .chip-clause__content {
   display: contents;
 }
@@ -2509,296 +2380,6 @@ a:hover {
 .chip-popup__time-field:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(184, 115, 51, 0.2);
-}
-
-.chip-popup__due-custom {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(208, 197, 175, 0.4);
-}
-.chip-popup__due-custom .chip-popup__number-btn {
-  background: #fff3d6;
-  color: #8a5a00;
-}
-.chip-popup__due-custom .chip-popup__number-btn:hover {
-  border-color: #8a5a00;
-}
-.chip-popup__due-custom .chip-popup__number-btn:active {
-  background: #8a5a00;
-  color: white;
-}
-.chip-popup__due-custom .chip-popup__number-field {
-  border-color: #8a5a00;
-  color: #8a5a00;
-}
-.chip-popup__due-custom .chip-popup__number-field:focus {
-  box-shadow: 0 0 0 2px rgba(138, 90, 0, 0.2);
-}
-.chip-popup--priority-picker {
-  min-width: 260px;
-}
-.chip-popup__breadcrumb {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.8rem;
-  color: #7a7976;
-}
-.chip-popup__breadcrumb-segment {
-  cursor: pointer;
-  padding: 0.1rem 0.25rem;
-  border-radius: 0.25rem;
-}
-.chip-popup__breadcrumb-segment:hover {
-  background: #f5f3ef;
-  color: #2a5082;
-}
-.chip-popup__breadcrumb-sep {
-  color: #b0ada8;
-  margin: 0 0.1rem;
-}
-
-.chip-popup__priority-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-.chip-popup__priority-row {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.chip-popup__priority-name {
-  flex: 1;
-  text-align: left;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  background: #d6e5f5;
-  color: #2a5082;
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.chip-popup__priority-name:hover {
-  border-color: #2a5082;
-}
-.chip-popup__priority-drill {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  background: #eef3f9;
-  color: #2a5082;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.chip-popup__priority-drill:hover {
-  border-color: #2a5082;
-  background: #d6e5f5;
-}
-
-.chip-popup__option--task {
-  background: #f5dfe0;
-  color: #994d5a;
-  border-color: transparent;
-}
-.chip-popup__option--task:hover,
-.chip-popup__option--task.selected {
-  border-color: #994d5a;
-}
-.chip-popup__option--task.selected {
-  background: #994d5a;
-  color: white;
-}
-
-.chip-popup__option--collate {
-  background: #f5ecd6;
-  color: #7d6b3a;
-  border-color: transparent;
-}
-.chip-popup__option--chip.chip-popup__option--collate:hover,
-.chip-popup__option--chip.chip-popup__option--collate.selected {
-  border-color: #7d6b3a;
-}
-/* !important needed: generic .chip-popup__option.selected (line ~2129) has
-   an unexplained specificity win in some browsers despite fewer classes.
-   TODO: refactor chip option selected styles to avoid this. */
-.chip-popup__option--chip.chip-popup__option--collate.selected {
-  background: #7d6b3a !important;
-  color: #fff8e6 !important;
-}
-
-.chip-popup__options--collate-target {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.chip-popup__options--collate-target .chip-popup__option {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.125rem;
-}
-.chip-popup__option-label {
-  font-weight: 600;
-}
-.chip-popup__option-desc {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-.chip-popup__options--collate-target .chip-popup__option.selected .chip-popup__option-desc {
-  opacity: 0.85;
-}
-
-.chip-popup__template-vars {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(208, 197, 175, 0.4);
-}
-.chip-popup__options--template-vars {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.chip-popup__option--event {
-  background: #d6f0ee;
-  color: #2a7d75;
-  border-color: transparent;
-}
-.chip-popup__option--event:hover,
-.chip-popup__option--event.selected {
-  border-color: #2a7d75;
-}
-.chip-popup__option--event.selected {
-  background: #2a7d75;
-  color: white;
-}
-
-.chip-popup__options--event-outcome {
-  padding-bottom: 0.5rem;
-}
-
-.chip-popup__event-status-change {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(208, 197, 175, 0.4);
-}
-.chip-popup__options--event-status {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.chip-popup__options--tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding-bottom: 0.5rem;
-}
-.chip-popup__tag-create {
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(208, 197, 175, 0.4);
-}
-.chip-popup__tag-field {
-  width: 100%;
-  height: 28px;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #6b5e4f;
-  border-radius: 0.5rem;
-  background: white;
-  color: #6b5e4f;
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  box-sizing: border-box;
-}
-.chip-popup__tag-field:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(107, 94, 79, 0.2);
-}
-
-.chip-popup__options--due {
-  padding-bottom: 0.5rem;
-}
-.chip-popup__options--due-unit {
-  display: flex;
-  gap: 0.25rem;
-  padding-top: 0.25rem;
-}
-
-.chip-popup__text-input {
-  padding: 0.25rem 0;
-}
-.chip-popup__text-field {
-  width: 100%;
-  min-width: 240px;
-  height: 32px;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #994d5a;
-  border-radius: 0.5rem;
-  background: white;
-  color: #994d5a;
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  box-sizing: border-box;
-}
-.chip-popup__text-field:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
-}
-
-.chip-trigger__text code {
-  font-family: "SF Mono", "Fira Code", monospace;
-  font-size: 0.8em;
-  padding: 0.1em 0.3em;
-  border-radius: 0.25rem;
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.chip-popup__textarea-input {
-  padding: 0.25rem 0;
-}
-.chip-popup__textarea-field {
-  width: 100%;
-  min-width: 280px;
-  padding: 0.5rem;
-  border: 1px solid #994d5a;
-  border-radius: 0.5rem;
-  background: white;
-  color: #994d5a;
-  font-family: "Newsreader", Georgia, "Times New Roman", serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  box-sizing: border-box;
-  resize: vertical;
-}
-.chip-popup__textarea-field:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(153, 77, 90, 0.2);
-}
-.chip-popup__char-count {
-  text-align: right;
-  font-size: 0.75rem;
-  color: #7a7976;
-  padding-top: 0.25rem;
 }
 
 .chip-trigger--placeholder {
@@ -4798,3 +4379,5 @@ body:has(.tree-node-drag) .tree-children:empty::after {
 .htmx-request.htmx-indicator {
   display: inline;
 }
+
+/*# sourceMappingURL=main.css.map */

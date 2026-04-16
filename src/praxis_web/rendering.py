@@ -90,6 +90,10 @@ async def render_full_page(
                 tasks_response = await client.get("/api/tasks")
             tasks_data = tasks_response.json()
 
+        # Fetch friend request notification counts for badge
+        notif_response = await client.get("/api/friend-requests/notifications")
+        notif_data = notif_response.json() if notif_response.status_code == 200 else {"total": 0}
+
     return templates.TemplateResponse(
         request,
         "home.html",
@@ -103,5 +107,6 @@ async def render_full_page(
             "outbox_mode": mode == "outbox",
             "initial_list_html": initial_list_html,
             "initial_detail_html": initial_detail_html,
+            "notification_count": notif_data.get("total", 0),
         }
     )

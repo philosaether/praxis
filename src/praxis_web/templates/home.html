@@ -42,6 +42,9 @@
                 onclick="setMode('friends')"
                 title="Friends">
             <span class="mode-nav-icon mode-nav-icon--friends"></span>
+            {% if notification_count and notification_count > 0 %}
+            <span class="notification-badge">{{ notification_count }}</span>
+            {% endif %}
         </button>
         <button class="mode-nav-btn {% if default_mode == 'rules' %}active{% endif %}"
                 id="rules-nav-btn"

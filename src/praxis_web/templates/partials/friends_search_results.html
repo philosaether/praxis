@@ -1,0 +1,20 @@
+{# Search results for adding friends #}
+{# Expects: results (list of {id, username, created_at}), query #}
+
+{% for user in results %}
+<div class="friend-row search-result" id="search-result-{{ user.id }}">
+    <div class="friend-info">
+        <span class="friend-name">{{ user.username }}</span>
+    </div>
+    <button class="btn btn-sm btn-primary"
+            hx-post="/friends/request/{{ user.id }}"
+            hx-target="#search-result-{{ user.id }}"
+            hx-swap="outerHTML">
+        Add Friend
+    </button>
+</div>
+{% else %}
+{% if query %}
+<div class="search-empty">no users found for "{{ query }}"</div>
+{% endif %}
+{% endfor %}
