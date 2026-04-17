@@ -175,6 +175,12 @@ praxis_web/
 ├── static/
 │   ├── css/
 │   │   └── main.css             — Compiled output (DO NOT EDIT — generated from SCSS)
+│   ├── js/
+│   │   ├── chips.js             — Chip component logic (extracted from inline script)
+│   │   ├── tutorial.js          — 17-step Shepherd.js onboarding tour
+│   │   └── dist/                — esbuild bundled output (DO NOT EDIT — generated from js/)
+│   │       ├── chips.js         — Bundled chip scripts (~23KB)
+│   │       └── tutorial.js      — Bundled tutorial + Shepherd.js (~47KB)
 │   ├── scss/
 │   │   ├── main.scss            — Entry point: @use imports only
 │   │   ├── base/
@@ -210,7 +216,7 @@ praxis_web/
 │   └── images/                  — Static images
 └── templates/                   — Jinja2 templates
 
-Build: `npm run build:css` compiles SCSS → CSS. `npm run watch:css` for dev.
+Build: `npm run build` compiles SCSS → CSS and bundles JS via esbuild. `npm run watch` for dev.
 ```
 
 ---

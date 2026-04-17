@@ -23,7 +23,8 @@ PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["praxis_env"] = PRAXIS_ENV
-templates.env.filters["tojson"] = lambda v: json.dumps(v)
+from markupsafe import Markup
+templates.env.filters["tojson"] = lambda v: Markup(json.dumps(v))
 
 
 def api_client(request: Request | None = None):
@@ -94,6 +95,9 @@ async def render_full_page(
         notif_response = await client.get("/api/friend-requests/notifications")
         notif_data = notif_response.json() if notif_response.status_code == 200 else {"total": 0}
 
+    # New user detection: no priorities (always fetched regardless of mode)
+    is_new_user = len(priorities_data.get("priorities", [])) == 0
+
     return templates.TemplateResponse(
         request,
         "home.html",
@@ -108,5 +112,6 @@ async def render_full_page(
             "initial_list_html": initial_list_html,
             "initial_detail_html": initial_detail_html,
             "notification_count": notif_data.get("total", 0),
+            "is_new_user": is_new_user,
         }
     )

@@ -274,6 +274,25 @@ async def task_save_notes(request: Request, task_id: str):
     )
 
 
+@router.post("/tasks/{task_id}/quick-assign", response_class=HTMLResponse)
+async def task_quick_assign(request: Request, task_id: str):
+    """Quick-assign a task to a priority (inbox triage)."""
+    form = await request.form()
+    priority_id = form.get("priority_id")
+    if not priority_id:
+        return HTMLResponse(content="", status_code=400)
+
+    async with _api_client(request) as client:
+        response = await client.put(
+            f"/api/tasks/{task_id}",
+            json={"priority_id": priority_id}
+        )
+        if response.status_code == 404:
+            return HTMLResponse(content="", status_code=404)
+
+    return HTMLResponse(content="", status_code=204)
+
+
 @router.post("/tasks/{task_id}/toggle", response_class=HTMLResponse)
 async def task_toggle_done(request: Request, task_id: str):
     """Toggle task between done and queued."""

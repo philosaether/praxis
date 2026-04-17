@@ -35,6 +35,7 @@
 @use 'features/action-cards';
 @use 'features/wizard';
 @use 'features/wizard-compact';
+@use 'features/tutorial';
 
 // Mobile (must be last — overrides desktop styles)
 @use 'layout/mobile';

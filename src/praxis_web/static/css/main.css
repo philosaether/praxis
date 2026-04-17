@@ -2481,6 +2481,30 @@ a:hover {
   color: #4a4a48;
 }
 
+.inbox-picker {
+  padding: 0.5rem 1rem;
+  background: #ebe8e2;
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
+}
+.inbox-picker .chip {
+  display: block;
+}
+.inbox-picker .chip-trigger {
+  width: 100%;
+  text-align: left;
+}
+.inbox-picker .chip-popup {
+  position: relative;
+  top: auto;
+  left: auto;
+  margin-top: 0.5rem;
+  width: 100%;
+  min-width: auto;
+}
+.inbox-picker .chip-popup::before {
+  display: none;
+}
+
 .detail-view {
   max-width: 700px;
 }
@@ -5003,6 +5027,191 @@ body:has(.tree-node-drag) .tree-children:empty::after {
   font-family: "Newsreader", Georgia, "Times New Roman", serif;
   font-size: 0.95rem;
   color: #1b1c1a;
+}
+
+.tutorial-active .quick-done {
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.shepherd-element {
+  background: #ffffff;
+  border: 1px solid #d0c5af;
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px rgba(77, 70, 53, 0.1);
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  margin: 0;
+  max-width: 320px;
+  opacity: 0;
+  outline: none;
+  padding: 0;
+  transition: opacity 0.3s, visibility 0.3s;
+  visibility: hidden;
+  width: 100%;
+  z-index: 9999;
+}
+.shepherd-element, .shepherd-element *, .shepherd-element:after, .shepherd-element:before {
+  box-sizing: border-box;
+}
+
+.shepherd-enabled.shepherd-element {
+  opacity: 1;
+  visibility: visible;
+}
+
+.shepherd-element[data-popper-reference-hidden]:not(.shepherd-centered) {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.shepherd-arrow,
+.shepherd-arrow:before {
+  height: 16px;
+  position: absolute;
+  width: 16px;
+  z-index: -1;
+}
+
+.shepherd-arrow:before {
+  background: #ffffff;
+  border: 1px solid #d0c5af;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.shepherd-element[data-popper-placement^=top] > .shepherd-arrow {
+  bottom: -8px;
+}
+
+.shepherd-element[data-popper-placement^=bottom] > .shepherd-arrow {
+  top: -8px;
+}
+
+.shepherd-element[data-popper-placement^=left] > .shepherd-arrow {
+  right: -8px;
+}
+
+.shepherd-element[data-popper-placement^=right] > .shepherd-arrow {
+  left: -8px;
+}
+
+.shepherd-element.shepherd-centered > .shepherd-arrow {
+  opacity: 0;
+}
+
+.shepherd-target-click-disabled.shepherd-enabled.shepherd-target,
+.shepherd-target-click-disabled.shepherd-enabled.shepherd-target * {
+  pointer-events: none;
+}
+
+.shepherd-content {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.shepherd-cancel-icon {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 0.25rem;
+  color: #7a7976;
+  font-size: 1.2rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.shepherd-cancel-icon:hover {
+  color: #1b1c1a;
+  background: #ebe8e2;
+}
+
+.shepherd-header {
+  display: none;
+}
+
+.shepherd-text {
+  padding: 1rem 2rem 1rem 1rem;
+  font-size: 0.85rem;
+  color: #1b1c1a;
+  line-height: 1.6;
+}
+.shepherd-text strong {
+  font-weight: 600;
+  color: #5a4700;
+}
+.shepherd-text p {
+  margin-top: 0;
+}
+.shepherd-text p:last-child {
+  margin-bottom: 0;
+}
+
+.shepherd-footer {
+  padding: 0 1rem 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+.shepherd-footer .shepherd-button:last-child {
+  margin-right: 0;
+}
+
+.shepherd-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 1rem;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(135deg, #735c00 0%, #d4af37 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(77, 70, 53, 0.06);
+}
+.shepherd-button:hover {
+  background: linear-gradient(135deg, #5a4700 0%, #735c00 100%);
+  box-shadow: 0 4px 16px rgba(77, 70, 53, 0.08);
+}
+.shepherd-button:not(:last-child) {
+  margin-right: 0.5rem;
+}
+.shepherd-button:disabled {
+  cursor: not-allowed;
+}
+
+.shepherd-modal-overlay-container {
+  height: 0;
+  left: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  transition: all 0.3s ease-out, height 0s 0.3s, opacity 0.3s 0s;
+  width: 100vw;
+  z-index: 9997;
+}
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  height: 100vh;
+  opacity: 0.4;
+  transform: translateZ(0);
+  transition: all 0.3s ease-out, height 0s 0s, opacity 0.3s 0s;
+}
+.shepherd-modal-overlay-container.shepherd-modal-is-visible path {
+  pointer-events: all;
 }
 
 .mobile-back-btn,

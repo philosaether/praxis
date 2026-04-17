@@ -35,14 +35,44 @@ async def tasks_inbox_page(request: Request):
     """Inbox view - full page or HTMX partial."""
     if is_htmx_request(request):
         async with api_client(request) as client:
-            response = await client.get("/api/tasks", params={"inbox": "true"})
-            data = response.json()
+            tasks_resp = await client.get("/api/tasks", params={"inbox": "true"})
+            data = tasks_resp.json()
+            # Fetch priority tree for inline triage picker
+            tree_resp = await client.get("/api/priorities/tree")
+            tree_data = tree_resp.json()
+        priority_tree = _build_picker_tree(tree_data)
         return templates.TemplateResponse(
             request,
             "partials/task_rows.html",
-            {"tasks": data["tasks"], "priorities": data.get("priorities", [])}
+            {
+                "tasks": data["tasks"],
+                "priorities": data.get("priorities", []),
+                "inbox_mode": True,
+                "priority_tree": priority_tree,
+            }
         )
     return await render_full_page(request, mode="inbox")
+
+
+def _build_picker_tree(tree_data: dict) -> list[dict]:
+    """Build priority picker tree from API /tree response.
+
+    API returns: {roots: [...], shared_roots: [...], children_map: {parent_id: [...]}}
+    Picker needs: [{name, id, children: [{name, id, children: [...]}]}]
+    """
+    children_map = tree_data.get("children_map", {})
+
+    def build_node(priority: dict) -> dict:
+        pid = str(priority["id"])
+        children = children_map.get(pid, [])
+        return {
+            "name": priority["name"],
+            "id": priority["id"],
+            "children": [build_node(c) for c in children],
+        }
+
+    roots = tree_data.get("roots", [])
+    return [build_node(r) for r in roots]
 
 
 @router.get("/tasks/outbox", response_class=HTMLResponse)
