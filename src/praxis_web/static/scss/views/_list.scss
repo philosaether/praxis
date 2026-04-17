@@ -190,3 +190,36 @@
     }
   }
 }
+
+// -----------------------------------------------------------------------------
+// Inbox Triage Picker
+// -----------------------------------------------------------------------------
+
+.inbox-picker {
+  padding: $spacing-sm $spacing-lg;
+  background: $bg-tertiary;
+  border-bottom: 1px solid $border-subtle;
+
+  // The chip inside needs relative positioning for its popup
+  .chip {
+    display: block;
+  }
+
+  .chip-trigger {
+    width: 100%;
+    text-align: left;
+  }
+
+  .chip-popup {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-top: $spacing-sm;
+    width: 100%;
+    min-width: auto;
+
+    &::before {
+      display: none;  // no arrow — picker is inline
+    }
+  }
+}

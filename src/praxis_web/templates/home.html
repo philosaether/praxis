@@ -218,7 +218,8 @@
                 <button class="btn btn-primary btn-sm"
                         hx-get="/tasks/new"
                         hx-target="#detail-content"
-                        hx-swap="innerHTML">
+                        hx-swap="innerHTML"
+                        onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
                     + New Task
                 </button>
             </div>
@@ -226,13 +227,14 @@
                 <button class="btn btn-primary btn-sm"
                         hx-get="/priorities/new"
                         hx-target="#detail-content"
-                        hx-swap="innerHTML">
+                        hx-swap="innerHTML"
+                        onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
                     + New Priority
                 </button>
                 <button class="btn btn-secondary btn-sm mobile-only"
                         id="mobile-tree-toggle"
                         onclick="mobileTogglePriorityView()">
-                    view as tree
+                    view as list
                 </button>
             </div>
             <div id="add-friend-bar" style="display: {% if default_mode == 'friends' %}flex{% else %}none{% endif %};">
@@ -244,7 +246,8 @@
                 <button class="btn btn-primary btn-sm"
                         hx-get="/rules/new"
                         hx-target="#detail-content"
-                        hx-swap="innerHTML">
+                        hx-swap="innerHTML"
+                        onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
                     + New Rule
                 </button>
                 <button class="btn btn-secondary btn-sm"
@@ -330,6 +333,58 @@
         document.querySelector('.container').classList.remove('mobile-detail');
     };
 
+    // Inbox triage: toggle inline priority picker beneath a task row
+    window.toggleInboxPicker = function(row, taskId) {
+        var picker = document.getElementById('inbox-picker-' + taskId);
+        if (!picker) return;
+
+        // Close any other open pickers
+        document.querySelectorAll('.inbox-picker.open').forEach(function(p) {
+            if (p !== picker) {
+                p.style.display = 'none';
+                p.classList.remove('open');
+            }
+        });
+
+        // Toggle this picker
+        var isOpen = picker.classList.contains('open');
+        if (isOpen) {
+            picker.style.display = 'none';
+            picker.classList.remove('open');
+        } else {
+            picker.style.display = 'block';
+            picker.classList.add('open');
+        }
+    };
+
+    // Inbox triage: handle priority selection — assign task and remove row
+    document.addEventListener('prioritySelected', function(event) {
+        var picker = event.target.closest('.inbox-picker');
+        if (!picker) return;
+
+        var taskId = picker.dataset.taskId;
+        var priorityId = event.detail.priorityId;
+        if (!taskId || !priorityId) return;
+
+        // POST quick-assign
+        fetch('/tasks/' + taskId + '/quick-assign', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'priority_id=' + encodeURIComponent(priorityId)
+        }).then(function(response) {
+            if (response.ok) {
+                // Remove the task row and picker with a fade-out
+                var row = document.getElementById('task-row-' + taskId);
+                if (row) {
+                    row.style.transition = 'opacity 0.3s ease';
+                    row.style.opacity = '0';
+                    setTimeout(function() { row.remove(); }, 300);
+                }
+                picker.remove();
+            }
+        });
+    });
+
     // Mobile: toggle priority list/tree view
     window.mobileTogglePriorityView = function() {
         var btn = document.getElementById('mobile-tree-toggle');
@@ -375,9 +430,14 @@
 
         // Update detail pane based on mode
         if (mode === 'priorities') {
-            // On mobile, load tree into left pane; on desktop, into detail pane
-            var treeTarget = window.innerWidth <= 768 ? '#item-list' : '#detail-content';
-            htmx.ajax('GET', '/priorities/tree-pane', {target: treeTarget, swap: 'innerHTML'});
+            // Tree is always the primary priorities view
+            // Mobile: tree replaces the item list (single pane)
+            // Desktop: tree loads into detail pane (right side), list stays in left pane
+            if (window.innerWidth <= 768) {
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+            } else {
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
+            }
         } else if (mode === 'friends') {
             // Friends mode: left-pane only, clear detail pane
             document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
@@ -404,7 +464,7 @@
 
     window.openQuickAdd = async function(priorityId) {
         const backdrop = document.getElementById('quick-add-backdrop');
-        const select = document.getElementById('qa-priority');
+        const select = document.getElementById('quick-add-priority');
 
         // Fetch fresh priorities (in case user created new ones)
         try {
@@ -443,7 +503,7 @@
     window.handleQuickAddResponse = function(event) {
         if (event.detail.successful) {
             // Get the priority ID from the form (in case user changed it)
-            const select = document.getElementById('qa-priority');
+            const select = document.getElementById('quick-add-priority');
             const priorityId = select ? select.value : currentQuickAddPriorityId;
 
             closeQuickAdd();
@@ -475,9 +535,9 @@
         const form = document.querySelector('#quick-add-priority-backdrop form');
         if (form) form.reset();
         // Reset type-specific fields to initiative defaults (none)
-        const typeFieldsContainer = document.getElementById('qap-type-fields');
+        const typeFieldsContainer = document.getElementById('quick-add-priority-type-fields');
         if (typeFieldsContainer) {
-            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=initiative', {target: '#qap-type-fields', swap: 'innerHTML'});
+            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=initiative', {target: '#quick-add-priority-type-fields', swap: 'innerHTML'});
         }
     };
 
@@ -812,7 +872,7 @@
         closeTreeContextMenu();
 
         // Open the quick-add priority modal with parent pre-selected
-        const parentSelect = document.getElementById('qap-parent');
+        const parentSelect = document.getElementById('quick-add-priority-parent');
         if (parentSelect) {
             parentSelect.value = treeMenuTarget.id;
         }

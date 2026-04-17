@@ -29,7 +29,7 @@ def _build_priority_tree(graph) -> list[dict]:
             child = graph.nodes.get(cid)
             if child:
                 children.append(build_node(child))
-        return {"name": priority.name, "children": children}
+        return {"name": priority.name, "id": priority.id, "children": children}
 
     return [build_node(r) for r in sorted(roots, key=lambda p: p.name)]
 

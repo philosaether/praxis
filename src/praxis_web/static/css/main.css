@@ -2481,6 +2481,30 @@ a:hover {
   color: #4a4a48;
 }
 
+.inbox-picker {
+  padding: 0.5rem 1rem;
+  background: #ebe8e2;
+  border-bottom: 1px solid rgba(208, 197, 175, 0.4);
+}
+.inbox-picker .chip {
+  display: block;
+}
+.inbox-picker .chip-trigger {
+  width: 100%;
+  text-align: left;
+}
+.inbox-picker .chip-popup {
+  position: relative;
+  top: auto;
+  left: auto;
+  margin-top: 0.5rem;
+  width: 100%;
+  min-width: auto;
+}
+.inbox-picker .chip-popup::before {
+  display: none;
+}
+
 .detail-view {
   max-width: 700px;
 }

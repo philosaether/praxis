@@ -1,9 +1,17 @@
 {
   "dependencies": {
-    "sass": "^1.98.0"
+    "sass": "^1.98.0",
+    "shepherd.js": "^15.2.2"
   },
   "scripts": {
     "build:css": "sass src/praxis_web/static/scss/main.scss src/praxis_web/static/css/main.css --no-source-map",
-    "watch:css": "sass --watch src/praxis_web/static/scss/main.scss src/praxis_web/static/css/main.css --no-source-map"
+    "watch:css": "sass --watch src/praxis_web/static/scss/main.scss src/praxis_web/static/css/main.css --no-source-map",
+    "build:js": "esbuild src/praxis_web/static/js/chips.js src/praxis_web/static/js/tutorial.js --bundle --outdir=src/praxis_web/static/js/dist --minify --format=iife",
+    "watch:js": "esbuild src/praxis_web/static/js/chips.js src/praxis_web/static/js/tutorial.js --bundle --outdir=src/praxis_web/static/js/dist --watch --format=iife",
+    "build": "npm run build:css && npm run build:js",
+    "watch": "npm run watch:css & npm run watch:js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }

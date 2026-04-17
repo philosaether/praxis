@@ -23,7 +23,8 @@ PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["praxis_env"] = PRAXIS_ENV
-templates.env.filters["tojson"] = lambda v: json.dumps(v)
+from markupsafe import Markup
+templates.env.filters["tojson"] = lambda v: Markup(json.dumps(v))
 
 
 def api_client(request: Request | None = None):
