@@ -54,7 +54,7 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'name-task',
-    attachTo: { element: '#quick-add-name', on: 'bottom' },
+    attachTo: { element: '#quick-add-backdrop .modal', on: 'bottom' },
     text: 'Give your task a name, then click "Add Task."',
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
@@ -115,6 +115,7 @@ function startTutorial() {
   tour.addStep({
     id: 'edit-mode',
     attachTo: { element: '#detail-content .actions-left .btn-primary', on: 'bottom' },
+    canClickTarget: false,
     text: 'Later on, you can use Edit Mode to add details to your task. For now, let\'s keep moving.',
     buttons: [{ text: 'Good idea', action: tour.next }],
     beforeShowPromise: () => new Promise(resolve => {

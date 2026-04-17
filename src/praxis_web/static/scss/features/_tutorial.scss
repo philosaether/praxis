@@ -1,5 +1,5 @@
 // =============================================================================
-// Tutorial — Shepherd.js overrides + tutorial-active state
+// Tutorial — Shepherd.js theme + structural overrides
 // =============================================================================
 @use '../base/variables' as *;
 
@@ -11,35 +11,146 @@
   }
 }
 
-// Shepherd.js theme overrides — match Alchemist's Folio
+// =============================================================================
+// Shepherd.js structural styles (replaces shepherd.css)
+// =============================================================================
+
+// Element visibility + transitions
 .shepherd-element {
-  max-width: 340px;
-  border-radius: $radius-lg;
+  background: $bg-elevated;
   border: 1px solid $border;
+  border-radius: $radius-lg;
   box-shadow: $shadow-lg;
   font-family: $font-family-body;
-  z-index: 200;
+  margin: 0;
+  max-width: 320px;
+  opacity: 0;
+  outline: none;
+  padding: 0;
+  transition: opacity 0.3s, visibility 0.3s;
+  visibility: hidden;
+  width: 100%;
+  z-index: 9999;
+
+  &, *, &:after, &:before {
+    box-sizing: border-box;
+  }
 }
 
+.shepherd-enabled.shepherd-element {
+  opacity: 1;
+  visibility: visible;
+}
+
+.shepherd-element[data-popper-reference-hidden]:not(.shepherd-centered) {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+// Arrow
+.shepherd-arrow,
+.shepherd-arrow:before {
+  height: 16px;
+  position: absolute;
+  width: 16px;
+  z-index: -1;
+}
+
+.shepherd-arrow:before {
+  background: $bg-elevated;
+  border: 1px solid $border;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.shepherd-element[data-popper-placement^="top"] > .shepherd-arrow { bottom: -8px; }
+.shepherd-element[data-popper-placement^="bottom"] > .shepherd-arrow { top: -8px; }
+.shepherd-element[data-popper-placement^="left"] > .shepherd-arrow { right: -8px; }
+.shepherd-element[data-popper-placement^="right"] > .shepherd-arrow { left: -8px; }
+.shepherd-element.shepherd-centered > .shepherd-arrow { opacity: 0; }
+
+// Click-disabled target
+.shepherd-target-click-disabled.shepherd-enabled.shepherd-target,
+.shepherd-target-click-disabled.shepherd-enabled.shepherd-target * {
+  pointer-events: none;
+}
+
+// =============================================================================
+// Shepherd.js theme — Alchemist's Folio
+// =============================================================================
+
+// Content wrapper
+.shepherd-content {
+  position: relative;
+  border-radius: $radius-lg;
+  overflow: hidden;
+}
+
+// Cancel (X) button
+.shepherd-cancel-icon {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: $radius-sm;
+  color: $text-muted;
+  font-size: 1.2rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $text-primary;
+    background: $bg-tertiary;
+  }
+}
+
+// Header — hidden (we embed titles in text)
+.shepherd-header {
+  display: none;
+}
+
+// Text content
 .shepherd-text {
-  padding: $spacing-lg;
-  font-size: $font-size-base;
+  padding: $spacing-lg $spacing-2xl $spacing-lg $spacing-lg;
+  font-size: $font-size-sm;
   color: $text-primary;
   line-height: $line-height;
 
   strong {
     font-weight: 600;
+    color: $accent-dim;
+  }
+
+  p {
+    margin-top: 0;
+    &:last-child { margin-bottom: 0; }
   }
 }
 
-.shepherd-header {
-  display: none; // We embed titles in text content instead
-}
-
+// Footer
 .shepherd-footer {
   padding: 0 $spacing-lg $spacing-lg;
+  display: flex;
+  justify-content: flex-end;
+
+  .shepherd-button:last-child {
+    margin-right: 0;
+  }
 }
 
+// Buttons — gold gradient
 .shepherd-button {
   padding: $spacing-sm $spacing-lg;
   border: none;
@@ -51,32 +162,43 @@
   transition: all $transition-base;
   background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
   color: white;
+  box-shadow: $shadow-sm;
 
   &:hover {
     background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
+    box-shadow: $shadow-md;
   }
 
   &:not(:last-child) {
     margin-right: $spacing-sm;
   }
-}
 
-.shepherd-cancel-icon {
-  color: $text-muted;
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  position: absolute;
-  top: $spacing-sm;
-  right: $spacing-sm;
-
-  &:hover {
-    color: $text-primary;
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
-// Modal overlay
+// Modal overlay — warm tint
 .shepherd-modal-overlay-container {
-  z-index: 150;
+  height: 0;
+  left: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  transition: all 0.3s ease-out, height 0s 0.3s, opacity 0.3s 0s;
+  width: 100vw;
+  z-index: 9997;
+
+  &.shepherd-modal-is-visible {
+    height: 100vh;
+    opacity: 0.4;
+    transform: translateZ(0);
+    transition: all 0.3s ease-out, height 0s 0s, opacity 0.3s 0s;
+
+    path {
+      pointer-events: all;
+    }
+  }
 }
