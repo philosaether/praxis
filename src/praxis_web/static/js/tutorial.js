@@ -14,6 +14,35 @@ function startTutorial() {
   // Track state across steps
   let createdPriorityName = '';
 
+  // Track active listeners for cleanup on cancel
+  const activeListeners = [];
+
+  function addTrackedListener(target, event, handler) {
+    target.addEventListener(event, handler);
+    activeListeners.push({ target, event, handler });
+  }
+
+  function removeAllListeners() {
+    for (const { target, event, handler } of activeListeners) {
+      target.removeEventListener(event, handler);
+    }
+    activeListeners.length = 0;
+  }
+
+  // Poll helper with timeout guard (10s max)
+  function pollFor(conditionFn, resolve, intervalMs) {
+    const start = Date.now();
+    const check = setInterval(() => {
+      if (conditionFn()) {
+        clearInterval(check);
+        resolve();
+      } else if (Date.now() - start > 10000) {
+        clearInterval(check);
+        resolve(); // Don't hang — advance even if condition isn't met
+      }
+    }, intervalMs || 100);
+  }
+
   const tour = new Shepherd.Tour({
     useModalOverlay: true,
     defaultStepOptions: {
@@ -26,8 +55,14 @@ function startTutorial() {
   });
 
   // When tour completes or is cancelled, clean up
-  tour.on('complete', () => container.classList.remove('tutorial-active'));
-  tour.on('cancel', () => container.classList.remove('tutorial-active'));
+  tour.on('complete', () => {
+    container.classList.remove('tutorial-active');
+    removeAllListeners();
+  });
+  tour.on('cancel', () => {
+    container.classList.remove('tutorial-active');
+    removeAllListeners();
+  });
 
   // =========================================================================
   // Step 1: Orient
@@ -58,23 +93,18 @@ function startTutorial() {
     text: 'Give your task a name, then click "Add Task."',
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for the modal to open and the input to exist
-      const check = setInterval(() => {
+      pollFor(() => {
         const input = document.getElementById('quick-add-name');
-        if (input && input.offsetParent !== null) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+        return input && input.offsetParent !== null;
+      }, resolve);
     }),
     when: {
       show: () => {
-        // Advance when task is created
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
           tour.next();
         };
-        document.body.addEventListener('taskCreated', handler);
+        addTrackedListener(document.body, 'taskCreated', handler);
       },
     },
   });
@@ -88,13 +118,7 @@ function startTutorial() {
     text: 'This is your task queue. Later on, you can customize it so it only shows you tasks you want to work on.',
     buttons: [{ text: 'Ok, cool', action: tour.next }],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for the task row to appear after modal closes
-      const check = setInterval(() => {
-        if (document.querySelector('.task-row')) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+      pollFor(() => !!document.querySelector('.task-row'), resolve);
     }),
   });
 
@@ -119,14 +143,10 @@ function startTutorial() {
     text: 'Later on, you can use Edit Mode to add details to your task. For now, let\'s keep moving.',
     buttons: [{ text: 'Good idea', action: tour.next }],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for detail pane to load AND be visible
-      const check = setInterval(() => {
+      pollFor(() => {
         const btn = document.querySelector('#detail-content .actions-left .btn-primary');
-        if (btn && btn.offsetParent !== null) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+        return btn && btn.offsetParent !== null;
+      }, resolve);
     }),
   });
 
@@ -151,13 +171,7 @@ function startTutorial() {
     advanceOn: { selector: '#fab-button', event: 'click' },
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for priorities mode to load
-      const check = setInterval(() => {
-        if (window.currentMode === 'priorities') {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+      pollFor(() => window.currentMode === 'priorities', resolve);
     }),
   });
 
@@ -177,13 +191,10 @@ function startTutorial() {
       },
     }],
     beforeShowPromise: () => new Promise(resolve => {
-      const check = setInterval(() => {
+      pollFor(() => {
         const input = document.getElementById('quick-add-priority-name');
-        if (input && input.offsetParent !== null) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+        return input && input.offsetParent !== null;
+      }, resolve);
     }),
   });
 
@@ -205,14 +216,10 @@ function startTutorial() {
     }),
     when: {
       show: () => {
-        // Poll for the priority modal's details element to open
-        const check = setInterval(() => {
+        pollFor(() => {
           const details = document.querySelector('.priority-modal .more-options');
-          if (details && details.open) {
-            clearInterval(check);
-            tour.next();
-          }
-        }, 200);
+          return details && details.open;
+        }, () => tour.next(), 200);
       },
     },
   });
@@ -235,7 +242,7 @@ function startTutorial() {
               tour.next();
             }
           };
-          select.addEventListener('change', handler);
+          addTrackedListener(select, 'change', handler);
         }
       },
     },
@@ -255,7 +262,7 @@ function startTutorial() {
           document.body.removeEventListener('priorityCreated', handler);
           tour.next();
         };
-        document.body.addEventListener('priorityCreated', handler);
+        addTrackedListener(document.body, 'priorityCreated', handler);
       },
     },
   });
@@ -269,14 +276,9 @@ function startTutorial() {
     text: 'As you add more priorities, you can organize them here by dragging. Whatever\'s on top gets the most attention in your task queue.',
     buttons: [{ text: 'Cool!', action: tour.next }],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for tree to render (priority was just created)
-      const check = setInterval(() => {
-        const tree = document.querySelector('.tree-pane') || document.querySelector('.tree-node');
-        if (tree) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 200);
+      pollFor(() => {
+        return document.querySelector('.tree-pane') || document.querySelector('.tree-node');
+      }, resolve, 200);
     }),
   });
 
@@ -300,24 +302,20 @@ function startTutorial() {
     text: 'Unprioritized tasks will always show up here, so you know where to find them. Go ahead and click that task to give it a home.',
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for inbox to load
-      const check = setInterval(() => {
-        if (window.currentMode === 'inbox' && document.querySelector('.task-row')) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+      pollFor(() => {
+        return window.currentMode === 'inbox' && document.querySelector('.task-row');
+      }, resolve);
     }),
     when: {
       show: () => {
-        // Advance when user clicks a task row (opens the picker)
+        const itemList = document.getElementById('item-list');
         const handler = (e) => {
           if (e.target.closest('.task-row')) {
-            document.getElementById('item-list').removeEventListener('click', handler);
+            itemList.removeEventListener('click', handler);
             tour.next();
           }
         };
-        document.getElementById('item-list').addEventListener('click', handler);
+        addTrackedListener(itemList, 'click', handler);
       },
     },
   });
@@ -331,23 +329,15 @@ function startTutorial() {
     text: 'Select your priority to file this task.',
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
-      // Wait for picker to open
-      const check = setInterval(() => {
-        const picker = document.querySelector('.inbox-picker.open');
-        if (picker) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 100);
+      pollFor(() => !!document.querySelector('.inbox-picker.open'), resolve);
     }),
     when: {
       show: () => {
-        // Advance when priority is selected (task vanishes)
         const handler = () => {
           document.removeEventListener('prioritySelected', handler);
           setTimeout(() => tour.next(), 400); // Wait for fade-out animation
         };
-        document.addEventListener('prioritySelected', handler);
+        addTrackedListener(document, 'prioritySelected', handler);
       },
     },
   });

@@ -381,7 +381,15 @@
                     setTimeout(function() { row.remove(); }, 300);
                 }
                 picker.remove();
+            } else {
+                // Close picker on failure — task stays in inbox
+                picker.style.display = 'none';
+                picker.classList.remove('open');
             }
+        }).catch(function() {
+            // Network error — close picker, task stays in inbox
+            picker.style.display = 'none';
+            picker.classList.remove('open');
         });
     });
 
