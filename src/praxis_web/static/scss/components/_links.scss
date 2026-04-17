@@ -1,0 +1,146 @@
+// =============================================================================
+// Links List, Friends List, Invites
+// =============================================================================
+@use '../base/variables' as *;
+
+// -----------------------------------------------------------------------------
+// Links List
+// -----------------------------------------------------------------------------
+
+.links-list {
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid $border;
+  }
+
+  .badge-wrapper {
+    flex-shrink: 0;
+    min-width: 6.5rem;
+  }
+
+  a {
+    color: $accent;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Friends List
+// -----------------------------------------------------------------------------
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+  transition: background $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.friend-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.friend-name {
+  font-size: $font-size-base;
+  color: $text-primary;
+  font-weight: 500;
+}
+
+.friend-email {
+  font-size: $font-size-sm;
+  color: $text-muted;
+}
+
+.friend-status {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  font-style: italic;
+}
+
+.friends-section {
+  margin-bottom: $spacing-md;
+}
+
+.friends-section-header {
+  font-size: $font-size-xs;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $text-muted;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+}
+
+.request-actions {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.notification-row {
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+
+  &.accepted {
+    background: rgba($accent, 0.05);
+  }
+}
+
+.notification-text {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+.friend-request-sent {
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-sm;
+  color: $text-muted;
+  font-style: italic;
+}
+
+.search-empty {
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-sm;
+  color: $text-muted;
+}
+
+// -----------------------------------------------------------------------------
+// Invite Modal
+// -----------------------------------------------------------------------------
+
+.invite-modal {
+  max-width: 480px;
+}
+
+.invite-link-container {
+  display: flex;
+  gap: $spacing-sm;
+
+  input {
+    flex: 1;
+  }
+}
+
+.invite-instructions {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-top: $spacing-sm;
+}

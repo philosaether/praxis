@@ -1,7 +1,7 @@
 // =============================================================================
 // Mode Navigation (Activity Bar)
 // =============================================================================
-@use 'variables' as *;
+@use '../base/variables' as *;
 
 // -----------------------------------------------------------------------------
 // Variables
@@ -16,7 +16,8 @@ $mode-icons: (
   priorities: "\2605", // star
   friends: "\263A",    // smiley face
   rules: "\2696",      // scales (balance/rules)
-  triggers: "\23F0"    // alarm clock (automation)
+  triggers: "\23F0",   // alarm clock (automation)
+  outbox: "\1F5D1"     // wastebasket (outbox/trash)
 );
 
 // -----------------------------------------------------------------------------
@@ -119,41 +120,44 @@ $mode-icons: (
 }
 
 // -----------------------------------------------------------------------------
-// Mobile Bottom Nav (future - uncomment when implementing)
+// Mobile Bottom Nav
 // -----------------------------------------------------------------------------
-// @media (max-width: $breakpoint-md) {
-//   .mode-nav {
-//     position: fixed;
-//     bottom: 0;
-//     left: 0;
-//     right: 0;
-//     width: 100%;
-//     height: 56px;
-//     flex-direction: row;
-//     justify-content: space-around;
-//     border-right: none;
-//     border-top: 1px solid $border;
-//     z-index: 100;
-//   }
-//
-//   .mode-nav-btn {
-//     width: auto;
-//     flex: 1;
-//     max-width: 80px;
-//     flex-direction: column;
-//
-//     &.active::before {
-//       // Top bar instead of left
-//       left: 50%;
-//       top: 0;
-//       transform: translateX(-50%);
-//       width: 24px;
-//       height: 3px;
-//       border-radius: $radius-sm $radius-sm 0 0;
-//     }
-//   }
-//
-//   .mode-nav-label {
-//     display: block;
-//   }
-// }
+@media (max-width: $breakpoint-md) {
+  .mode-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 56px;
+    flex-direction: row;
+    justify-content: space-around;
+    border-right: none;
+    border-top: 1px solid $border;
+    background: $bg-tertiary;
+    z-index: 100;
+  }
+
+  .mode-nav-btn {
+    width: auto;
+    flex: 1;
+    max-width: 80px;
+    height: 100%;
+    flex-direction: column;
+    border-radius: 0;
+
+    &.active::before {
+      // Top bar instead of left
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 3px;
+      border-radius: 0 0 $radius-sm $radius-sm;
+    }
+  }
+
+  .mode-nav-label {
+    display: block;
+  }
+}

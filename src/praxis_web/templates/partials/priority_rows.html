@@ -2,7 +2,7 @@
 <div class="priority-row{% if p.is_shared_with_me %} shared-with-me{% endif %}"
      id="priority-row-{{ p.id }}"
      hx-get="/priorities/{{ p.id }}"
-     hx-target="#detail-pane"
+     hx-target="#detail-content"
      hx-swap="innerHTML"
      hx-push-url="true"
      onclick="selectRow(this)">

@@ -2,7 +2,8 @@
 // Input Chips - Editable sentence fragments
 // =============================================================================
 @use 'sass:list';
-@use 'variables' as *;
+@use 'sass:map';
+@use '../base/variables' as *;
 
 // -----------------------------------------------------------------------------
 // Chip Color Palette (pastel, semantic)
@@ -15,6 +16,9 @@ $chip-colors: (
   priority: (#2a5082, #d6e5f5),   // Blue - priority references
   tag:      (#6b5e4f, #e8e4dc),   // Warm gray - tags
   due:      (#8a5a00, #fff3d6),   // Gold - due dates
+  collate:  (#7d6b3a, #f5ecd6),   // Warm brown - collation
+  event:    (#2a7d75, #d6f0ee),   // Teal - events
+  task:     (#994d5a, #f5dfe0),   // Rose - tasks/create
 );
 
 // -----------------------------------------------------------------------------
@@ -878,4 +882,383 @@ $chip-colors: (
     border-color: #8a5a00;
     box-shadow: 0 0 0 2px rgba(#8a5a00, 0.2);
   }
+}
+
+// -----------------------------------------------------------------------------
+// Clause Placeholder/Active Visibility
+// -----------------------------------------------------------------------------
+
+// When active, hide the placeholder text
+.chip-clause--active > .chip-clause__placeholder {
+  display: none;
+}
+
+// When inactive and placeholder text exists, hide chip content (placeholder
+// stands in). Clauses without placeholder text show the chip itself.
+.chip-clause:not(.chip-clause--active) > .chip-clause__placeholder:not(:empty) ~ .chip-clause__content {
+  display: none;
+}
+
+// -----------------------------------------------------------------------------
+// Due Custom (due-date number picker)
+// -----------------------------------------------------------------------------
+
+.chip-popup__due-custom {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
+
+  .chip-popup__number-btn {
+    background: list.nth(map.get($chip-colors, due), 2);
+    color: list.nth(map.get($chip-colors, due), 1);
+
+    &:hover {
+      border-color: list.nth(map.get($chip-colors, due), 1);
+    }
+
+    &:active {
+      background: list.nth(map.get($chip-colors, due), 1);
+      color: white;
+    }
+  }
+
+  .chip-popup__number-field {
+    border-color: list.nth(map.get($chip-colors, due), 1);
+    color: list.nth(map.get($chip-colors, due), 1);
+
+    &:focus {
+      box-shadow: 0 0 0 2px rgba(list.nth(map.get($chip-colors, due), 1), 0.2);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Priority Picker
+// -----------------------------------------------------------------------------
+
+.chip-popup--priority-picker {
+  min-width: 260px;
+}
+
+.chip-popup__breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  padding-bottom: $spacing-sm;
+  margin-bottom: $spacing-sm;
+  border-bottom: 1px solid $border-subtle;
+  font-family: $font-family-body;
+  font-size: 0.8rem;
+  color: $text-muted;
+}
+
+.chip-popup__breadcrumb-segment {
+  cursor: pointer;
+  padding: 0.1rem $spacing-xs;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: $bg-secondary;
+    color: list.nth(map.get($chip-colors, priority), 1);
+  }
+}
+
+.chip-popup__breadcrumb-sep {
+  color: #b0ada8;
+  margin: 0 0.1rem;
+}
+
+.chip-popup__priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.chip-popup__priority-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.chip-popup__priority-name {
+  flex: 1;
+  text-align: left;
+  padding: 0.375rem $spacing-sm;
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  background: list.nth(map.get($chip-colors, priority), 2);
+  color: list.nth(map.get($chip-colors, priority), 1);
+  font-family: $font-family-body;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: list.nth(map.get($chip-colors, priority), 1);
+  }
+}
+
+.chip-popup__priority-drill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  background: #eef3f9;
+  color: list.nth(map.get($chip-colors, priority), 1);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: list.nth(map.get($chip-colors, priority), 1);
+    background: list.nth(map.get($chip-colors, priority), 2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Task Option Styles
+// -----------------------------------------------------------------------------
+
+.chip-popup__option--task {
+  background: list.nth(map.get($chip-colors, task), 2);
+  color: list.nth(map.get($chip-colors, task), 1);
+  border-color: transparent;
+
+  &:hover,
+  &.selected {
+    border-color: list.nth(map.get($chip-colors, task), 1);
+  }
+
+  &.selected {
+    background: list.nth(map.get($chip-colors, task), 1);
+    color: white;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Collate Option Styles
+// -----------------------------------------------------------------------------
+
+.chip-popup__option--collate {
+  background: list.nth(map.get($chip-colors, collate), 2);
+  color: list.nth(map.get($chip-colors, collate), 1);
+  border-color: transparent;
+}
+
+.chip-popup__option--chip.chip-popup__option--collate {
+  &:hover,
+  &.selected {
+    border-color: list.nth(map.get($chip-colors, collate), 1);
+  }
+
+  // !important needed: generic .chip-popup__option.selected has an unexplained
+  // specificity win in some browsers despite fewer classes.
+  // TODO: refactor chip option selected styles to avoid this.
+  &.selected {
+    background: list.nth(map.get($chip-colors, collate), 1) !important;
+    color: #fff8e6 !important;
+  }
+}
+
+// Collate target options (vertical list with label + description)
+.chip-popup__options--collate-target {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  .chip-popup__option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+
+    &.selected .chip-popup__option-desc {
+      opacity: 0.85;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Template Variables
+// -----------------------------------------------------------------------------
+
+.chip-popup__template-vars {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
+}
+
+.chip-popup__options--template-vars {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+// -----------------------------------------------------------------------------
+// Event Option Styles
+// -----------------------------------------------------------------------------
+
+.chip-popup__option--event {
+  background: list.nth(map.get($chip-colors, event), 2);
+  color: list.nth(map.get($chip-colors, event), 1);
+  border-color: transparent;
+
+  &:hover,
+  &.selected {
+    border-color: list.nth(map.get($chip-colors, event), 1);
+  }
+
+  &.selected {
+    background: list.nth(map.get($chip-colors, event), 1);
+    color: white;
+  }
+}
+
+.chip-popup__options--event-outcome {
+  padding-bottom: $spacing-sm;
+}
+
+.chip-popup__event-status-change {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
+}
+
+.chip-popup__options--event-status {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+// -----------------------------------------------------------------------------
+// Tag Options
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  padding-bottom: $spacing-sm;
+}
+
+.chip-popup__tag-create {
+  padding-top: $spacing-sm;
+  border-top: 1px solid $border-subtle;
+}
+
+.chip-popup__tag-field {
+  width: 100%;
+  height: 28px;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px solid list.nth(map.get($chip-colors, tag), 1);
+  border-radius: $radius-md;
+  background: white;
+  color: list.nth(map.get($chip-colors, tag), 1);
+  font-family: $font-family-body;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(list.nth(map.get($chip-colors, tag), 1), 0.2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Due Options
+// -----------------------------------------------------------------------------
+
+.chip-popup__options--due {
+  padding-bottom: $spacing-sm;
+}
+
+.chip-popup__options--due-unit {
+  display: flex;
+  gap: $spacing-xs;
+  padding-top: $spacing-xs;
+}
+
+// -----------------------------------------------------------------------------
+// Text Input (single-line, task-colored)
+// -----------------------------------------------------------------------------
+
+.chip-popup__text-input {
+  padding: $spacing-xs 0;
+}
+
+.chip-popup__text-field {
+  width: 100%;
+  min-width: 240px;
+  height: 32px;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px solid list.nth(map.get($chip-colors, task), 1);
+  border-radius: $radius-md;
+  background: white;
+  color: list.nth(map.get($chip-colors, task), 1);
+  font-family: $font-family-body;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(list.nth(map.get($chip-colors, task), 1), 0.2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Chip Trigger Text Code
+// -----------------------------------------------------------------------------
+
+.chip-trigger__text code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8em;
+  padding: 0.1em 0.3em;
+  border-radius: $radius-sm;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+// -----------------------------------------------------------------------------
+// Textarea Input (multi-line, task-colored)
+// -----------------------------------------------------------------------------
+
+.chip-popup__textarea-input {
+  padding: $spacing-xs 0;
+}
+
+.chip-popup__textarea-field {
+  width: 100%;
+  min-width: 280px;
+  padding: $spacing-sm;
+  border: 1px solid list.nth(map.get($chip-colors, task), 1);
+  border-radius: $radius-md;
+  background: white;
+  color: list.nth(map.get($chip-colors, task), 1);
+  font-family: $font-family-body;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  box-sizing: border-box;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(list.nth(map.get($chip-colors, task), 1), 0.2);
+  }
+}
+
+.chip-popup__char-count {
+  text-align: right;
+  font-size: $font-size-xs;
+  color: $text-muted;
+  padding-top: $spacing-xs;
 }

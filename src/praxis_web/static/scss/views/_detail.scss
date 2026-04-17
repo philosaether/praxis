@@ -2,7 +2,7 @@
 // Detail View
 // =============================================================================
 @use 'sass:list';
-@use 'variables' as *;
+@use '../base/variables' as *;
 
 .detail-view {
   max-width: $detail-max-width;

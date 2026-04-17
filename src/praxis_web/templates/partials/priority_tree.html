@@ -3,7 +3,7 @@
     <div class="tree-node">
         <div class="tree-node-content"
              hx-get="/priorities/{{ root.id }}"
-             hx-target="#detail-pane"
+             hx-target="#detail-content"
              hx-swap="innerHTML">
             {% set child_ids = graph.children.get(root.id) %}
             {% if child_ids %}

@@ -9,7 +9,7 @@
         {% if from_task %}
         <a href="#"
            hx-get="/tasks/{{ from_task }}"
-           hx-target="#detail-pane"
+           hx-target="#detail-content"
            hx-swap="innerHTML"
            class="back-link">
             ← Back to Task
@@ -17,7 +17,7 @@
         {% else %}
         <a href="#"
            hx-get="/priorities/tree-pane"
-           hx-target="#detail-pane"
+           hx-target="#detail-content"
            hx-swap="innerHTML"
            hx-push-url="/priorities"
            class="back-link">
@@ -52,7 +52,7 @@
                 <li>
                     <a href="#"
                        hx-get="/priorities/{{ child.id }}"
-                       hx-target="#detail-pane"
+                       hx-target="#detail-content"
                        hx-swap="innerHTML">
                         {{ child.name }}
                     </a>
@@ -82,7 +82,7 @@
                 <li class="task-item-compact {% if task.status == 'done' %}done{% endif %}">
                     <a href="#"
                        hx-get="/tasks/{{ task.id }}"
-                       hx-target="#detail-pane"
+                       hx-target="#detail-content"
                        hx-swap="innerHTML">
                         {{ task.name }}
                     </a>

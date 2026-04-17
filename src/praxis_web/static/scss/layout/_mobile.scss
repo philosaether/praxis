@@ -1,0 +1,114 @@
+// =============================================================================
+// Mobile Layout (<= 768px)
+// =============================================================================
+@use '../base/variables' as *;
+
+// Elements hidden on desktop, shown on mobile
+.mobile-back-btn,
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: $breakpoint-md) {
+
+  // --- Container: column instead of row, dynamic viewport height ---
+  .container {
+    flex-direction: column;
+    height: 100vh;                     // fallback for older browsers
+    height: 100dvh;                    // dynamic viewport height
+  }
+
+  // --- Panes: full-width, single visible ---
+  .left-pane {
+    width: 100%;
+    min-width: unset;
+    max-width: unset;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .right-pane {
+    display: none;                     // hidden by default on mobile
+    width: 100%;
+    padding: $spacing-md;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  // When detail is active, swap pane visibility
+  .container.mobile-detail {
+    .left-pane {
+      display: none;
+    }
+    .right-pane {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  // --- Bottom nav padding ---
+  // Prevent content from hiding behind fixed bottom nav
+  .left-pane,
+  .right-pane {
+    padding-bottom: 64px;             // 56px nav + 8px breathing room
+  }
+
+  // --- Header: compact ---
+  .header {
+    padding: $spacing-md;
+
+    h1 {
+      font-size: $font-size-base;
+    }
+  }
+
+  .brand-logo {
+    width: 24px;
+    height: 32px;
+  }
+
+  // --- Filters: full width ---
+  .search-input-wrapper {
+    max-width: none;
+  }
+
+  // --- FAB: raise above bottom nav ---
+  .fab {
+    bottom: calc(56px + 1rem);
+    right: 1rem;
+  }
+
+  // --- Detail view: full width ---
+  .detail-view {
+    max-width: none;
+  }
+
+  // --- Tree pane: full width ---
+  .tree-pane {
+    max-width: none;
+  }
+
+  // --- Mobile-only elements ---
+  .mobile-only {
+    display: inline-flex;
+  }
+
+  // Right-align tree toggle in add-priority-bar
+  #add-priority-bar {
+    justify-content: space-between;
+  }
+
+  // --- Back button ---
+  .mobile-back-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: none;
+    border: none;
+    color: $accent;
+    font-size: $font-size-sm;
+    font-family: $font-family-body;
+    cursor: pointer;
+  }
+}

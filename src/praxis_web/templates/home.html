@@ -14,6 +14,7 @@
                 onclick="setMode('inbox')"
                 title="Inbox">
             <span class="mode-nav-icon mode-nav-icon--inbox"></span>
+            <span class="mode-nav-label">inbox</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'tasks' %}active{% endif %}"
                 id="tasks-nav-btn"
@@ -24,6 +25,7 @@
                 onclick="setMode('tasks')"
                 title="Queue">
             <span class="mode-nav-icon mode-nav-icon--tasks"></span>
+            <span class="mode-nav-label">tasks</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'priorities' %}active{% endif %}"
                 id="priorities-nav-btn"
@@ -33,6 +35,7 @@
                 onclick="setMode('priorities')"
                 title="Priorities">
             <span class="mode-nav-icon mode-nav-icon--priorities"></span>
+            <span class="mode-nav-label">priorities</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'friends' %}active{% endif %}"
                 id="friends-nav-btn"
@@ -42,6 +45,7 @@
                 onclick="setMode('friends')"
                 title="Friends">
             <span class="mode-nav-icon mode-nav-icon--friends"></span>
+            <span class="mode-nav-label">friends</span>
             {% if notification_count and notification_count > 0 %}
             <span class="notification-badge">{{ notification_count }}</span>
             {% endif %}
@@ -54,6 +58,7 @@
                 onclick="setMode('rules')"
                 title="Rules">
             <span class="mode-nav-icon mode-nav-icon--rules"></span>
+            <span class="mode-nav-label">rules</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'outbox' %}active{% endif %}"
                 id="outbox-nav-btn"
@@ -63,6 +68,7 @@
                 onclick="setMode('outbox')"
                 title="Outbox">
             <span class="mode-nav-icon mode-nav-icon--outbox"></span>
+            <span class="mode-nav-label">outbox</span>
         </button>
     </nav>
 
@@ -211,7 +217,7 @@
             <div id="add-task-bar" style="display: {% if default_mode in ['tasks', 'inbox'] %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/tasks/new"
-                        hx-target="#detail-pane"
+                        hx-target="#detail-content"
                         hx-swap="innerHTML">
                     + New Task
                 </button>
@@ -219,9 +225,14 @@
             <div id="add-priority-bar" style="display: {% if default_mode == 'priorities' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/priorities/new"
-                        hx-target="#detail-pane"
+                        hx-target="#detail-content"
                         hx-swap="innerHTML">
                     + New Priority
+                </button>
+                <button class="btn btn-secondary btn-sm mobile-only"
+                        id="mobile-tree-toggle"
+                        onclick="mobileTogglePriorityView()">
+                    view as tree
                 </button>
             </div>
             <div id="add-friend-bar" style="display: {% if default_mode == 'friends' %}flex{% else %}none{% endif %};">
@@ -232,7 +243,7 @@
             <div id="add-rule-bar" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/rules/new"
-                        hx-target="#detail-pane"
+                        hx-target="#detail-content"
                         hx-swap="innerHTML">
                     + New Rule
                 </button>
@@ -258,6 +269,10 @@
 
     <!-- Right Pane: Detail View -->
     <div class="right-pane" id="detail-pane">
+        <button class="mobile-back-btn" onclick="mobileBack()">
+            <span>&larr;</span> Back
+        </button>
+        <div id="detail-content">
         {% if initial_detail_html %}
             {{ initial_detail_html|safe }}
         {% else %}
@@ -266,6 +281,7 @@
                 <p>Click an item on the left to view details</p>
             </div>
         {% endif %}
+        </div>
     </div>
 
     <!-- Floating Action Button -->
@@ -309,8 +325,28 @@
     // Current view mode (set from server)
     window.currentMode = '{{ default_mode }}';
 
+    // Mobile: return to list view
+    window.mobileBack = function() {
+        document.querySelector('.container').classList.remove('mobile-detail');
+    };
+
+    // Mobile: toggle priority list/tree view
+    window.mobileTogglePriorityView = function() {
+        var btn = document.getElementById('mobile-tree-toggle');
+        if (btn.textContent.trim() === 'view as tree') {
+            htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+            btn.textContent = 'view as list';
+        } else {
+            htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+            btn.textContent = 'view as tree';
+        }
+    };
+
     window.setMode = function(mode) {
         window.currentMode = mode;
+
+        // Mobile: return to list view on mode switch
+        document.querySelector('.container').classList.remove('mobile-detail');
 
         // Toggle button states
         document.getElementById('inbox-nav-btn').classList.toggle('active', mode === 'inbox');
@@ -339,17 +375,18 @@
 
         // Update detail pane based on mode
         if (mode === 'priorities') {
-            // Load tree view in detail pane
-            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            // On mobile, load tree into left pane; on desktop, into detail pane
+            var treeTarget = window.innerWidth <= 768 ? '#item-list' : '#detail-content';
+            htmx.ajax('GET', '/priorities/tree-pane', {target: treeTarget, swap: 'innerHTML'});
         } else if (mode === 'friends') {
             // Friends mode: left-pane only, clear detail pane
-            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
+            document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
         } else if (mode === 'rules') {
             // Rules mode: show rules help in detail pane
-            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Rules</h3><p>Rules control how tasks are prioritized based on time, tags, and due dates</p></div>';
+            document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Rules</h3><p>Rules control how tasks are prioritized based on time, tags, and due dates</p></div>';
         } else {
             // Clear detail pane for tasks/inbox mode
-            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+            document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
         }
     };
 
@@ -466,6 +503,10 @@
             .forEach(el => el.classList.remove('selected'));
         // Add selected class to clicked node
         element.classList.add('selected');
+        // Show detail pane on mobile
+        if (window.innerWidth <= 768) {
+            document.querySelector('.container').classList.add('mobile-detail');
+        }
     };
 
     window.loadNewTask = function(event) {
@@ -477,11 +518,11 @@
             if (newRow) selectRow(newRow);
 
             // Load the detail view
-            htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-pane', swap: 'innerHTML'})
+            htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-content', swap: 'innerHTML'})
                 .then(() => {
                     // Focus the name input after detail loads
                     setTimeout(() => {
-                        const nameInput = document.querySelector('#detail-pane #name');
+                        const nameInput = document.querySelector('#detail-content #name');
                         if (nameInput) {
                             nameInput.focus();
                             nameInput.select();
@@ -500,11 +541,11 @@
             if (newRow) selectRow(newRow);
 
             // Load the detail view
-            htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-pane', swap: 'innerHTML'})
+            htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-content', swap: 'innerHTML'})
                 .then(() => {
                     // Focus the name input after detail loads
                     setTimeout(() => {
-                        const nameInput = document.querySelector('#detail-pane #name');
+                        const nameInput = document.querySelector('#detail-content #name');
                         if (nameInput) {
                             nameInput.focus();
                             nameInput.select();
@@ -520,6 +561,10 @@
             .forEach(el => el.classList.remove('selected'));
         // Add selected class to clicked row
         element.classList.add('selected');
+        // Show detail pane on mobile
+        if (window.innerWidth <= 768) {
+            document.querySelector('.container').classList.add('mobile-detail');
+        }
     };
 
     // Listen for task creation to refresh the list
@@ -751,7 +796,7 @@
 
         // Load the priority edit view into the detail pane
         htmx.ajax('GET', '/priorities/' + treeMenuTarget.id + '/edit', {
-            target: '#detail-pane',
+            target: '#detail-content',
             swap: 'innerHTML'
         });
 
@@ -835,7 +880,7 @@
                 // Refresh the priority view to show updated last_triggered_at
                 const priorityId = event.target.closest('.detail-view')?.querySelector('[hx-get*="/priorities/"]')?.getAttribute('hx-get')?.match(/priorities\/([^/]+)/)?.[1];
                 if (priorityId) {
-                    htmx.ajax('GET', `/priorities/${priorityId}`, {target: '#detail-pane', swap: 'innerHTML'});
+                    htmx.ajax('GET', `/priorities/${priorityId}`, {target: '#detail-content', swap: 'innerHTML'});
                 }
             } else if (!data.success) {
                 alert(`Trigger failed: ${data.error || 'Unknown error'}`);
@@ -905,7 +950,7 @@
                 htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
 
                 // Navigate to tree view
-                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
             } else {
                 console.error('Failed to delete priority');
             }
@@ -997,7 +1042,7 @@
                 var refreshId = sharePriorityId;
                 closeShareModal();
                 // Refresh the priority detail to update the share banner
-                htmx.ajax('GET', '/priorities/' + refreshId, {target: '#detail-pane', swap: 'innerHTML'});
+                htmx.ajax('GET', '/priorities/' + refreshId, {target: '#detail-content', swap: 'innerHTML'});
             } else {
                 alert(data.error || 'Failed to share priority');
             }
@@ -1023,7 +1068,7 @@
         .then(data => {
             if (data.success) {
                 // Refresh tree pane to show priority in owned section
-                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
             } else {
                 alert(data.error || 'Failed to adopt priority');
             }
@@ -1037,7 +1082,7 @@
         .then(data => {
             if (data.success) {
                 // Refresh tree pane to show priority back in "Shared with Me"
-                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
             } else {
                 alert(data.error || 'Failed to unadopt priority');
             }

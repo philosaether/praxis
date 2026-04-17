@@ -20,7 +20,7 @@
         {# Clickable content area #}
         <div class="tree-node-content"
              hx-get="/priorities/{{ node.id }}"
-             hx-target="#detail-pane"
+             hx-target="#detail-content"
              hx-swap="innerHTML"
              hx-push-url="true"
              onclick="selectTreeNode(this)">
