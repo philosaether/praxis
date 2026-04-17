@@ -154,9 +154,9 @@
                             body: JSON.stringify({ parent_priority_id: newParentId })
                         }).then(response => {
                             // Reload tree to get correct state
-                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
                         }).catch(() => {
-                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
                         });
                         return;
                     }
@@ -242,10 +242,10 @@
                         })
                     }).then(function(response) {
                         if (!response.ok) {
-                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
                         }
                     }).catch(function() {
-                        htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                        htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
                     });
                 }
             });

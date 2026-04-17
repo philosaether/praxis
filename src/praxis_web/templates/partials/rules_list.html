@@ -4,7 +4,7 @@
     <div class="rule-row {% if not rule.enabled %}disabled{% endif %}"
          id="rule-row-{{ rule.id }}"
          hx-get="/rules/{{ rule.id }}"
-         hx-target="#detail-pane"
+         hx-target="#detail-content"
          hx-push-url="/rules/{{ rule.id }}"
          onclick="selectRow(this)">
         <div class="rule-row-content">

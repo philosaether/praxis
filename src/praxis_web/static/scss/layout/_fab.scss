@@ -2,7 +2,7 @@
 // Floating Action Button
 // =============================================================================
 @use 'sass:color';
-@use 'variables' as *;
+@use '../base/variables' as *;
 
 // Priority mode colors (initiative blue)
 $initiative-blue: #2a5082;

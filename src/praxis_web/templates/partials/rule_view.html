@@ -108,7 +108,7 @@
                 <button type="button"
                         class="btn btn-primary"
                         hx-get="/rules/{{ rule.id }}/edit"
-                        hx-target="#detail-pane"
+                        hx-target="#detail-content"
                         hx-swap="innerHTML">
                     Edit
                 </button>
@@ -119,7 +119,7 @@
                         hx-delete="/rules/{{ rule.id }}"
                         hx-swap="none"
                         hx-confirm="Delete '{{ rule.name }}'? This cannot be undone."
-                        hx-on::after-request="if(event.detail.successful) { document.getElementById('rule-row-{{ rule.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select a rule</h3><p>Click a rule on the left to view details</p></div>'; }">
+                        hx-on::after-request="if(event.detail.successful) { document.getElementById('rule-row-{{ rule.id }}')?.remove(); document.getElementById('detail-content').innerHTML = '<div class=\'empty-state\'><h3>Select a rule</h3><p>Click a rule on the left to view details</p></div>'; }">
                     Delete
                 </button>
             </div>

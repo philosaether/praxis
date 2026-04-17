@@ -1,0 +1,139 @@
+// =============================================================================
+// Tags
+// =============================================================================
+@use '../base/variables' as *;
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  font-size: $font-size-xs;
+  background: var(--tag-color, $bg-tertiary);
+  color: $text-primary;
+  white-space: nowrap;
+
+  .tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.1rem;
+    font-size: 0.9em;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity $transition-base;
+
+    &:hover {
+      opacity: 1;
+      color: $error;
+    }
+  }
+}
+
+.tag-chip-mini {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.75rem;
+  font-size: $font-size-xs;
+  background: var(--tag-color, $bg-tertiary);
+  color: $text-primary;
+}
+
+.task-tags-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: $spacing-lg 0;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid $border-subtle;
+}
+
+.task-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.task-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.tag-input-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tag-input {
+  width: 100px;
+  padding: 0.2rem 0.5rem;
+  font-size: $font-size-sm;
+  background: transparent;
+  border: 1px dashed $border-subtle;
+  border-radius: $radius-md;
+  color: $text-primary;
+  transition: border-color $transition-base, width $transition-base;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+    border-style: solid;
+    width: 140px;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  min-width: 140px;
+  background: $bg-secondary;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-md;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 2px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.tag-suggestion {
+  padding: $spacing-sm $spacing-md;
+  cursor: pointer;
+  transition: background $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.tag-create {
+    border-top: 1px solid $border-subtle;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    .create-label {
+      color: $text-muted;
+      font-size: $font-size-sm;
+    }
+  }
+}

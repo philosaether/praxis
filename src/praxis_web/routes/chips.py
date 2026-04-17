@@ -103,7 +103,7 @@ async def action_card_partial(
 ):
     """Return a blank action card HTML fragment for client-side insertion."""
     from praxis_core.persistence import get_connection, PriorityGraph, validate_session
-    from praxis_web.app import _build_priority_tree
+    from praxis_web.routes.priority_actions import _build_priority_tree
 
     action = {
         "trigger_type": trigger_type,

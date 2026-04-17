@@ -172,8 +172,45 @@ praxis_web/
 ├── helpers/
 │   ├── __init__.py
 │   └── action_renderer.py   — Render practice actions as human-readable chip data
-├── static/                  — CSS, SCSS, images (unchanged)
-└── templates/               — Jinja2 templates (unchanged)
+├── static/
+│   ├── css/
+│   │   └── main.css             — Compiled output (DO NOT EDIT — generated from SCSS)
+│   ├── scss/
+│   │   ├── main.scss            — Entry point: @use imports only
+│   │   ├── base/
+│   │   │   ├── _variables.scss  — Design tokens: colors, spacing, typography, breakpoints
+│   │   │   ├── _reset.scss      — CSS reset
+│   │   │   └── _utilities.scss  — Utility classes (sr-only, text helpers)
+│   │   ├── layout/
+│   │   │   ├── _container.scss  — .container flex layout, pane widths
+│   │   │   ├── _header.scss     — Brand, user info, environment indicators
+│   │   │   ├── _filters.scss    — Search bar, filter dropdowns, add-new bar
+│   │   │   ├── _mode-nav.scss   — Sidebar nav (desktop) + bottom nav (mobile)
+│   │   │   ├── _fab.scss        — Floating action button
+│   │   │   └── _mobile.scss     — Mobile overrides: single-pane, back button, compact header
+│   │   ├── components/
+│   │   │   ├── _buttons.scss    — Button styles, new-item controls
+│   │   │   ├── _badges.scss     — Type badges, status indicators
+│   │   │   ├── _forms.scss      — Input fields, selects, labels
+│   │   │   ├── _tags.scss       — Tag pills and tag input
+│   │   │   ├── _links.scss      — Links list, friends list, invite display
+│   │   │   ├── _chips.scss      — Input chip system (all chip types)
+│   │   │   └── _modals.scss     — Modal backdrop, content, forms
+│   │   ├── views/
+│   │   │   ├── _list.scss       — Task/priority/rule row styling
+│   │   │   ├── _detail.scss     — Detail views, edit forms, property sections
+│   │   │   ├── _tree.scss       — Priority tree: nodes, drag states, context menu
+│   │   │   └── _login.scss      — Auth pages: login, signup, invite accept
+│   │   └── features/
+│   │       ├── _rules.scss      — Rule list, import, block editor, template picker
+│   │       ├── _actions.scss    — Actions editor, triggers, YAML editor
+│   │       ├── _action-cards.scss — Action card BEM component (view/edit modes)
+│   │       ├── _wizard.scss     — Wizard modal, progress, sentence builders
+│   │       └── _wizard-compact.scss — Compact wizard grid (chipset-era action picker)
+│   └── images/                  — Static images
+└── templates/                   — Jinja2 templates
+
+Build: `npm run build:css` compiles SCSS → CSS. `npm run watch:css` for dev.
 ```
 
 ---

@@ -2,17 +2,39 @@
 // Praxis Main Stylesheet
 // =============================================================================
 
-// Using @use for modern Sass (no deprecation warnings)
-@use 'variables' as *;
-@use 'reset';
-@use 'layout';
-@use 'mode-nav';
-@use 'components';
-@use 'chips';
-@use 'list';
-@use 'detail';
-@use 'tree';
-@use 'login';
-@use 'fab';
-@use 'modal';
-@use 'utilities';
+// Base
+@use 'base/variables' as *;
+@use 'base/reset';
+@use 'base/utilities';
+
+// Layout
+@use 'layout/container';
+@use 'layout/header';
+@use 'layout/filters';
+@use 'layout/mode-nav';
+@use 'layout/fab';
+
+// Components
+@use 'components/buttons';
+@use 'components/badges';
+@use 'components/forms';
+@use 'components/tags';
+@use 'components/links';
+@use 'components/chips';
+@use 'components/modals';
+
+// Views
+@use 'views/list';
+@use 'views/detail';
+@use 'views/tree';
+@use 'views/login';
+
+// Features (rules before actions — yaml-editor cascade dependency)
+@use 'features/rules';
+@use 'features/actions';
+@use 'features/action-cards';
+@use 'features/wizard';
+@use 'features/wizard-compact';
+
+// Mobile (must be last — overrides desktop styles)
+@use 'layout/mobile';

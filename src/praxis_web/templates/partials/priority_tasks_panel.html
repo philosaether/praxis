@@ -19,7 +19,7 @@
         <li class="task-item-compact {% if task.status == 'done' %}done{% endif %}">
             <a href="#"
                hx-get="/tasks/{{ task.id }}"
-               hx-target="#detail-pane"
+               hx-target="#detail-content"
                hx-swap="innerHTML">
                 {{ task.name }}
             </a>

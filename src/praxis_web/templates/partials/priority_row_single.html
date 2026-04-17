@@ -2,7 +2,7 @@
      id="priority-row-{{ priority.id }}"
      {% if oob %}hx-swap-oob="true"{% endif %}
      hx-get="/priorities/{{ priority.id }}"
-     hx-target="#detail-pane"
+     hx-target="#detail-content"
      hx-swap="innerHTML"
      hx-push-url="true"
      onclick="selectRow(this)">

@@ -12,7 +12,7 @@
                 <a href="#"
                    class="type-badge {{ task.priority_type }}"
                    hx-get="/priorities/{{ task.priority_id }}?from_task={{ task.id }}"
-                   hx-target="#detail-pane"
+                   hx-target="#detail-content"
                    hx-swap="innerHTML">
                     {{ task.priority_name }}
                 </a>
@@ -83,7 +83,7 @@
                 <button type="button"
                         class="btn btn-primary"
                         hx-get="/tasks/{{ task.id }}/edit"
-                        hx-target="#detail-pane"
+                        hx-target="#detail-content"
                         hx-swap="innerHTML">
                     Edit
                 </button>
@@ -96,7 +96,7 @@
                         hx-delete="/tasks/{{ task.id }}"
                         hx-swap="none"
                         hx-confirm="Delete '{{ task.name }}'? This cannot be undone."
-                        hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
+                        hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-content').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
                     Delete
                 </button>
                 {% endif %}
