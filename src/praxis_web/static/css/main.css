@@ -5029,6 +5029,75 @@ body:has(.tree-node-drag) .tree-children:empty::after {
   color: #1b1c1a;
 }
 
+.tutorial-active .quick-done {
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.shepherd-element {
+  max-width: 340px;
+  border-radius: 1rem;
+  border: 1px solid #d0c5af;
+  box-shadow: 0 12px 32px rgba(77, 70, 53, 0.1);
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  z-index: 200;
+}
+
+.shepherd-text {
+  padding: 1rem;
+  font-size: 1rem;
+  color: #1b1c1a;
+  line-height: 1.6;
+}
+.shepherd-text strong {
+  font-weight: 600;
+}
+
+.shepherd-header {
+  display: none;
+}
+
+.shepherd-footer {
+  padding: 0 1rem 1rem;
+}
+
+.shepherd-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 1rem;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(135deg, #735c00 0%, #d4af37 100%);
+  color: white;
+}
+.shepherd-button:hover {
+  background: linear-gradient(135deg, #5a4700 0%, #735c00 100%);
+}
+.shepherd-button:not(:last-child) {
+  margin-right: 0.5rem;
+}
+
+.shepherd-cancel-icon {
+  color: #7a7976;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+.shepherd-cancel-icon:hover {
+  color: #1b1c1a;
+}
+
+.shepherd-modal-overlay-container {
+  z-index: 150;
+}
+
 .mobile-back-btn,
 .mobile-only {
   display: none;

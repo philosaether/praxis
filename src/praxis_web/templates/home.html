@@ -3,7 +3,7 @@
 {% block title %}Praxis{% endblock %}
 
 {% block body %}
-<div class="container">
+<div class="container" data-is-new-user="{{ is_new_user|lower }}">
     <!-- Mode Navigation (Icon Bar) -->
     <nav class="mode-nav" role="navigation" aria-label="View mode">
         <button class="mode-nav-btn {% if default_mode == 'inbox' %}active{% endif %}"
@@ -645,18 +645,23 @@
         const priorityId = detail?.id;
         const parentId = detail?.parent_id;
 
-        // Refresh the priority list, then select the new row
-        htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'})
-            .then(() => {
-                if (priorityId) {
-                    const newRow = document.getElementById('priority-row-' + priorityId);
-                    if (newRow) selectRow(newRow);
-                }
-            });
-
-        // If in priorities mode, also add to the tree view
-        if (window.currentMode === 'priorities' && priorityId) {
-            addPriorityToTree(priorityId, parentId);
+        if (window.currentMode === 'priorities') {
+            // Reload the tree view (primary view for priorities)
+            var treeTarget = window.innerWidth <= 768 ? '#item-list' : '#detail-content';
+            htmx.ajax('GET', '/priorities/tree-pane', {target: treeTarget, swap: 'innerHTML'});
+            // Also refresh the list if it's visible (desktop left pane)
+            if (window.innerWidth > 768) {
+                htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+            }
+        } else {
+            // Refresh the priority list
+            htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'})
+                .then(() => {
+                    if (priorityId) {
+                        const newRow = document.getElementById('priority-row-' + priorityId);
+                        if (newRow) selectRow(newRow);
+                    }
+                });
         }
 
         // Refresh parent dropdowns in any open forms
