@@ -29,7 +29,7 @@ function startTutorial() {
     activeListeners.length = 0;
   }
 
-  // Poll helper with timeout guard (10s max)
+  // Poll for UI elements to appear (10s timeout — advances anyway to prevent hangs)
   function pollFor(conditionFn, resolve, intervalMs) {
     const start = Date.now();
     const check = setInterval(() => {
@@ -38,9 +38,19 @@ function startTutorial() {
         resolve();
       } else if (Date.now() - start > 10000) {
         clearInterval(check);
-        resolve(); // Don't hang — advance even if condition isn't met
+        resolve();
       }
     }, intervalMs || 100);
+  }
+
+  // Wait for user action — no timeout, waits indefinitely
+  function waitFor(conditionFn, resolve, intervalMs) {
+    const check = setInterval(() => {
+      if (conditionFn()) {
+        clearInterval(check);
+        resolve();
+      }
+    }, intervalMs || 200);
   }
 
   const tour = new Shepherd.Tour({
@@ -70,23 +80,38 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'welcome',
-    text: '<strong>Welcome to Praxis</strong><br>Let\'s get you set up.',
+    classes: 'praxis-tutorial tutorial-centered',
+    text: '<h2 class="tutorial-header">Welcome to Praxis</h2>' +
+      '<p>Praxis helps you act on what matters most.</p>' +
+      '<p>Let\'s get you set up!</p>',
     buttons: [{ text: 'Let\'s go', action: tour.next }],
   });
 
   // =========================================================================
-  // Step 2: Make a task — point to FAB
+  // Step 2: Introduce task queue
+  // =========================================================================
+  tour.addStep({
+    id: 'task-queue-intro',
+    attachTo: { element: '#item-list', on: 'right' },
+    text: '<p>This is your task queue. It reorders itself constantly, so it only ever shows you what you <em>actually want to do, right now.</em></p>' +
+      '<p>Want to hide work tasks on the weekend? Praxis can do that.</p>' +
+      '<p>Want to make sure your family commitments are always on top of your to-do list? Praxis can do that, too.</p>',
+    buttons: [{ text: 'Show me how!', action: tour.next }],
+  });
+
+  // =========================================================================
+  // Step 3: Make a task — point to FAB
   // =========================================================================
   tour.addStep({
     id: 'fab-task',
     attachTo: { element: '#fab-button', on: 'top' },
-    text: 'Click here to make a new task.',
+    text: 'This is the quick-add button. Click here to make your first task.',
     advanceOn: { selector: '#fab-button', event: 'click' },
     buttons: [],
   });
 
   // =========================================================================
-  // Step 3: Give it a name
+  // Step 4: Give it a name
   // =========================================================================
   tour.addStep({
     id: 'name-task',
@@ -97,30 +122,39 @@ function startTutorial() {
       pollFor(() => {
         const input = document.getElementById('quick-add-name');
         return input && input.offsetParent !== null;
-      }, resolve);
+      }, () => {
+        // Disable cancel, more options, and close button during this step
+        const backdrop = document.getElementById('quick-add-backdrop');
+        if (backdrop) {
+          const closeBtn = backdrop.querySelector('.modal-close');
+          const cancelBtn = backdrop.querySelector('.btn-secondary');
+          const moreOptions = backdrop.querySelector('.more-options summary');
+          [closeBtn, cancelBtn, moreOptions].forEach(el => {
+            if (el) {
+              el.style.pointerEvents = 'none';
+              el.style.opacity = '0.3';
+              el.dataset.tutorialDisabled = 'true';
+            }
+          });
+        }
+        resolve();
+      });
     }),
     when: {
       show: () => {
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
+          // Re-enable disabled elements
+          document.querySelectorAll('[data-tutorial-disabled]').forEach(el => {
+            el.style.pointerEvents = '';
+            el.style.opacity = '';
+            delete el.dataset.tutorialDisabled;
+          });
           tour.next();
         };
         addTrackedListener(document.body, 'taskCreated', handler);
       },
     },
-  });
-
-  // =========================================================================
-  // Step 4: Introduce task queue
-  // =========================================================================
-  tour.addStep({
-    id: 'task-queue',
-    attachTo: { element: '#item-list', on: 'right' },
-    text: 'This is your task queue. Later on, you can customize it so it only shows you tasks you want to work on.',
-    buttons: [{ text: 'Ok, cool', action: tour.next }],
-    beforeShowPromise: () => new Promise(resolve => {
-      pollFor(() => !!document.querySelector('.task-row'), resolve);
-    }),
   });
 
   // =========================================================================
@@ -132,6 +166,9 @@ function startTutorial() {
     text: 'Here\'s the task you just made. Click it to view details.',
     advanceOn: { selector: '.task-row .task-content', event: 'click' },
     buttons: [],
+    beforeShowPromise: () => new Promise(resolve => {
+      pollFor(() => !!document.querySelector('.task-row'), resolve);
+    }),
   });
 
   // =========================================================================
@@ -168,7 +205,7 @@ function startTutorial() {
   tour.addStep({
     id: 'fab-priority',
     attachTo: { element: '#fab-button', on: 'top' },
-    text: 'In priority mode, the quick-add button will make a new priority.',
+    text: 'On the priority tab, the quick-add button turns blue, and will make a new priority.<br><br>Click it now!',
     advanceOn: { selector: '#fab-button', event: 'click' },
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
@@ -187,7 +224,12 @@ function startTutorial() {
       text: 'Done',
       action: () => {
         const input = document.getElementById('quick-add-priority-name');
-        createdPriorityName = input ? input.value.trim() : 'that';
+        const name = input ? input.value.trim() : '';
+        if (!name) {
+          input?.focus();
+          return;
+        }
+        createdPriorityName = name;
         tour.next();
       },
     }],
@@ -211,13 +253,13 @@ function startTutorial() {
       const name = createdPriorityName || 'that';
       const step = tour.steps.find(s => s.id === 'more-options');
       step.updateStepOptions({
-        text: `"${name}?" Hey, you do you. Let's make sure we capture how important it is properly. Tap "More options."`,
+        text: `"${name}?" Hey, you do you.<br><br>Let's make sure we capture how important it is properly. Tap "More options."`,
       });
       resolve();
     }),
     when: {
       show: () => {
-        pollFor(() => {
+        waitFor(() => {
           const details = document.querySelector('.priority-modal .more-options');
           return details && details.open;
         }, () => tour.next(), 200);
@@ -336,7 +378,9 @@ function startTutorial() {
       show: () => {
         const handler = () => {
           document.removeEventListener('prioritySelected', handler);
-          setTimeout(() => tour.next(), 400); // Wait for fade-out animation
+          // Hide current step immediately to prevent flicker during fade-out
+          tour.getCurrentStep()?.el?.classList.remove('shepherd-enabled');
+          setTimeout(() => tour.next(), 400);
         };
         addTrackedListener(document, 'prioritySelected', handler);
       },
@@ -348,7 +392,7 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'done',
-    text: '<strong>You\'re all set!</strong><br><br>' +
+    text: '<h2 class="tutorial-header">You\'re all set!</h2>' +
       'Here\'s what to remember:<br>' +
       '&bull; Tap <strong>+</strong> to capture tasks anytime<br>' +
       '&bull; Your <strong>inbox</strong> holds unsorted tasks — tap to sort them<br>' +
