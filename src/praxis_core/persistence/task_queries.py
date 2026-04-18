@@ -46,11 +46,10 @@ def list_tasks(
             """
         params = []
 
-        if entity_id is not None:
-            query += " AND t.entity_id = ?"
-            params.append(entity_id)
-
         if outbox_only:
+            if entity_id is not None:
+                query += " AND t.entity_id = ?"
+                params.append(entity_id)
             query += " AND t.is_in_outbox = 1"
         else:
             # Hide outbox tasks from all non-outbox views
@@ -58,12 +57,20 @@ def list_tasks(
 
             if inbox_only:
                 if org_priority_ids:
-                    # Personal inbox (no priority) OR tasks directly under Org priorities
+                    # Personal inbox (owned, no priority) OR tasks directly under Org priorities (any entity)
                     org_placeholders = ", ".join("?" for _ in org_priority_ids)
-                    query += f" AND (t.priority_id IS NULL OR t.priority_id IN ({org_placeholders}))"
+                    query += f" AND ((t.entity_id = ? AND t.priority_id IS NULL) OR t.priority_id IN ({org_placeholders}))"
+                    params.append(entity_id)
                     params.extend(org_priority_ids)
                 else:
+                    if entity_id is not None:
+                        query += " AND t.entity_id = ?"
+                        params.append(entity_id)
                     query += " AND t.priority_id IS NULL"
+            else:
+                if entity_id is not None:
+                    query += " AND t.entity_id = ?"
+                    params.append(entity_id)
             elif priority_ids:
                 placeholders = ", ".join("?" for _ in priority_ids)
                 query += f" AND t.priority_id IN ({placeholders})"
