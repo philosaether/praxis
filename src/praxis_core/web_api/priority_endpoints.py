@@ -14,6 +14,7 @@ from praxis_core.model import (
     Goal,
     Practice,
     Initiative,
+    Org,
     User,
 )
 from praxis_core.web_api.auth import get_current_user_optional
@@ -80,6 +81,8 @@ def _create_priority_by_type(priority_type: str, id: str, name: str, entity_id: 
         return Goal(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     elif priority_type == "practice":
         return Practice(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
+    elif priority_type == "org":
+        return Org(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     else:
         # Default to Initiative
         return Initiative(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
