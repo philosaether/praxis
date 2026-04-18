@@ -222,14 +222,14 @@ def fork_on_unshare(priority_id: str, adopter_entity_id: str, adopter_user_id: i
             conn.execute(
                 """INSERT INTO priorities (id, entity_id, name, priority_type, status,
                    description, rank, created_at, updated_at,
-                   auto_assign_owner, auto_assign_creator, last_engaged_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   assigned_to_entity_id, last_engaged_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     new_id, adopter_entity_id, source["name"], source["priority_type"],
                     source["status"], source.get("description"),
                     source["rank"] if old_id != priority_id else placement["rank"],
                     now, now,
-                    source.get("auto_assign_owner", 0), source.get("auto_assign_creator", 0),
+                    adopter_entity_id,  # Assign forked priority to adopter
                     source.get("last_engaged_at"),
                 )
             )
@@ -252,8 +252,8 @@ def fork_on_unshare(priority_id: str, adopter_entity_id: str, adopter_user_id: i
         # Batch-load all tasks belonging to the adopter across all source priorities (single query)
         all_tasks = conn.execute(
             f"""SELECT * FROM tasks WHERE priority_id IN ({placeholders})
-                AND (assigned_to = ? OR created_by = ? OR entity_id = ?)""",
-            source_ids + [adopter_user_id, adopter_user_id, adopter_entity_id]
+                AND (created_by = ? OR entity_id = ?)""",
+            source_ids + [adopter_user_id, adopter_entity_id]
         ).fetchall()
 
         for task in all_tasks:
@@ -264,13 +264,13 @@ def fork_on_unshare(priority_id: str, adopter_entity_id: str, adopter_user_id: i
                 continue
             conn.execute(
                 """INSERT INTO tasks (id, entity_id, name, status, description,
-                   due_date, priority_id, assigned_to, created_by,
+                   due_date, priority_id, created_by,
                    created_at, is_in_outbox, moved_to_outbox_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     new_task_id, adopter_entity_id, task["name"], task["status"],
                     task.get("description"), task.get("due_date"), new_priority_id,
-                    task.get("assigned_to"), task.get("created_by"),
+                    task.get("created_by"),
                     task.get("created_at", now),
                     task.get("is_in_outbox", 0), task.get("moved_to_outbox_at"),
                 )

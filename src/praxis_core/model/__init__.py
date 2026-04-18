@@ -8,6 +8,7 @@ from praxis_core.model.priorities import (
     Goal,
     Practice,
     Initiative,
+    Org,
 )
 from praxis_core.model.tasks import (
     Task,
@@ -51,6 +52,7 @@ __all__ = [
     "Goal",
     "Practice",
     "Initiative",
+    "Org",
     # Tasks
     "Task",
     "TaskStatus",

@@ -17,7 +17,6 @@ TASKS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     entity_id TEXT REFERENCES entities(id),
-    assigned_to INTEGER REFERENCES users(id),
     created_by INTEGER REFERENCES users(id),
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued',
@@ -39,7 +38,6 @@ CREATE TABLE IF NOT EXISTS subtasks (
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_entity ON tasks(entity_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 
 -- Tags (user-scoped labels for tasks and priorities)
@@ -224,7 +222,6 @@ def _row_to_task(row: sqlite3.Row) -> Task:
     # Read entity fields (may not exist in older schemas during migration)
     keys = row.keys()
     entity_id = row["entity_id"] if "entity_id" in keys else None
-    assigned_to = row["assigned_to"] if "assigned_to" in keys else None
     created_by = row["created_by"] if "created_by" in keys else None
 
     # Handle description (was 'notes' in older schemas)
@@ -241,7 +238,6 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         name=row["name"],
         status=TaskStatus(row["status"]),
         entity_id=entity_id,
-        assigned_to=assigned_to,
         created_by=created_by,
         description=description,
         due_date=due_date,
@@ -280,7 +276,6 @@ def create_task(
     due_date: datetime | None = None,
     priority_id: str | None = None,
     entity_id: str | None = None,
-    assigned_to: int | None = None,
     created_by: int | None = None,
     description: str | None = None,
 ) -> Task:
@@ -296,11 +291,11 @@ def create_task(
         due_str = due_date.isoformat() if due_date else None
         conn.execute(
             """
-            INSERT INTO tasks (id, entity_id, assigned_to, created_by,
+            INSERT INTO tasks (id, entity_id, created_by,
                              name, description, due_date, priority_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (task_id, entity_id, assigned_to, created_by,
+            (task_id, entity_id, created_by,
              name, desc, due_str, priority_id, now.isoformat()),
         )
         return Task(
@@ -308,7 +303,6 @@ def create_task(
             name=name,
             status=TaskStatus.QUEUED,
             entity_id=entity_id,
-            assigned_to=assigned_to,
             created_by=created_by,
             description=desc,
             due_date=due_date,
@@ -364,7 +358,6 @@ def update_task(
     status: TaskStatus | None = None,
     due_date: datetime | None = None,
     priority_id: str | None = None,
-    assigned_to: int | None = -1,  # -1 means "don't change", None means "unassign"
     notes: str | None = None,  # Deprecated, use description
 ) -> Task | None:
     """Update task fields. Returns updated task or None if not found."""
@@ -394,9 +387,6 @@ def update_task(
             updates.append("priority_id = ?")
             # Allow empty string to clear priority
             params.append(priority_id if priority_id else None)
-        if assigned_to != -1:
-            updates.append("assigned_to = ?")
-            params.append(assigned_to)
 
         if not updates:
             return get_task(task_id)

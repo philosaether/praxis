@@ -10,6 +10,7 @@ class PriorityType(StrEnum):
     VALUE = "value"            # Guiding principle (direction, never completes)
     GOAL = "goal"              # Concrete outcome (destination, has end state)
     PRACTICE = "practice"      # Recurring activity (generates tasks on rhythm)
+    ORG = "org"                # Shared workspace with group inbox
 
 
 class PriorityStatus(StrEnum):
@@ -38,10 +39,8 @@ class Priority:
     # Lower rank = higher importance (rank 1 is most important)
     rank: int | None = None
 
-    # Task assignment settings (for shared priorities)
-    # These are mutually exclusive; both False = unassigned (manual claim)
-    auto_assign_owner: bool = True    # Assign new tasks to priority owner
-    auto_assign_creator: bool = False  # Assign new tasks to task creator
+    # Priority-level assignment (replaces task-level assigned_to)
+    assigned_to_entity_id: str | None = None  # Entity responsible for this priority
 
     # Engagement tracking (updated when child tasks are completed)
     last_engaged_at: datetime | None = None
@@ -86,3 +85,11 @@ class Initiative(Priority):
     """An ongoing bucket of work. Pull-based and tactical, no special fields."""
 
     priority_type: PriorityType = PriorityType.INITIATIVE
+
+
+@dataclass
+class Org(Priority):
+    """A shared workspace with a group inbox. Tasks directly under an Org
+    appear in the personal inboxes of all group members."""
+
+    priority_type: PriorityType = PriorityType.ORG
