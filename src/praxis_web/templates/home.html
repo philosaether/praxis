@@ -444,12 +444,16 @@
 
         // Update detail pane based on mode
         if (mode === 'priorities') {
-            // Tree is always the primary priorities view
-            // Mobile: tree replaces the item list (single pane)
-            // Desktop: tree loads into detail pane (right side), list stays in left pane
             if (window.innerWidth <= 768) {
-                htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+                // Mobile: tree is the primary view. The nav button's hx-get loads the list,
+                // so we delay the tree fetch to ensure it overwrites the list.
+                setTimeout(function() {
+                    htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+                }, 50);
+                var toggle = document.getElementById('mobile-tree-toggle');
+                if (toggle) toggle.textContent = 'view as list';
             } else {
+                // Desktop: tree loads into detail pane, list stays in left pane
                 htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
             }
         } else if (mode === 'friends') {

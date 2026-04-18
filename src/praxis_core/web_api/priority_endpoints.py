@@ -64,6 +64,27 @@ def _get_priority_tasks(priority_id: str):
     return list_tasks(priority_id=priority_id, include_done=True)
 
 
+def _auto_share_with_group(priority_id: str, entity_id: str, graph, owner_user_id: int):
+    """If entity_id is a group, share the priority with all group members as contributors."""
+    from praxis_core.persistence.database import get_connection
+    with get_connection() as conn:
+        entity = conn.execute("SELECT type FROM entities WHERE id = ?", (entity_id,)).fetchone()
+        if not entity or entity["type"] != "group":
+            return
+        members = conn.execute(
+            "SELECT user_id FROM entity_members WHERE entity_id = ?", (entity_id,)
+        ).fetchall()
+        for member in members:
+            if member["user_id"] != owner_user_id:
+                graph.share_with_user(priority_id, member["user_id"], "contributor", allow_adoption=False)
+        # Clear graph caches for all members
+        from praxis_core.web_api.app import clear_graph_cache
+        for member in members:
+            user_row = conn.execute("SELECT entity_id FROM users WHERE id = ?", (member["user_id"],)).fetchone()
+            if user_row and user_row["entity_id"]:
+                clear_graph_cache(user_row["entity_id"])
+
+
 def _generate_priority_id(name: str, graph) -> str:
     """Generate a unique ULID for a priority."""
     from ulid import ULID
@@ -158,6 +179,10 @@ async def create_priority_full(
                 priority.due_date = None
 
     graph.add(priority)
+
+    # Auto-share with group members if assigned to a group
+    if priority.assigned_to_entity_id and user:
+        _auto_share_with_group(priority.id, priority.assigned_to_entity_id, graph, user.id)
 
     # Handle parent link
     if parent_id and parent_id.strip():
@@ -526,7 +551,13 @@ async def update_priority_properties(
     priority.updated_at = datetime.now()
 
     # Update priority assignment
-    priority.assigned_to_entity_id = assigned_to_entity_id.strip() if assigned_to_entity_id else None
+    new_assignee = assigned_to_entity_id.strip() if assigned_to_entity_id else None
+    old_assignee = priority.assigned_to_entity_id
+    priority.assigned_to_entity_id = new_assignee
+
+    # Auto-share with group members if assignment changed to a group
+    if new_assignee and new_assignee != old_assignee and user:
+        _auto_share_with_group(priority_id, new_assignee, graph, user.id)
 
     # Update type-specific fields
     if isinstance(priority, Goal):
