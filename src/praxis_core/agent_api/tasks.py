@@ -57,7 +57,6 @@ def _serialize(t, tags: set[str] | None = None, score_data: dict | None = None) 
         "priority_id": t.priority_id,
         "priority_name": t.priority_name,
         "entity_id": t.entity_id,
-        "assigned_to": t.assigned_to,
         "created_by": t.created_by,
         "is_in_outbox": t.is_in_outbox,
         "created_at": t.created_at.isoformat() if t.created_at else None,
@@ -95,7 +94,6 @@ async def create_task_endpoint(body: CreateTaskRequest, user: User = Depends(get
         due_date=parsed_due,
         priority_id=body.priority_id,
         entity_id=entity_id,
-        assigned_to=user.id,
         created_by=user.id,
     )
     return _serialize(task)
@@ -127,7 +125,6 @@ async def list_tasks_endpoint(
         status=status_filter,
         include_done=include_done,
         entity_id=user.entity_id,
-        assigned_to=user.id,
         inbox_only=inbox,
         outbox_only=outbox,
         tag_names=tag_names,

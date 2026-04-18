@@ -116,18 +116,8 @@ def _evaluate_due_date(params: dict, task: Task | None, ctx: EvaluationContext) 
 
 
 def _evaluate_assigned_to(params: dict, task: Task | None) -> bool:
-    """Check task assignment."""
-    if task is None:
-        return False
-
-    expected = params.get("value") or params.get("assigned_to", "")
-
-    if expected == "me":
-        # Caller should resolve "me" to actual user ID before evaluation
-        # For now, just check if assigned
-        return task.assigned_to is not None
-
-    return str(task.assigned_to) == str(expected)
+    """Legacy: task-level assignment removed. Always returns True (no-op)."""
+    return True
 
 
 def _evaluate_completed_before(

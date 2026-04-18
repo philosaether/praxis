@@ -118,9 +118,8 @@ async def create_priority_full(
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Task assignment settings
-    auto_assign_owner: Annotated[str | None, Form()] = "on",
-    auto_assign_creator: Annotated[str | None, Form()] = None,
+    # Priority assignment
+    assigned_to_entity_id: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -142,9 +141,8 @@ async def create_priority_full(
     priority.agent_context = agent_context.strip() if agent_context else None
     priority.description = notes.strip() if notes else None
 
-    # Set task assignment settings (checkboxes: "on" if checked, None if not)
-    priority.auto_assign_owner = auto_assign_owner == "on"
-    priority.auto_assign_creator = auto_assign_creator == "on"
+    # Set priority assignment
+    priority.assigned_to_entity_id = assigned_to_entity_id.strip() if assigned_to_entity_id else None
 
     # Set type-specific fields
     if isinstance(priority, Goal):
@@ -477,9 +475,8 @@ async def update_priority_properties(
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Task assignment settings
-    auto_assign_owner: Annotated[str | None, Form()] = None,
-    auto_assign_creator: Annotated[str | None, Form()] = None,
+    # Priority assignment
+    assigned_to_entity_id: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -512,9 +509,8 @@ async def update_priority_properties(
     priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
-    # Update task assignment settings (checkboxes: "on" if checked, None if not)
-    priority.auto_assign_owner = auto_assign_owner == "on"
-    priority.auto_assign_creator = auto_assign_creator == "on"
+    # Update priority assignment
+    priority.assigned_to_entity_id = assigned_to_entity_id.strip() if assigned_to_entity_id else None
 
     # Update type-specific fields
     if isinstance(priority, Goal):

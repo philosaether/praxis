@@ -21,13 +21,10 @@
             {% endif %}
         </div>
 
-        <!-- Coworking metadata (only shown when creator != assignee) -->
-        {% if task.assigned_to_username and task.assigned_to != task.created_by %}
+        <!-- Creator attribution (shown when task was created by someone else) -->
+        {% if task.created_by_username and task.entity_id != task.created_by %}
         <div class="coworking-meta">
-            {% if task.created_by_username %}
             <span class="meta-chip">created by {{ task.created_by_username }}</span>
-            {% endif %}
-            <span class="meta-chip">assigned to {{ task.assigned_to_username }}</span>
         </div>
         {% endif %}
 

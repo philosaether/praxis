@@ -47,8 +47,10 @@ async def lifespan(app: FastAPI):
     # Startup: seed default rules
     ensure_default_rules()
 
-    # Auto-migrate: tutorial_completed on users
+    # Auto-migrate
     conn = get_connection()
+
+    # tutorial_completed on users
     user_cols = {row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
     if "tutorial_completed" not in user_cols:
         conn.execute("ALTER TABLE users ADD COLUMN tutorial_completed INTEGER NOT NULL DEFAULT 0")
@@ -56,9 +58,29 @@ async def lifespan(app: FastAPI):
         conn.commit()
         _log.warning("Auto-migrated: added tutorial_completed to users")
 
+    # Priority-level assignment
+    p_cols = {row[1] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()}
+    if "assigned_to_entity_id" not in p_cols:
+        conn.execute("ALTER TABLE priorities ADD COLUMN assigned_to_entity_id TEXT REFERENCES entities(id)")
+        conn.execute("UPDATE priorities SET assigned_to_entity_id = entity_id WHERE entity_id IS NOT NULL")
+        conn.commit()
+        _log.warning("Auto-migrated: added assigned_to_entity_id to priorities")
+    # Drop legacy columns if present
+    for col in ("auto_assign_owner", "auto_assign_creator"):
+        if col in p_cols:
+            try:
+                conn.execute(f"ALTER TABLE priorities DROP COLUMN {col}")
+                conn.commit()
+                _log.warning("Auto-migrated: dropped %s from priorities", col)
+            except Exception:
+                pass  # SQLite < 3.35
+    # Rename entity type
+    conn.execute("UPDATE entities SET type = 'group' WHERE type = 'organization'")
+    conn.commit()
+
     # Diagnostics
     cols = [row[1] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()]
-    missing = [c for c in ("description", "last_engaged_at", "agent_context") if c not in cols]
+    missing = [c for c in ("description", "last_engaged_at", "agent_context", "assigned_to_entity_id") if c not in cols]
     if missing:
         _log.warning("DB schema missing columns on priorities: %s", missing)
     else:
@@ -191,8 +213,7 @@ def serialize_priority(
         "agent_context": p.agent_context,
         "notes": description,  # Keep JSON key as 'notes' for frontend compatibility
         "rank": p.rank,
-        "auto_assign_owner": p.auto_assign_owner,
-        "auto_assign_creator": p.auto_assign_creator,
+        "assigned_to_entity_id": p.assigned_to_entity_id,
         "created_at": fmt_datetime(p.created_at),
         "updated_at": fmt_datetime(p.updated_at),
     }
@@ -269,7 +290,6 @@ def serialize_task(
         "priority_name": t.priority_name,
         "priority_type": t.priority_type,
         "entity_id": t.entity_id,
-        "assigned_to": t.assigned_to,
         "created_by": t.created_by,
         "subtasks": [
             {
@@ -282,16 +302,11 @@ def serialize_task(
         ],
     }
 
-    # Resolve assignee/creator usernames
-    # TODO(beta): N+1 queries — batch-load usernames for task lists
-    if t.assigned_to or t.created_by:
+    # Resolve creator username
+    if t.created_by:
         from praxis_core.persistence.user_repo import get_user as _get_user
-        if t.assigned_to:
-            assignee = _get_user(t.assigned_to)
-            data["assigned_to_username"] = assignee.username if assignee else None
-        if t.created_by:
-            creator = _get_user(t.created_by)
-            data["created_by_username"] = creator.username if creator else None
+        creator = _get_user(t.created_by)
+        data["created_by_username"] = creator.username if creator else None
 
     # Outbox fields
     data["is_in_outbox"] = t.is_in_outbox
