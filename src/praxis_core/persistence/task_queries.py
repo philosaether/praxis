@@ -67,10 +67,6 @@ def list_tasks(
                         query += " AND t.entity_id = ?"
                         params.append(entity_id)
                     query += " AND t.priority_id IS NULL"
-            else:
-                if entity_id is not None:
-                    query += " AND t.entity_id = ?"
-                    params.append(entity_id)
             elif priority_ids:
                 placeholders = ", ".join("?" for _ in priority_ids)
                 query += f" AND t.priority_id IN ({placeholders})"
@@ -78,6 +74,11 @@ def list_tasks(
             elif priority_id:
                 query += " AND t.priority_id = ?"
                 params.append(priority_id)
+            else:
+                # Default queue: scope to user's entity
+                if entity_id is not None:
+                    query += " AND t.entity_id = ?"
+                    params.append(entity_id)
 
         if status:
             query += " AND t.status = ?"
