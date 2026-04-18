@@ -3439,6 +3439,16 @@ textarea.property-input {
   flex-shrink: 0;
 }
 
+.assignee-badge {
+  background: #ebe8e2;
+  color: #4a4a48;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .share-badge {
   background: #3d8c5c;
   color: #fbf9f5;

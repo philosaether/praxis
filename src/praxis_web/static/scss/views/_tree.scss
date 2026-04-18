@@ -183,6 +183,16 @@
   flex-shrink: 0;
 }
 
+.assignee-badge {
+  background: $bg-tertiary;
+  color: $text-secondary;
+  padding: 0.1rem $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: 0.65rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .share-badge {
   background: #3d8c5c;
   color: $bg-primary;

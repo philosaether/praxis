@@ -1,0 +1,137 @@
+{# Org properties form - shared workspace with group inbox #}
+{# Expects: priority, priority_statuses, all_priorities, parents, priority_types #}
+
+{% set readonly = not priority.is_owner %}
+
+<div class="properties-section priority-properties org-properties {% if readonly %}readonly-form{% endif %}">
+    <form hx-post="/priorities/{{ priority.id }}/properties"
+          hx-target="#properties-section"
+          hx-swap="outerHTML">
+
+        <!-- Type selector -->
+        <div class="property-row">
+            <label for="priority_type">Type</label>
+            <select id="priority_type"
+                    name="new_priority_type"
+                    class="property-input type-select"
+                    {% if readonly %}disabled{% endif %}
+                    hx-post="/priorities/{{ priority.id }}/change-type"
+                    hx-target="#properties-section"
+                    hx-swap="outerHTML">
+                {% for t in priority_types %}
+                <option value="{{ t }}" {% if t == 'org' %}selected{% endif %}>
+                    {{ t|title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Name -->
+        <div class="property-row">
+            <label for="name">Name</label>
+            <input type="text"
+                   id="name"
+                   name="name"
+                   value="{{ priority.name }}"
+                   required
+                   autocomplete="off"
+                   {% if readonly %}disabled{% endif %}
+                   class="property-input title-input">
+        </div>
+
+        <!-- Status (values only have active/dormant) -->
+        <div class="property-row">
+            <label for="status">Status</label>
+            <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
+                <option value="active" {% if priority.status == 'active' %}selected{% endif %}>active</option>
+                <option value="dormant" {% if priority.status == 'dormant' %}selected{% endif %}>dormant</option>
+            </select>
+        </div>
+
+        <!-- Parent -->
+        <div class="property-row">
+            <label for="parent_id">Parent</label>
+            <select id="parent_id" name="parent_id" class="property-input" {% if readonly %}disabled{% endif %}>
+                <option value="">None</option>
+                {% for p in all_priorities %}
+                {% if p.id != priority.id %}
+                <option value="{{ p.id }}" {% if parents and p.id in parents|map(attribute='id')|list %}selected{% endif %}>
+                    {{ p.name }} ({{ p.priority_type }})
+                </option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Agent Context -->
+        <div class="property-row">
+            <label for="agent_context">Context</label>
+            <textarea id="agent_context"
+                      name="agent_context"
+                      rows="3"
+                      class="property-input"
+                      {% if readonly %}disabled{% endif %}
+                      placeholder="Context for AI agent...">{{ priority.agent_context or '' }}</textarea>
+        </div>
+
+        {% include "partials/properties/_task_assignment.html" %}
+
+        {# Values are simplified - use notes for any additional context #}
+
+        <!-- Actions (owner only) -->
+        {% if not readonly %}
+        <div class="property-actions">
+            <div class="actions-left">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <span class="save-status" id="save-status"></span>
+                <button type="button"
+                        class="btn btn-danger"
+                        hx-delete="/priorities/{{ priority.id }}"
+                        hx-swap="none"
+                        hx-confirm="Delete '{{ priority.name }}'? This cannot be undone."
+                        hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'}); }">
+                    Delete
+                </button>
+            </div>
+            <div class="actions-right">
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="openShareModal('{{ priority.id }}', {{ priority.name|tojson|e }})">
+                    Share
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="property-errors" class="property-errors"></div>
+    </form>
+
+    <!-- Sharing Status -->
+    {% if priority.is_shared_with_me %}
+    <div class="share-status shared-with-me">
+        <span class="share-badge">&#x263A;</span>
+        <span>Shared with you</span>
+    </div>
+    {% elif priority.shares and priority.shares|length > 0 %}
+    <div class="share-status shared-by-me">
+        <span class="share-badge">&#x263A;</span>
+        <span>Shared with {{ priority.shares|length }} user(s):</span>
+        <ul class="share-list">
+            {% for share in priority.shares %}
+            <li>{{ share.username or share.entity_name }} ({{ share.permission }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="property-meta">
+        <span class="meta-item">{{ priority.id }}</span>
+        {% if priority.created_at %}
+        <span class="meta-item">Created: {{ priority.created_at }}</span>
+        {% endif %}
+        {% if priority.updated_at %}
+        <span class="meta-item">Updated: {{ priority.updated_at }}</span>
+        {% endif %}
+    </div>
+</div>

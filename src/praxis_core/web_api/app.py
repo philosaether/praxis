@@ -218,6 +218,27 @@ def serialize_priority(
         "updated_at": fmt_datetime(p.updated_at),
     }
 
+    # Resolve assignee name
+    if p.assigned_to_entity_id:
+        from praxis_core.persistence.database import get_connection as _get_conn_ent
+        with _get_conn_ent() as conn:
+            ent_row = conn.execute(
+                "SELECT name, type FROM entities WHERE id = ?", (p.assigned_to_entity_id,)
+            ).fetchone()
+            if ent_row:
+                # For personal entities, show the username instead
+                if ent_row["type"] == "personal":
+                    user_row = conn.execute(
+                        "SELECT username FROM users WHERE entity_id = ?", (p.assigned_to_entity_id,)
+                    ).fetchone()
+                    data["assigned_to_name"] = user_row["username"] if user_row else ent_row["name"]
+                else:
+                    data["assigned_to_name"] = ent_row["name"]
+            else:
+                data["assigned_to_name"] = None
+    else:
+        data["assigned_to_name"] = None
+
     # Add ownership/sharing info if entity context provided
     if current_entity_id:
         is_owner = p.entity_id == current_entity_id
