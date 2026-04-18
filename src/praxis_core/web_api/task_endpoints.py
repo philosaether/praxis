@@ -210,7 +210,20 @@ async def list_tasks_endpoint(
     search_query = q.strip() if q else None
 
     entity_id = user.entity_id if user else None
-    user_id = user.id if user else None
+    graph = _get_graph(entity_id)
+
+    # For inbox: find Org-type priorities assigned to groups the user belongs to
+    org_priority_ids = None
+    if inbox and user:
+        from praxis_core.persistence.user_repo import list_user_groups
+        user_groups = list_user_groups(user.id)
+        group_entity_ids = {g["entity_id"] for g in user_groups}
+        if group_entity_ids:
+            org_priority_ids = [
+                p.id for p in graph.nodes.values()
+                if p.priority_type.value == "org"
+                and p.assigned_to_entity_id in group_entity_ids
+            ]
 
     tasks = list_tasks(
         priority_id=priority,
@@ -220,8 +233,8 @@ async def list_tasks_endpoint(
         outbox_only=outbox,
         tag_names=tag_names,
         search_query=search_query,
+        org_priority_ids=org_priority_ids,
     )
-    graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     # Load rules and tags for rule-based scoring

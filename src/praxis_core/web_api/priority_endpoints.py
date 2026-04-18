@@ -344,12 +344,25 @@ async def get_priority_for_edit(
     priority_data = _serialize_priority(priority, current_entity_id=entity_id, shares=shares)
     priority_data["notes_raw"] = priority.description or ""
 
+    # Fetch friends and groups for assignee picker
+    friends = []
+    groups = []
+    if user and user.id:
+        from praxis_core.persistence.friend_repo import list_friends
+        from praxis_core.persistence.user_repo import list_user_groups
+        friends = list_friends(user.id)
+        # Include the current user in the list (for self-assignment)
+        friends.insert(0, {"id": user.id, "username": user.username, "entity_id": user.entity_id})
+        groups = list_user_groups(user.id)
+
     return {
         "priority": priority_data,
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_types": [t.value for t in PriorityType],
         "priority_statuses": [s.value for s in PriorityStatus],
+        "friends": friends,
+        "groups": groups,
         "edit_mode": True,
     }
 

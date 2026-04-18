@@ -1,5 +1,5 @@
 {# Priority assignment - include in priority property forms #}
-{# Expects: priority, friends (list of {entity_id, username}) #}
+{# Expects: priority, friends (list of {entity_id, username}), groups (list of {entity_id, name}) #}
 {# Only shown to owner #}
 
 {% if priority.is_owner %}
@@ -8,11 +8,24 @@
     <label for="assigned_to_entity_id">Assigned to</label>
     <select name="assigned_to_entity_id" id="assigned_to_entity_id" class="property-input">
         <option value="">Unassigned</option>
-        {% for friend in friends %}
-        <option value="{{ friend.entity_id }}" {% if priority.assigned_to_entity_id == friend.entity_id %}selected{% endif %}>
-            {{ friend.username }}
-        </option>
-        {% endfor %}
+        {% if friends %}
+        <optgroup label="People">
+            {% for friend in friends %}
+            <option value="{{ friend.entity_id }}" {% if priority.assigned_to_entity_id == friend.entity_id %}selected{% endif %}>
+                {{ friend.username }}
+            </option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
+        {% if groups %}
+        <optgroup label="Groups">
+            {% for group in groups %}
+            <option value="{{ group.entity_id }}" {% if priority.assigned_to_entity_id == group.entity_id %}selected{% endif %}>
+                {{ group.name }}
+            </option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
     </select>
 </div>
 {% endif %}

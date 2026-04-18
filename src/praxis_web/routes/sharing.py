@@ -76,6 +76,29 @@ async def remove_friend(request: Request, friend_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Groups
+# ---------------------------------------------------------------------------
+
+@router.post("/groups", response_class=HTMLResponse)
+async def create_group(request: Request):
+    """Create a group entity."""
+    form = await request.form()
+    name = form.get("name", "").strip()
+    member_ids = [int(uid) for uid in form.getlist("member_ids") if uid]
+
+    async with api_client(request) as client:
+        response = await client.post(
+            "/api/auth/groups",
+            json={"name": name, "member_ids": member_ids}
+        )
+        if response.status_code != 200:
+            return HTMLResponse(content="<div class='error'>Failed to create group</div>")
+
+    # Re-render friends list to show the new group
+    return await _render_friends_list(request, as_template_response=True)
+
+
+# ---------------------------------------------------------------------------
 # Friend Requests
 # ---------------------------------------------------------------------------
 

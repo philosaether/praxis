@@ -62,6 +62,8 @@ from praxis_core.persistence.user_repo import (
     list_users,
     update_user_password,
     mark_tutorial_completed,
+    create_group,
+    list_user_groups,
     delete_user,
 )
 from praxis_core.persistence.session_repo import (
@@ -152,6 +154,8 @@ __all__ = [
     "list_users",
     "update_user_password",
     "mark_tutorial_completed",
+    "create_group",
+    "list_user_groups",
     "delete_user",
     "create_session",
     "get_session",

@@ -227,6 +227,26 @@ async def tutorial_completed(user: User = Depends(get_current_user)):
     return {"message": "Tutorial marked as completed"}
 
 
+@router.post("/groups")
+async def create_group_endpoint(request: Request, user: User = Depends(get_current_user)):
+    """Create a group entity with members."""
+    body = await request.json()
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Group name is required")
+    member_ids = body.get("member_ids", [])
+    from praxis_core.persistence import create_group
+    entity_id = create_group(name, user.id, member_ids)
+    return {"entity_id": entity_id, "name": name}
+
+
+@router.get("/groups")
+async def list_groups_endpoint(user: User = Depends(get_current_user)):
+    """List groups the current user belongs to."""
+    from praxis_core.persistence import list_user_groups
+    return {"groups": list_user_groups(user.id)}
+
+
 @router.get("/users", response_model=list[UserResponse])
 async def get_users(user: User = Depends(get_current_user)):
     """
