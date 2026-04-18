@@ -95,8 +95,11 @@ async def render_full_page(
         notif_response = await client.get("/api/friend-requests/notifications")
         notif_data = notif_response.json() if notif_response.status_code == 200 else {"total": 0}
 
-    # New user detection: no priorities (always fetched regardless of mode)
-    is_new_user = len(priorities_data.get("priorities", [])) == 0
+    # New user detection: no priorities AND hasn't completed tutorial
+    is_new_user = (
+        len(priorities_data.get("priorities", [])) == 0
+        and not user.get("tutorial_completed", False)
+    )
 
     return templates.TemplateResponse(
         request,

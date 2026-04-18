@@ -57,6 +57,7 @@ class UserResponse(BaseModel):
     email: str | None
     role: str
     is_active: bool
+    tutorial_completed: bool = False
 
 
 # -----------------------------------------------------------------------------
@@ -214,7 +215,16 @@ async def get_me(user: User = Depends(get_current_user)):
         email=user.email,
         role=user.role.value,
         is_active=user.is_active,
+        tutorial_completed=user.tutorial_completed,
     )
+
+
+@router.post("/tutorial-completed")
+async def tutorial_completed(user: User = Depends(get_current_user)):
+    """Mark the onboarding tutorial as completed."""
+    from praxis_core.persistence import mark_tutorial_completed
+    mark_tutorial_completed(user.id)
+    return {"message": "Tutorial marked as completed"}
 
 
 @router.get("/users", response_model=list[UserResponse])

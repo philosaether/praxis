@@ -42,6 +42,10 @@
   visibility: visible;
 }
 
+.shepherd-element.tutorial-centered .shepherd-text {
+  text-align: center;
+}
+
 .shepherd-element[data-popper-reference-hidden]:not(.shepherd-centered) {
   opacity: 0;
   pointer-events: none;
@@ -133,8 +137,18 @@
     color: $accent-dim;
   }
 
+  .tutorial-header {
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 $spacing-md;
+    color: $accent;
+  }
+
+
   p {
     margin-top: 0;
+    margin-bottom: $spacing-md;
     &:last-child { margin-bottom: 0; }
   }
 }

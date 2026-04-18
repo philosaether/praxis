@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     entity_id TEXT REFERENCES entities(id),
     role TEXT NOT NULL DEFAULT 'user',
     is_active INTEGER NOT NULL DEFAULT 1,
+    tutorial_completed INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login TEXT
 );
@@ -290,6 +291,17 @@ def update_user_password(user_id: int, new_password: str) -> bool:
         return cursor.rowcount > 0
 
 
+def mark_tutorial_completed(user_id: int) -> bool:
+    """Mark the tutorial as completed for a user. Returns True if updated."""
+    ensure_schema()
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "UPDATE users SET tutorial_completed = 1 WHERE id = ?",
+            (user_id,)
+        )
+        return cursor.rowcount > 0
+
+
 def delete_user(user_id: int) -> bool:
     """Delete a user and all their sessions. Returns True if deleted."""
     ensure_schema()
@@ -310,6 +322,7 @@ def _row_to_user(row) -> User:
 
     # Handle entity_id (may not exist in older schemas)
     entity_id = row["entity_id"] if "entity_id" in row.keys() else None
+    tutorial_completed = bool(row["tutorial_completed"]) if "tutorial_completed" in row.keys() else False
 
     return User(
         id=row["id"],
@@ -319,6 +332,7 @@ def _row_to_user(row) -> User:
         entity_id=entity_id,
         role=UserRole(row["role"]),
         is_active=bool(row["is_active"]),
+        tutorial_completed=tutorial_completed,
         created_at=created_at,
         last_login=last_login,
     )

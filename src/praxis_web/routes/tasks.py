@@ -283,9 +283,9 @@ async def task_quick_assign(request: Request, task_id: str):
         return HTMLResponse(content="", status_code=400)
 
     async with _api_client(request) as client:
-        response = await client.put(
-            f"/api/tasks/{task_id}",
-            json={"priority_id": priority_id}
+        response = await client.post(
+            f"/api/tasks/{task_id}/reassign",
+            data={"priority_id": priority_id}
         )
         if response.status_code == 404:
             return HTMLResponse(content="", status_code=404)

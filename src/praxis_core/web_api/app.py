@@ -47,8 +47,16 @@ async def lifespan(app: FastAPI):
     # Startup: seed default rules
     ensure_default_rules()
 
-    # Diagnostics
+    # Auto-migrate: tutorial_completed on users
     conn = get_connection()
+    user_cols = {row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
+    if "tutorial_completed" not in user_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN tutorial_completed INTEGER NOT NULL DEFAULT 0")
+        conn.execute("UPDATE users SET tutorial_completed = 1")
+        conn.commit()
+        _log.warning("Auto-migrated: added tutorial_completed to users")
+
+    # Diagnostics
     cols = [row[1] for row in conn.execute("PRAGMA table_info(priorities)").fetchall()]
     missing = [c for c in ("description", "last_engaged_at", "agent_context") if c not in cols]
     if missing:

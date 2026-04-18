@@ -93,6 +93,18 @@ async def logout(request: Request):
 
 
 # -----------------------------------------------------------------------------
+# Tutorial
+# -----------------------------------------------------------------------------
+
+@router.post("/tutorial-completed")
+async def tutorial_completed(request: Request):
+    """Mark the onboarding tutorial as completed."""
+    async with api_client(request) as client:
+        await client.post("/api/auth/tutorial-completed")
+    return {"message": "Tutorial marked as completed"}
+
+
+# -----------------------------------------------------------------------------
 # Signup
 # -----------------------------------------------------------------------------
 
