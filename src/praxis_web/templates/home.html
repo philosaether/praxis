@@ -1253,12 +1253,12 @@
                     list.innerHTML = '<p class="text-muted">Add friends first to create a group.</p>';
                     return;
                 }
-                list.innerHTML = friends.map(f =>
-                    `<label class="checkbox-label">
-                        <input type="checkbox" name="member_ids" value="${f.id}">
-                        <span>${f.username}</span>
-                    </label>`
-                ).join('');
+                list.innerHTML = friends.map(function(f) {
+                    return '<label class="checkbox-label">' +
+                        '<input type="checkbox" name="member_ids" value="' + f.id + '">' +
+                        '<span>' + f.username + '</span>' +
+                    '</label>';
+                }).join('');
             });
     };
 
