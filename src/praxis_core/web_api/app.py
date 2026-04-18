@@ -184,12 +184,38 @@ def render_md(text: str) -> str:
     return markdown.markdown(text, extensions=["fenced_code", "tables"])
 
 
+def _resolve_entity_name(entity_id: str, cache: dict | None = None) -> str | None:
+    """Resolve an entity_id to a display name. Uses cache if provided."""
+    if cache is not None and entity_id in cache:
+        return cache[entity_id]
+
+    from praxis_core.persistence.database import get_connection as _get_conn
+    with _get_conn() as conn:
+        ent_row = conn.execute(
+            "SELECT name, type FROM entities WHERE id = ?", (entity_id,)
+        ).fetchone()
+        if not ent_row:
+            name = None
+        elif ent_row["type"] == "personal":
+            user_row = conn.execute(
+                "SELECT username FROM users WHERE entity_id = ?", (entity_id,)
+            ).fetchone()
+            name = user_row["username"] if user_row else ent_row["name"]
+        else:
+            name = ent_row["name"]
+
+    if cache is not None:
+        cache[entity_id] = name
+    return name
+
+
 def serialize_priority(
     p,
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
     include_action_cards: bool = False,
+    entity_name_cache: dict | None = None,
 ) -> dict:
     """Convert a Priority to JSON-serializable dict.
 
@@ -218,26 +244,11 @@ def serialize_priority(
         "updated_at": fmt_datetime(p.updated_at),
     }
 
-    # Resolve assignee name
-    if p.assigned_to_entity_id:
-        from praxis_core.persistence.database import get_connection as _get_conn_ent
-        with _get_conn_ent() as conn:
-            ent_row = conn.execute(
-                "SELECT name, type FROM entities WHERE id = ?", (p.assigned_to_entity_id,)
-            ).fetchone()
-            if ent_row:
-                # For personal entities, show the username instead
-                if ent_row["type"] == "personal":
-                    user_row = conn.execute(
-                        "SELECT username FROM users WHERE entity_id = ?", (p.assigned_to_entity_id,)
-                    ).fetchone()
-                    data["assigned_to_name"] = user_row["username"] if user_row else ent_row["name"]
-                else:
-                    data["assigned_to_name"] = ent_row["name"]
-            else:
-                data["assigned_to_name"] = None
-    else:
-        data["assigned_to_name"] = None
+    # Resolve assignee name (cached across serialization calls)
+    data["assigned_to_name"] = (
+        _resolve_entity_name(p.assigned_to_entity_id, entity_name_cache)
+        if p.assigned_to_entity_id else None
+    )
 
     # Add ownership/sharing info if entity context provided
     if current_entity_id:

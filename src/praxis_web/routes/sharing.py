@@ -117,12 +117,16 @@ async def group_detail(request: Request, entity_id: str):
         friends_resp = await client.get("/api/friends")
         friends = friends_resp.json() if friends_resp.status_code == 200 else []
 
+    # Filter friends to only those not already in the group
+    member_ids = {m["id"] for m in group.get("members", [])}
+    non_members = [f for f in friends if f["id"] not in member_ids]
+
     return templates.TemplateResponse(
         request,
         "partials/group_detail.html",
         {
             "group": group,
-            "friends": friends,
+            "non_members": non_members,
             "is_owner": group.get("user_role") == "owner",
             "current_user_id": current_user.get("id"),
         }

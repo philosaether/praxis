@@ -30,6 +30,10 @@ def _get_graph(entity_id: str | None = None):
     return get_graph(entity_id=entity_id)
 
 
+# Shared cache for entity name resolution within a request
+_entity_name_cache: dict = {}
+
+
 def _serialize_priority(
     p,
     render_markdown: bool = False,
@@ -45,6 +49,7 @@ def _serialize_priority(
         current_entity_id=current_entity_id,
         shares=shares,
         include_action_cards=include_action_cards,
+        entity_name_cache=_entity_name_cache,
     )
 
 
@@ -67,22 +72,23 @@ def _get_priority_tasks(priority_id: str):
 def _auto_share_with_group(priority_id: str, entity_id: str, graph, owner_user_id: int):
     """If entity_id is a group, share the priority with all group members as contributors."""
     from praxis_core.persistence.database import get_connection
+    from praxis_core.web_api.app import clear_graph_cache
     with get_connection() as conn:
         entity = conn.execute("SELECT type FROM entities WHERE id = ?", (entity_id,)).fetchone()
         if not entity or entity["type"] != "group":
             return
         members = conn.execute(
-            "SELECT user_id FROM entity_members WHERE entity_id = ?", (entity_id,)
+            """SELECT em.user_id, u.entity_id as user_entity_id
+               FROM entity_members em
+               JOIN users u ON em.user_id = u.id
+               WHERE em.entity_id = ?""",
+            (entity_id,)
         ).fetchall()
         for member in members:
             if member["user_id"] != owner_user_id:
                 graph.share_with_user(priority_id, member["user_id"], "contributor", allow_adoption=False)
-        # Clear graph caches for all members
-        from praxis_core.web_api.app import clear_graph_cache
-        for member in members:
-            user_row = conn.execute("SELECT entity_id FROM users WHERE id = ?", (member["user_id"],)).fetchone()
-            if user_row and user_row["entity_id"]:
-                clear_graph_cache(user_row["entity_id"])
+            if member["user_entity_id"]:
+                clear_graph_cache(member["user_entity_id"])
 
 
 def _generate_priority_id(name: str, graph) -> str:
