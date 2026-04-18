@@ -58,6 +58,7 @@ function startTutorial() {
   tour.on('complete', () => {
     container.classList.remove('tutorial-active');
     removeAllListeners();
+    fetch('/tutorial-completed', { method: 'POST' });
   });
   tour.on('cancel', () => {
     container.classList.remove('tutorial-active');

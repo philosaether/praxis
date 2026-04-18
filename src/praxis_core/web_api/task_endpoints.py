@@ -473,6 +473,26 @@ async def restore_task(
     return {"task": _serialize_task(restored, current_user=user)}
 
 
+@router.post("/{task_id}/reassign")
+async def reassign_task(
+    task_id: str,
+    priority_id: Annotated[str, Form()],
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Reassign a task to a different priority."""
+    task = get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+
+    graph = _get_graph(user.entity_id if user else None)
+    permission = get_task_permission(task, user, graph)
+    if not can_edit_task(permission):
+        return JSONResponse({"error": "Permission denied"}, status_code=403)
+
+    update_task(task_id, priority_id=priority_id.strip())
+    return await get_task_endpoint(task_id, user)
+
+
 @router.post("/{task_id}/properties")
 async def update_task_properties(
     task_id: str,
