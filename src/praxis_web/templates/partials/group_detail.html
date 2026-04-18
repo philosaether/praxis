@@ -1,0 +1,63 @@
+{# Group detail view — shows members with add/remove #}
+{# Expects: group (dict with entity_id, name, members), friends #}
+
+<div class="group-detail">
+    <h2>{{ group.name }}</h2>
+
+    <div class="group-section">
+        <div class="friends-section-header">members</div>
+        {% for member in group.members %}
+        <div class="friend-row" id="group-member-{{ member.id }}">
+            <div class="friend-info">
+                <span class="friend-name">{{ member.username }}</span>
+                <span class="friend-status">{{ member.role }}</span>
+            </div>
+            {% if is_owner and member.id != current_user_id %}
+            <button class="btn btn-sm btn-danger"
+                    hx-delete="/groups/{{ group.entity_id }}/members/{{ member.id }}"
+                    hx-target="#detail-content"
+                    hx-swap="innerHTML"
+                    hx-confirm="Remove {{ member.username }} from {{ group.name }}?">
+                Remove
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if is_owner %}
+    <div class="group-section">
+        <div class="friends-section-header">add member</div>
+        {% set non_members = [] %}
+        {% for friend in friends %}
+            {% set is_member = false %}
+            {% for member in group.members %}
+                {% if member.id == friend.id %}
+                    {% set is_member = true %}
+                {% endif %}
+            {% endfor %}
+            {% if not is_member %}
+                {% set _ = non_members.append(friend) %}
+            {% endif %}
+        {% endfor %}
+
+        {% if non_members %}
+        {% for friend in non_members %}
+        <div class="friend-row">
+            <div class="friend-info">
+                <span class="friend-name">{{ friend.username }}</span>
+            </div>
+            <button class="btn btn-sm btn-primary"
+                    hx-post="/groups/{{ group.entity_id }}/members/{{ friend.id }}"
+                    hx-target="#detail-content"
+                    hx-swap="innerHTML">
+                Add
+            </button>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted">All your friends are already members.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

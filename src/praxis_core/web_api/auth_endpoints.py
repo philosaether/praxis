@@ -247,6 +247,82 @@ async def list_groups_endpoint(user: User = Depends(get_current_user)):
     return {"groups": list_user_groups(user.id)}
 
 
+@router.get("/groups/{entity_id}")
+async def get_group_detail(entity_id: str, user: User = Depends(get_current_user)):
+    """Get group details with members."""
+    from praxis_core.persistence.database import get_connection
+    with get_connection() as conn:
+        entity = conn.execute("SELECT * FROM entities WHERE id = ? AND type = 'group'", (entity_id,)).fetchone()
+        if not entity:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        # Check user is a member
+        membership = conn.execute(
+            "SELECT role FROM entity_members WHERE entity_id = ? AND user_id = ?",
+            (entity_id, user.id)
+        ).fetchone()
+        if not membership:
+            raise HTTPException(status_code=403, detail="Not a member of this group")
+
+        members = conn.execute(
+            """SELECT u.id, u.username, u.entity_id, em.role
+               FROM entity_members em
+               JOIN users u ON em.user_id = u.id
+               WHERE em.entity_id = ?
+               ORDER BY em.role, u.username""",
+            (entity_id,)
+        ).fetchall()
+
+    return {
+        "entity_id": entity_id,
+        "name": entity["name"],
+        "members": [dict(m) for m in members],
+        "user_role": membership["role"],
+    }
+
+
+@router.post("/groups/{entity_id}/members/{user_id}")
+async def add_group_member(entity_id: str, user_id: int, user: User = Depends(get_current_user)):
+    """Add a member to a group."""
+    from praxis_core.persistence.database import get_connection
+    with get_connection() as conn:
+        # Check caller is owner
+        membership = conn.execute(
+            "SELECT role FROM entity_members WHERE entity_id = ? AND user_id = ?",
+            (entity_id, user.id)
+        ).fetchone()
+        if not membership or membership["role"] != "owner":
+            raise HTTPException(status_code=403, detail="Only owners can add members")
+
+        conn.execute(
+            "INSERT OR IGNORE INTO entity_members (entity_id, user_id, role, created_at) VALUES (?, ?, 'member', datetime('now'))",
+            (entity_id, user_id),
+        )
+    return {"ok": True}
+
+
+@router.delete("/groups/{entity_id}/members/{user_id}")
+async def remove_group_member(entity_id: str, user_id: int, user: User = Depends(get_current_user)):
+    """Remove a member from a group."""
+    from praxis_core.persistence.database import get_connection
+    with get_connection() as conn:
+        membership = conn.execute(
+            "SELECT role FROM entity_members WHERE entity_id = ? AND user_id = ?",
+            (entity_id, user.id)
+        ).fetchone()
+        if not membership or membership["role"] != "owner":
+            raise HTTPException(status_code=403, detail="Only owners can remove members")
+
+        if user_id == user.id:
+            raise HTTPException(status_code=400, detail="Cannot remove yourself")
+
+        conn.execute(
+            "DELETE FROM entity_members WHERE entity_id = ? AND user_id = ?",
+            (entity_id, user_id),
+        )
+    return {"ok": True}
+
+
 @router.get("/users", response_model=list[UserResponse])
 async def get_users(user: User = Depends(get_current_user)):
     """
