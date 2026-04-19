@@ -9,9 +9,9 @@
         <div class="template-card"
              hx-post="/rules/new/from-template"
              hx-vals='{"template_id": "{{ template.id }}"}'
-             hx-target="#detail-pane"
+             hx-target="#detail-content"
              hx-swap="innerHTML">
-            <div class="template-icon">{{ template.icon }}</div>
+            <div class="template-icon"><span class="icon icon--lg">{{ template.icon }}</span></div>
             <div class="template-content">
                 <h3 class="template-name">{{ template.name }}</h3>
                 <p class="template-description">{{ template.description }}</p>

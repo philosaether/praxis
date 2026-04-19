@@ -6,7 +6,7 @@
     <div class="detail-nav">
         <a href="#"
            hx-get="/priorities/{{ priority.id }}"
-           hx-target="#detail-pane"
+           hx-target="#detail-content"
            hx-swap="innerHTML"
            class="back-link">
             &larr; Back to View
@@ -14,7 +14,7 @@
         <span class="nav-separator">|</span>
         <a href="#"
            hx-get="/priorities/tree-pane"
-           hx-target="#detail-pane"
+           hx-target="#detail-content"
            hx-swap="innerHTML"
            hx-push-url="/priorities"
            class="back-link">
@@ -24,7 +24,7 @@
 
     <div class="properties-section priority-properties {{ priority.priority_type }}-properties">
         <form hx-post="/priorities/{{ priority.id }}/properties"
-              hx-target="#detail-pane"
+              hx-target="#detail-content"
               hx-swap="innerHTML">
 
             <!-- Header row: Type + Status -->
@@ -36,7 +36,7 @@
                             name="new_priority_type"
                             class="property-input type-select"
                             hx-post="/priorities/{{ priority.id }}/change-type"
-                            hx-target="#detail-pane"
+                            hx-target="#detail-content"
                             hx-swap="innerHTML"
                             hx-trigger="change">
                         {% for t in priority_types %}
@@ -111,6 +111,8 @@
                           oninput="updateCharCount(this, 'desc-count', 800)">{{ priority.notes_raw or '' }}</textarea>
             </div>
 
+            {% include "partials/properties/_task_assignment.html" %}
+
             <!-- Type-specific fields -->
             {% if priority.priority_type == 'goal' %}
             <div class="type-specific-fields goal-fields">
@@ -164,7 +166,7 @@
                     <button type="button"
                             class="btn btn-secondary"
                             hx-get="/priorities/{{ priority.id }}"
-                            hx-target="#detail-pane"
+                            hx-target="#detail-content"
                             hx-swap="innerHTML">
                         Cancel
                     </button>

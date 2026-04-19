@@ -36,9 +36,8 @@ class Task:
     name: str
     status: TaskStatus
 
-    # Ownership and assignment
+    # Ownership
     entity_id: str | None = None  # ULID of owning entity
-    assigned_to: int | None = None  # user_id of assignee (for collaboration)
     created_by: int | None = None  # user_id of creator
 
     # Content

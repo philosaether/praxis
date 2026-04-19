@@ -217,10 +217,8 @@ def evaluate_condition(condition: RuleCondition, ctx: RuleContext) -> bool:
             value = params.get("value")
 
             if prop == "assigned_to":
-                if value == "me":
-                    # TODO: Need current user context
-                    return ctx.task.assigned_to is not None
-                return str(ctx.task.assigned_to) == str(value)
+                # Legacy: task-level assignment removed
+                return True
             elif prop == "status":
                 return ctx.task.status.value == value
             return False

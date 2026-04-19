@@ -5,7 +5,7 @@
     <div id="properties-section">
         <div class="properties-section task-properties">
             <form hx-post="/tasks/create"
-                  hx-target="#detail-pane"
+                  hx-target="#detail-content"
                   hx-swap="innerHTML">
 
                 <!-- Name (required) -->
@@ -59,7 +59,7 @@
                     <div class="actions-right">
                         <button type="button"
                                 class="btn btn-secondary"
-                                onclick="document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
+                                onclick="document.getElementById('detail-content').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
                             Cancel
                         </button>
                     </div>

@@ -8,7 +8,7 @@ from enum import StrEnum
 class EntityType(StrEnum):
     """Type of entity."""
     PERSONAL = "personal"
-    ORGANIZATION = "organization"
+    GROUP = "group"
 
 
 class EntityRole(StrEnum):

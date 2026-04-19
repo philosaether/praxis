@@ -7,7 +7,7 @@
         {% if from_task %}
         <a href="#"
            hx-get="/tasks/{{ from_task }}"
-           hx-target="#detail-pane"
+           hx-target="#detail-content"
            hx-swap="innerHTML"
            class="back-link">
             &larr; Back to Task
@@ -15,7 +15,7 @@
         {% else %}
         <a href="#"
            hx-get="/priorities/tree-pane"
-           hx-target="#detail-pane"
+           hx-target="#detail-content"
            hx-swap="innerHTML"
            hx-push-url="/priorities"
            class="back-link">
@@ -40,12 +40,12 @@
         <h2 class="detail-title-row">
             {% if not parents or parents|length == 0 %}
             {# Top-level: show rank badge #}
-            <span class="rank-badge">#{{ priority.rank or 1 }}</span>
+            <span class="pill pill--xs pill--rank">#{{ priority.rank or 1 }}</span>
             {% endif %}
-            <span class="type-badge {{ priority.priority_type }} large">{{ priority.priority_type|upper }}</span>
+            <span class="pill pill--md pill--{{ priority.priority_type }}">{{ priority.priority_type|upper }}</span>
             <span class="title-text">{{ priority.name }}</span>
             {% if priority.status and priority.status != 'active' %}
-            <span class="status-badge {{ priority.status }}">{{ priority.status }}</span>
+            <span class="pill pill--status-{{ priority.status }}">{{ priority.status }}</span>
             {% endif %}
         </h2>
 
@@ -97,7 +97,7 @@
                 <button type="button"
                         class="btn btn-primary"
                         hx-get="/priorities/{{ priority.id }}/edit"
-                        hx-target="#detail-pane"
+                        hx-target="#detail-content"
                         hx-swap="innerHTML">
                     Edit
                 </button>
@@ -107,7 +107,9 @@
                 {% if priority.is_owner %}
                 <button type="button"
                         class="btn btn-secondary"
-                        onclick="openShareModal('{{ priority.id }}', {{ priority.name|tojson|e }})">
+                        data-share-priority-id="{{ priority.id }}"
+                        data-share-priority-name="{{ priority.name }}"
+                        onclick="openShareModal(this.dataset.sharePriorityId, this.dataset.sharePriorityName)">
                     Share
                 </button>
                 {% include "partials/components/delete_priority_btn.html" %}
@@ -118,12 +120,25 @@
         <!-- Sharing Status -->
         {% if priority.is_shared_with_me %}
         <div class="share-status shared-with-me">
-            <span class="share-icon">&#x1F517;</span>
+            <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
             <span>Shared with you</span>
+            {% if priority.is_adopted %}
+            <button type="button"
+                    class="btn btn-sm btn-secondary"
+                    onclick="unadoptPriority('{{ priority.id }}')">
+                Return to shared
+            </button>
+            {% elif priority.can_adopt %}
+            <button type="button"
+                    class="btn btn-sm btn-primary adopt-btn"
+                    onclick="adoptPriority('{{ priority.id }}')">
+                Adopt
+            </button>
+            {% endif %}
         </div>
         {% elif priority.shares and priority.shares|length > 0 %}
         <div class="share-status shared-by-me">
-            <span class="share-icon">&#x1F91D;</span>
+            <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
             <span>Shared with {{ priority.shares|length }} user(s)</span>
         </div>
         {% endif %}
@@ -143,17 +158,17 @@
         {% for child in children %}
         <li class="child-item {% if child.status != 'active' %}status-{{ child.status }}{% endif %}">
             <span class="indent-arrow">&#8627;</span>
-            <span class="type-badge {{ child.priority_type }} small">{{ child.priority_type|upper }}</span>
+            <span class="pill pill--xs pill--{{ child.priority_type }}">{{ child.priority_type|upper }}</span>
             <a href="#"
                class="child-link"
                hx-get="/priorities/{{ child.id }}"
-               hx-target="#detail-pane"
+               hx-target="#detail-content"
                hx-swap="innerHTML"
                hx-push-url="/priorities/{{ child.id }}">
                 {{ child.name }}
             </a>
             {% if child.status and child.status != 'active' %}
-            <span class="status-indicator">{{ child.status }}</span>
+            <span class="pill pill--xs pill--status-{{ child.status }}">{{ child.status }}</span>
             {% endif %}
         </li>
         {% endfor %}
@@ -180,12 +195,12 @@
             <li class="task-item-compact {% if task.status == 'done' %}done{% endif %}">
                 <a href="#"
                    hx-get="/tasks/{{ task.id }}"
-                   hx-target="#detail-pane"
+                   hx-target="#detail-content"
                    hx-swap="innerHTML">
                     {{ task.name }}
                 </a>
                 {% if task.status == 'done' %}
-                <span class="task-status done">done</span>
+                <span class="pill pill--xs pill--status-done">done</span>
                 {% endif %}
             </li>
             {% endfor %}

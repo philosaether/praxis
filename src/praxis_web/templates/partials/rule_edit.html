@@ -1,5 +1,5 @@
 <div class="detail-view rule-edit" id="rule-edit-{{ rule.id }}">
-    <form id="rule-edit-form" hx-post="/rules/{{ rule.id }}" hx-target="#detail-pane" hx-swap="innerHTML">
+    <form id="rule-edit-form" hx-post="/rules/{{ rule.id }}" hx-target="#detail-content" hx-swap="innerHTML">
         <div class="detail-header">
             <input type="text" name="name" value="{{ rule.name }}" class="rule-name-input" placeholder="Rule name">
         </div>
@@ -64,7 +64,7 @@
             <div class="rule-edit-actions-right">
                 <button type="button" class="btn btn-secondary"
                         hx-get="/rules/{{ rule.id }}"
-                        hx-target="#detail-pane">Cancel</button>
+                        hx-target="#detail-content">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save</button>
             </div>
         </div>

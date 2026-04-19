@@ -6,10 +6,10 @@
     <a href="#"
        class="parent-link"
        hx-get="/priorities/{{ parent.id }}"
-       hx-target="#detail-pane"
+       hx-target="#detail-content"
        hx-swap="innerHTML"
        hx-push-url="/priorities/{{ parent.id }}">
-        <span class="type-badge {{ parent.priority_type }} small">{{ parent.priority_type|upper }}</span>
+        <span class="pill pill--xs pill--{{ parent.priority_type }}">{{ parent.priority_type|upper }}</span>
         <span class="parent-name">{{ parent.name }}</span>
     </a>
 </div>

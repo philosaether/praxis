@@ -1,0 +1,74 @@
+// =============================================================================
+// Buttons
+// =============================================================================
+@use '../base/variables' as *;
+
+.btn {
+  padding: $spacing-sm $spacing-lg;
+  border: none;
+  border-radius: $radius-lg;
+  font-size: $font-size-base;
+  font-family: $font-family-body;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-base;
+}
+
+.btn-primary {
+  // Gold gradient per design guide (mimics light on foil)
+  background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
+  color: white;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
+    box-shadow: $shadow-md;
+  }
+}
+
+.btn-secondary {
+  background: transparent;
+  color: $accent;
+  border: 1px solid $border-subtle;
+
+  &:hover {
+    background: $accent-glow;
+    border-color: $accent;
+  }
+}
+
+.btn-danger {
+  background: transparent;
+  color: $text-muted;
+  border: 1px solid $border-subtle;
+
+  &:hover {
+    background: rgba($error, 0.1);
+    color: $error;
+    border-color: $error;
+  }
+}
+
+.btn-sm {
+  padding: $spacing-sm $spacing-lg;
+  font-size: $font-size-sm;
+}
+
+// -----------------------------------------------------------------------------
+// New Item Controls
+// -----------------------------------------------------------------------------
+
+.new-priority-group {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
+.priority-type-select {
+  background: $bg-tertiary;
+  color: $text-primary;
+  border: 1px solid $border;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}

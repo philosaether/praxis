@@ -3,7 +3,7 @@
 
 <div class="trigger-editor">
     <form hx-post="/priorities/{{ priority.id }}/trigger"
-          hx-target="#detail-pane"
+          hx-target="#detail-content"
           hx-swap="innerHTML">
 
         <h4>Trigger Configuration</h4>
@@ -105,7 +105,7 @@
             <button type="button"
                     class="btn btn-danger"
                     hx-delete="/priorities/{{ priority.id }}/trigger"
-                    hx-target="#detail-pane"
+                    hx-target="#detail-content"
                     hx-swap="innerHTML"
                     hx-confirm="Remove trigger configuration?">
                 Remove Trigger

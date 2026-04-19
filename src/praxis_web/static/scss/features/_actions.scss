@@ -1,0 +1,332 @@
+// =============================================================================
+// Actions Editor, Triggers, YAML editor
+// =============================================================================
+@use '../base/variables' as *;
+
+// -----------------------------------------------------------------------------
+// Trigger Section (Practice detail view)
+// -----------------------------------------------------------------------------
+
+.trigger-section {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-subtle;
+}
+
+.trigger-status {
+  display: inline-block;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: 500;
+
+  &.configured {
+    background: rgba($accent, 0.15);
+    color: $accent;
+  }
+
+  &.not-configured {
+    background: $bg-tertiary;
+    color: $text-muted;
+  }
+}
+
+.trigger-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.trigger-editor {
+  margin-top: $spacing-lg;
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+
+  h4 {
+    margin: 0 0 $spacing-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $text-primary;
+
+    &:not(:first-child) {
+      margin-top: $spacing-lg;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid $border-subtle;
+    margin: $spacing-lg 0;
+  }
+
+  .form-group {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-xs;
+      font-size: $font-size-sm;
+      font-weight: 500;
+      color: $text-secondary;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      background: $bg-primary;
+      border: 1px solid $border-subtle;
+      border-radius: $radius-md;
+      color: $text-primary;
+      font-size: $font-size-base;
+      font-family: $font-family-body;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+        box-shadow: 0 0 0 2px $accent-glow;
+      }
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-hint {
+      display: block;
+      margin-top: $spacing-xs;
+      font-size: $font-size-xs;
+      color: $text-muted;
+
+      code {
+        background: $bg-tertiary;
+        padding: 0.1em 0.3em;
+        border-radius: $radius-sm;
+        font-family: $font-family-mono;
+      }
+    }
+  }
+
+  .checkbox-group {
+    label {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      cursor: pointer;
+      font-weight: normal;
+      color: $text-primary;
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid $border-subtle;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Actions Editor (Practice DSL v2)
+// -----------------------------------------------------------------------------
+
+.actions-editor-container {
+  margin-top: $spacing-md;
+}
+
+.actions-mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: $spacing-md;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-md;
+  overflow: hidden;
+  width: fit-content;
+
+  .mode-btn {
+    padding: $spacing-sm $spacing-md;
+    background: $bg-tertiary;
+    color: $text-secondary;
+    border: none;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    font-family: $font-family-body;
+    transition: all $transition-base;
+
+    &:hover {
+      background: $bg-secondary;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
+      color: white;
+    }
+
+    & + .mode-btn {
+      border-left: 1px solid $border-subtle;
+    }
+  }
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.action-sentence {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: $bg-tertiary;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  line-height: 1.5;
+
+  &.editable {
+    cursor: default;
+
+    .editable-chip {
+      background: rgba($accent, 0.1);
+      padding: 0.1rem 0.4rem;
+      border-radius: $radius-sm;
+      cursor: pointer;
+      transition: background $transition-base;
+
+      &:hover {
+        background: rgba($accent, 0.2);
+      }
+    }
+  }
+
+  .action-drag-handle {
+    color: $text-muted;
+    cursor: grab;
+    flex-shrink: 0;
+    padding: 0 $spacing-xs;
+
+    &:hover {
+      color: $text-secondary;
+    }
+  }
+
+  .action-text {
+    flex: 1;
+  }
+
+  .action-remove {
+    background: none;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 $spacing-xs;
+    opacity: 0;
+    transition: opacity $transition-base, color $transition-base;
+
+    &:hover {
+      color: $error;
+    }
+  }
+
+  &:hover .action-remove {
+    opacity: 1;
+  }
+}
+
+.add-action-btn {
+  margin-top: $spacing-sm;
+}
+
+// YAML editor (overrides base definition in _rules.scss)
+.yaml-editor {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  line-height: 1.4;
+  min-height: 200px;
+}
+
+.yaml-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.yaml-status {
+  font-size: $font-size-sm;
+
+  &.success {
+    color: $success;
+  }
+
+  &.error {
+    color: $error;
+  }
+
+  &--saved {
+    color: $success;
+  }
+
+  &--error {
+    color: $error;
+  }
+}
+
+// Action preview
+.action-preview {
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border-radius: $radius-md;
+  border-left: 3px solid $accent;
+
+  .preview-sentence {
+    margin: 0;
+    font-size: $font-size-lg;
+    color: $text-primary;
+    line-height: 1.5;
+  }
+}
+
+.preview-details {
+  margin-top: $spacing-md;
+
+  .preview-row {
+    display: flex;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+
+    label {
+      color: $text-muted;
+      font-size: $font-size-sm;
+    }
+
+    span {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+// Field hint
+.field-hint {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $text-muted;
+}

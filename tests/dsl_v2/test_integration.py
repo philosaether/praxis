@@ -30,14 +30,14 @@ def test_db(tmp_path, monkeypatch):
     importlib.reload(db_module)  # Force reload to pick up new env var
 
     # Ensure all required schemas exist
-    import praxis_core.persistence.user_persistence as user_persistence
+    import praxis_core.persistence.user_repo as user_repo
     import praxis_core.persistence.task_persistence as task_persistence
     import praxis_core.persistence.tag_persistence as tag_persistence
-    importlib.reload(user_persistence)
+    importlib.reload(user_repo)
     importlib.reload(task_persistence)
     importlib.reload(tag_persistence)
 
-    user_persistence.ensure_schema()  # Creates users, entities, sessions tables
+    user_repo.ensure_schema()  # Creates users, entities, sessions tables
     task_persistence.ensure_schema()  # Creates tasks table
     tag_persistence.ensure_schema()   # Creates tags, task_tags tables
 

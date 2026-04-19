@@ -1,0 +1,119 @@
+// =============================================================================
+// Action Cards (chip-sentence based action editor)
+// =============================================================================
+@use '../base/variables' as *;
+
+// -----------------------------------------------------------------------------
+// Card Container
+// -----------------------------------------------------------------------------
+
+.action-card {
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  background: white;
+  margin-bottom: $spacing-md;
+}
+
+// -----------------------------------------------------------------------------
+// Card Header
+// -----------------------------------------------------------------------------
+
+.action-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: $spacing-sm $spacing-md;
+  background: $bg-secondary;
+  border-bottom: 1px solid $bg-tertiary;
+}
+
+// Badge (colored dot indicating action type)
+.action-card__badge {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.action-card__badge--schedule {
+  background: #ece0f5;
+  color: #7c5cad;
+}
+
+.action-card__badge--event {
+  background: #d6f0ee;
+  color: #2a7d75;
+}
+
+.action-card__badge--create {
+  background: #f5dfe0;
+  color: #994d5a;
+}
+
+.action-card__badge--collate {
+  background: #f5ecd6;
+  color: #7d6b3a;
+}
+
+// -----------------------------------------------------------------------------
+// Card Controls
+// -----------------------------------------------------------------------------
+
+.action-card__controls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-left: auto;
+}
+
+.action-card__btn {
+  background: none;
+  border: none;
+  font-size: $font-size-xs;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: $radius-sm;
+  font-family: $font-family-body;
+
+  &:hover {
+    background: $bg-tertiary;
+    color: $text-secondary;
+  }
+}
+
+.action-card__btn--change {
+  margin-right: auto;
+}
+
+.action-card__btn--delete {
+  color: #a04050;
+
+  &:hover {
+    background: #fde8e8;
+    color: $error;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Card Body
+// -----------------------------------------------------------------------------
+
+// View mode: display sentence
+.action-card__summary {
+  padding: $spacing-md;
+}
+
+.action-card--view .chip-trigger {
+  background: transparent;
+  padding: 0;
+  cursor: default;
+
+  &:hover {
+    border-color: transparent;
+  }
+}
+
+// Edit mode: chip sentence
+.action-card__editor {
+  padding: $spacing-md;
+}

@@ -1,0 +1,27 @@
+// =============================================================================
+// Container & Panes
+// =============================================================================
+@use '../base/variables' as *;
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.left-pane {
+  width: $left-pane-width;
+  min-width: $left-pane-min;
+  max-width: $left-pane-max;
+  // Soft boundary via background shift (no hard border per design guide)
+  box-shadow: 1px 0 0 $border-subtle;
+  display: flex;
+  flex-direction: column;
+  background: $bg-secondary;
+}
+
+.right-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-xl;
+  background: $bg-primary;
+}

@@ -3,7 +3,7 @@
     <div class="tree-node">
         <div class="tree-node-content"
              hx-get="/priorities/{{ root.id }}"
-             hx-target="#detail-pane"
+             hx-target="#detail-content"
              hx-swap="innerHTML">
             {% set child_ids = graph.children.get(root.id) %}
             {% if child_ids %}
@@ -17,7 +17,7 @@
             {% else %}
             <span class="tree-toggle-spacer"></span>
             {% endif %}
-            <span class="type-badge {{ root.priority_type }}">{{ root.priority_type|upper }}</span>
+            <span class="pill pill--{{ root.priority_type }}">{{ root.priority_type|upper }}</span>
             <span class="tree-node-name">{{ root.name }}</span>
             <span class="tree-node-id">{{ root.id }}</span>
         </div>

@@ -17,11 +17,11 @@ from praxis_core.persistence import (
     get_tags_for_task,
     get_tags_for_tasks,
 )
-from praxis_core.api.auth import get_current_user
+from praxis_core.web_api.auth import get_current_user
 
 
 def _get_graph(entity_id):
-    from praxis_core.api.app import get_graph
+    from praxis_core.web_api.app import get_graph
     return get_graph(entity_id)
 
 router = APIRouter()
@@ -57,7 +57,6 @@ def _serialize(t, tags: set[str] | None = None, score_data: dict | None = None) 
         "priority_id": t.priority_id,
         "priority_name": t.priority_name,
         "entity_id": t.entity_id,
-        "assigned_to": t.assigned_to,
         "created_by": t.created_by,
         "is_in_outbox": t.is_in_outbox,
         "created_at": t.created_at.isoformat() if t.created_at else None,
@@ -95,7 +94,6 @@ async def create_task_endpoint(body: CreateTaskRequest, user: User = Depends(get
         due_date=parsed_due,
         priority_id=body.priority_id,
         entity_id=entity_id,
-        assigned_to=user.id,
         created_by=user.id,
     )
     return _serialize(task)
@@ -127,7 +125,6 @@ async def list_tasks_endpoint(
         status=status_filter,
         include_done=include_done,
         entity_id=user.entity_id,
-        assigned_to=user.id,
         inbox_only=inbox,
         outbox_only=outbox,
         tag_names=tag_names,
@@ -235,7 +232,7 @@ async def complete_task(task_id: str, user: User = Depends(get_current_user)):
     updated = update_task_status(task_id, TaskStatus.DONE)
 
     # Fire event triggers
-    from praxis_core.triggers import on_task_completed
+    from praxis_core.practices import on_task_completed
     if task.entity_id:
         on_task_completed(
             task_id=task_id,
