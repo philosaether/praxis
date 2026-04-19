@@ -669,7 +669,7 @@ select.property-input {
     &:hover {
       color: $accent;
 
-      .type-badge {
+      .pill {
         opacity: 0.9;
       }
     }
@@ -745,9 +745,8 @@ select.property-input {
     }
   }
 
-  .status-indicator {
+  .pill {
     font-size: $font-size-xs;
-    color: $text-muted;
     margin-left: auto;
   }
 }

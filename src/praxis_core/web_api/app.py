@@ -214,6 +214,7 @@ def serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    share_counts: dict[str, int] | None = None,
     include_action_cards: bool = False,
     entity_name_cache: dict | None = None,
 ) -> dict:
@@ -224,6 +225,7 @@ def serialize_priority(
         render_markdown: Whether to render description as markdown
         current_entity_id: Current user's entity_id for ownership check
         shares: List of share dicts from graph.get_shares() for share indicators
+        share_counts: Pre-loaded {priority_id: count} dict for batch share count lookups
     """
     description = p.description
     if render_markdown and description:
@@ -271,13 +273,10 @@ def serialize_priority(
         if shares is not None:
             data["share_count"] = len(shares)
             data["shares"] = shares
-        elif is_owner:
-            # shares not passed (e.g., tree view) — look up count for owner
-            from praxis_core.persistence.priority_sharing import get_shares
-            from praxis_core.persistence.database import get_connection as _get_conn2
-            looked_up = get_shares(_get_conn2, p.id)
-            data["share_count"] = len(looked_up)
-            data["shares"] = []  # Don't include full share details in tree
+        elif share_counts is not None:
+            # Batch-loaded counts (tree view) — O(1) lookup per node
+            data["share_count"] = share_counts.get(p.id, 0)
+            data["shares"] = []
         else:
             data["share_count"] = 0
             data["shares"] = []

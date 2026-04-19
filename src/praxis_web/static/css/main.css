@@ -3157,7 +3157,7 @@ select.property-input {
 .parent-header .parent-link:hover {
   color: #735c00;
 }
-.parent-header .parent-link:hover .type-badge {
+.parent-header .parent-link:hover .pill {
   opacity: 0.9;
 }
 .parent-header .parent-link .parent-name {
@@ -3212,9 +3212,8 @@ select.property-input {
 .child-item .child-link:hover {
   color: #735c00;
 }
-.child-item .status-indicator {
+.child-item .pill {
   font-size: 0.75rem;
-  color: #7a7976;
   margin-left: auto;
 }
 

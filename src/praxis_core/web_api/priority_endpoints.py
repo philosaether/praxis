@@ -39,6 +39,7 @@ def _serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    share_counts: dict[str, int] | None = None,
     include_action_cards: bool = False,
 ):
     """Import here to avoid circular import."""
@@ -48,6 +49,7 @@ def _serialize_priority(
         render_markdown=render_markdown,
         current_entity_id=current_entity_id,
         shares=shares,
+        share_counts=share_counts,
         include_action_cards=include_action_cards,
         entity_name_cache=_entity_name_cache,
     )
@@ -269,16 +271,23 @@ async def priority_tree(
     graph = _get_graph(entity_id)
     roots = sorted(graph.roots(), key=_sort_key)
 
+    # Batch-load share counts for all owned priorities (single query, not N+1)
+    sc = None
+    if entity_id:
+        from praxis_core.persistence.priority_sharing import get_share_counts_for_entity
+        from praxis_core.persistence.database import get_connection as _get_conn
+        sc = get_share_counts_for_entity(_get_conn, entity_id)
+
     # Build children map for the entire tree
     children_map = {}
     for parent_id, child_ids in graph.children.items():
         children = [graph.get(cid) for cid in child_ids if graph.get(cid)]
         children_map[parent_id] = [
-            _serialize_priority(c, current_entity_id=entity_id)
+            _serialize_priority(c, current_entity_id=entity_id, share_counts=sc)
             for c in sorted(children, key=_sort_key)
         ]
 
-    serialized_roots = [_serialize_priority(r, current_entity_id=entity_id) for r in roots]
+    serialized_roots = [_serialize_priority(r, current_entity_id=entity_id, share_counts=sc) for r in roots]
     owned_roots = [r for r in serialized_roots if r.get("is_owner", True)]
     shared_roots = [r for r in serialized_roots if r.get("is_shared_with_me")]
 
