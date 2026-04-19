@@ -145,12 +145,12 @@ function startTutorial() {
       });
     }),
     when: {
-      show: () => {
-        // Shepherd steals focus to the step element after a 300ms delay
-        // (for keyboard nav). On mobile this dismisses the keyboard.
-        // Prevent by making the step element unfocusable.
-        const stepEl = tour.getCurrentStep()?.el;
-        if (stepEl) stepEl.setAttribute('tabindex', '-1');
+      show() {
+        // Shepherd calls .focus() on the step element after positioning,
+        // which steals focus from the input and dismisses mobile keyboards.
+        // Neuter it for this step. (github.com/shipshapecode/shepherd/issues/1143)
+        const el = this.getElement();
+        if (el) el.focus = () => {};
 
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
@@ -252,10 +252,10 @@ function startTutorial() {
       }, resolve);
     }),
     when: {
-      show: () => {
+      show() {
         // Same focus-steal prevention as name-task
-        const stepEl = tour.getCurrentStep()?.el;
-        if (stepEl) stepEl.setAttribute('tabindex', '-1');
+        const el = this.getElement();
+        if (el) el.focus = () => {};
       },
     },
   });
