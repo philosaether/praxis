@@ -622,8 +622,8 @@ a:hover {
 }
 
 .pill--value {
-  color: #ffecd0;
-  background: #8a5a00;
+  color: white;
+  background: #d4af37;
 }
 
 .pill--status-queued {

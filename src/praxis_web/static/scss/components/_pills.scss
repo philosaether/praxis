@@ -49,11 +49,10 @@
   }
 }
 
-// Value: inverted (dark bg, light text) to distinguish from copper Practice
+// Value: solid bright gold with white text to distinguish from copper Practice
 .pill--value {
-  $gold: map.get($palette, gold);
-  color: list.nth($gold, 2);
-  background: list.nth($gold, 1);
+  color: white;
+  background: $accent-bright;
 }
 
 // -----------------------------------------------------------------------------

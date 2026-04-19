@@ -167,18 +167,7 @@ function startTutorial() {
     advanceOn: { selector: '.task-row .task-content', event: 'click' },
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
-      // The taskCreated event triggers an HTMX list refresh that replaces #item-list contents.
-      // Wait for that refresh to settle so Shepherd attaches to the final DOM node.
-      const itemList = document.getElementById('item-list');
-      if (itemList) {
-        const onSettle = () => {
-          itemList.removeEventListener('htmx:afterSettle', onSettle);
-          pollFor(() => !!document.querySelector('.task-row'), resolve);
-        };
-        addTrackedListener(itemList, 'htmx:afterSettle', onSettle);
-      } else {
-        pollFor(() => !!document.querySelector('.task-row'), resolve);
-      }
+      pollFor(() => !!document.querySelector('.task-row'), resolve);
     }),
   });
 
@@ -330,22 +319,9 @@ function startTutorial() {
     text: 'As you add more priorities, you can organize them here by dragging. Whatever\'s on top gets the most attention in your task queue.',
     buttons: [{ text: 'Cool!', action: tour.next }],
     beforeShowPromise: () => new Promise(resolve => {
-      // priorityCreated triggers an HTMX tree refresh that replaces the pane contents.
-      // Wait for that refresh to settle before attaching.
-      const detailContent = document.getElementById('detail-content');
-      if (detailContent) {
-        const onSettle = () => {
-          detailContent.removeEventListener('htmx:afterSettle', onSettle);
-          pollFor(() => {
-            return document.querySelector('.tree-pane') || document.querySelector('.tree-node');
-          }, resolve, 200);
-        };
-        addTrackedListener(detailContent, 'htmx:afterSettle', onSettle);
-      } else {
-        pollFor(() => {
-          return document.querySelector('.tree-pane') || document.querySelector('.tree-node');
-        }, resolve, 200);
-      }
+      pollFor(() => {
+        return document.querySelector('.tree-pane') || document.querySelector('.tree-node');
+      }, resolve, 200);
     }),
   });
 
