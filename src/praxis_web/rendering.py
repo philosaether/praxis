@@ -5,6 +5,7 @@ Provides the API client factory, template engine, HTMX detection,
 and the full-page rendering helper that wraps partials in the app shell.
 """
 
+import hashlib
 import json
 import os
 import httpx
@@ -19,11 +20,28 @@ API_URL = os.getenv("PRAXIS_API_URL", "http://localhost:8000")
 SESSION_COOKIE_NAME = "praxis_session"
 PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 
+# Static asset cache-busting: hash key static files at import time
+def _compute_asset_hash():
+    """Short hash of compiled CSS/JS for cache-busting query params."""
+    static_dir = Path(__file__).parent / "static"
+    files = [
+        static_dir / "css" / "main.css",
+        static_dir / "js" / "dist" / "tutorial.js",
+        static_dir / "js" / "dist" / "chips.js",
+    ]
+    h = hashlib.md5()
+    for f in files:
+        if f.exists():
+            h.update(f.read_bytes())
+    return h.hexdigest()[:8]
+
+ASSET_HASH = _compute_asset_hash()
+
 # Templates
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["praxis_env"] = PRAXIS_ENV
-from markupsafe import Markup
+templates.env.globals["asset_v"] = ASSET_HASH
 templates.env.filters["tojson"] = lambda v: Markup(json.dumps(v))
 
 
