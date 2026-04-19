@@ -302,6 +302,45 @@ def mark_tutorial_completed(user_id: int) -> bool:
         return cursor.rowcount > 0
 
 
+def create_group(name: str, owner_user_id: int, member_user_ids: list[int] | None = None) -> str:
+    """Create a group entity and add members. Returns entity_id."""
+    ensure_schema()
+    entity_id = str(ULID())
+    now_str = datetime.now().isoformat()
+
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO entities (id, type, name, config, created_at) VALUES (?, 'group', ?, '{}', ?)",
+            (entity_id, name, now_str),
+        )
+        conn.execute(
+            "INSERT INTO entity_members (entity_id, user_id, role, created_at) VALUES (?, ?, 'owner', ?)",
+            (entity_id, owner_user_id, now_str),
+        )
+        for uid in (member_user_ids or []):
+            if uid != owner_user_id:
+                conn.execute(
+                    "INSERT INTO entity_members (entity_id, user_id, role, created_at) VALUES (?, ?, 'member', ?)",
+                    (entity_id, uid, now_str),
+                )
+    return entity_id
+
+
+def list_user_groups(user_id: int) -> list[dict]:
+    """List groups the user belongs to. Returns [{entity_id, name, role}]."""
+    ensure_schema()
+    with get_connection() as conn:
+        rows = conn.execute(
+            """SELECT e.id as entity_id, e.name, em.role
+               FROM entity_members em
+               JOIN entities e ON em.entity_id = e.id
+               WHERE em.user_id = ? AND e.type = 'group'
+               ORDER BY e.name""",
+            (user_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
 def delete_user(user_id: int) -> bool:
     """Delete a user and all their sessions. Returns True if deleted."""
     ensure_schema()

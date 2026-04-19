@@ -11,6 +11,7 @@ from praxis_core.model.priorities import (
     Goal,
     Practice,
     Initiative,
+    Org,
 )
 
 
@@ -32,9 +33,8 @@ CREATE TABLE IF NOT EXISTS priorities (
     description TEXT,
     rank INTEGER,
 
-    -- Task assignment settings
-    auto_assign_owner INTEGER NOT NULL DEFAULT 1,
-    auto_assign_creator INTEGER NOT NULL DEFAULT 0,
+    -- Priority-level assignment
+    assigned_to_entity_id TEXT REFERENCES entities(id),
 
     -- Goal (concrete outcome with end state)
     complete_when TEXT,
@@ -85,8 +85,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
     keys = row.keys()
     entity_id = row["entity_id"] if "entity_id" in keys else None
     substatus = row["substatus"] if "substatus" in keys else None
-    auto_assign_owner = bool(row["auto_assign_owner"]) if "auto_assign_owner" in keys else True
-    auto_assign_creator = bool(row["auto_assign_creator"]) if "auto_assign_creator" in keys else False
+    assigned_to_entity_id = row["assigned_to_entity_id"] if "assigned_to_entity_id" in keys else None
 
     # Handle description (was 'notes' in older schemas)
     description = row["description"] if "description" in keys else (row["notes"] if "notes" in keys else None)
@@ -102,8 +101,7 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
         "agent_context": row["agent_context"],
         "description": description,
         "rank": row["rank"],
-        "auto_assign_owner": auto_assign_owner,
-        "auto_assign_creator": auto_assign_creator,
+        "assigned_to_entity_id": assigned_to_entity_id,
         "last_engaged_at": last_engaged_at,
         "created_at": created_at,
         "updated_at": updated_at,
@@ -139,6 +137,12 @@ def priority_from_row(row: sqlite3.Row) -> Priority:
 
         case PriorityType.INITIATIVE:
             return Initiative(
+                **common_kwargs,
+                priority_type=priority_type,
+            )
+
+        case PriorityType.ORG:
+            return Org(
                 **common_kwargs,
                 priority_type=priority_type,
             )
@@ -189,8 +193,7 @@ def priority_to_row_values(priority: Priority) -> tuple:
         priority.agent_context,
         priority.description,
         priority.rank,
-        int(priority.auto_assign_owner),
-        int(priority.auto_assign_creator),
+        priority.assigned_to_entity_id,
         complete_when,
         due_date,
         progress,

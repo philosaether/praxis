@@ -1,9 +1,9 @@
-{# Practice properties form - editable by owner, read-only for others #}
+{# Org properties form - shared workspace with group inbox #}
 {# Expects: priority, priority_statuses, all_priorities, parents, priority_types #}
 
 {% set readonly = not priority.is_owner %}
 
-<div class="properties-section priority-properties practice-properties {% if readonly %}readonly-form{% endif %}">
+<div class="properties-section priority-properties org-properties {% if readonly %}readonly-form{% endif %}">
     <form hx-post="/priorities/{{ priority.id }}/properties"
           hx-target="#properties-section"
           hx-swap="outerHTML">
@@ -19,7 +19,7 @@
                     hx-target="#properties-section"
                     hx-swap="outerHTML">
                 {% for t in priority_types %}
-                <option value="{{ t }}" {% if t == 'practice' %}selected{% endif %}>
+                <option value="{{ t }}" {% if t == 'org' %}selected{% endif %}>
                     {{ t|title }}
                 </option>
                 {% endfor %}
@@ -39,7 +39,7 @@
                    class="property-input title-input">
         </div>
 
-        <!-- Status (practices only have active/dormant) -->
+        <!-- Status (values only have active/dormant) -->
         <div class="property-row">
             <label for="status">Status</label>
             <select id="status" name="status" class="property-input" {% if readonly %}disabled{% endif %}>
@@ -76,8 +76,7 @@
 
         {% include "partials/properties/_task_assignment.html" %}
 
-        {# Practice-specific fields hidden until task generation is implemented #}
-        {# Will be replaced by Rhythm entity reference #}
+        {# Values are simplified - use notes for any additional context #}
 
         <!-- Actions (owner only) -->
         {% if not readonly %}

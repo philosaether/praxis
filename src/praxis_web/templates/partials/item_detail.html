@@ -38,6 +38,10 @@
                 {% include "partials/properties/goal_properties.html" %}
             {% elif priority.priority_type == 'practice' %}
                 {% include "partials/properties/practice_properties.html" %}
+            {% elif priority.priority_type == 'org' %}
+                {% include "partials/properties/org_properties.html" %}
+            {% else %}
+                {% include "partials/properties/value_properties.html" %}
             {% endif %}
         {% endif %}
     </div>

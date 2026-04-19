@@ -50,11 +50,15 @@ async def _render_friends_list(request: Request, as_template_response=False, htt
         if accepted:
             await client.post("/api/friend-requests/mark-seen")
 
+        groups_resp = await client.get("/api/auth/groups")
+        groups = groups_resp.json().get("groups", []) if groups_resp.status_code == 200 else []
+
     ctx = {
         "friends": friends,
         "incoming_requests": incoming,
         "outgoing_requests": outgoing,
         "accepted_notifications": accepted,
+        "groups": groups,
     }
 
     if as_template_response:
@@ -73,6 +77,76 @@ async def remove_friend(request: Request, friend_id: int):
 
     # Return empty content to remove the row
     return HTMLResponse(content="")
+
+
+# ---------------------------------------------------------------------------
+# Groups
+# ---------------------------------------------------------------------------
+
+@router.post("/groups")
+async def create_group(request: Request):
+    """Create a group entity."""
+    body = await request.json()
+    name = body.get("name", "").strip()
+    member_ids = body.get("member_ids", [])
+
+    async with api_client(request) as client:
+        response = await client.post(
+            "/api/auth/groups",
+            json={"name": name, "member_ids": member_ids}
+        )
+        if response.status_code != 200:
+            return Response(content='{"error": "Failed to create group"}', status_code=400,
+                          media_type="application/json")
+
+    return Response(content='{"ok": true}', media_type="application/json")
+
+
+@router.get("/groups/{entity_id}", response_class=HTMLResponse)
+async def group_detail(request: Request, entity_id: str):
+    """Show group detail with members."""
+    async with api_client(request) as client:
+        group_resp = await client.get(f"/api/auth/groups/{entity_id}")
+        if group_resp.status_code != 200:
+            return HTMLResponse(content="<div class='error'>Group not found</div>")
+        group = group_resp.json()
+
+        me_resp = await client.get("/api/auth/me")
+        current_user = me_resp.json() if me_resp.status_code == 200 else {}
+
+        friends_resp = await client.get("/api/friends")
+        friends = friends_resp.json() if friends_resp.status_code == 200 else []
+
+    # Filter friends to only those not already in the group
+    member_ids = {m["id"] for m in group.get("members", [])}
+    non_members = [f for f in friends if f["id"] not in member_ids]
+
+    return templates.TemplateResponse(
+        request,
+        "partials/group_detail.html",
+        {
+            "group": group,
+            "non_members": non_members,
+            "is_owner": group.get("user_role") == "owner",
+            "current_user_id": current_user.get("id"),
+        }
+    )
+
+
+@router.post("/groups/{entity_id}/members/{user_id}", response_class=HTMLResponse)
+async def add_group_member(request: Request, entity_id: str, user_id: int):
+    """Add a member and refresh the group detail."""
+    async with api_client(request) as client:
+        await client.post(f"/api/auth/groups/{entity_id}/members/{user_id}")
+    return await group_detail(request, entity_id)
+
+
+@router.delete("/groups/{entity_id}/members/{user_id}", response_class=HTMLResponse)
+async def remove_group_member(request: Request, entity_id: str, user_id: int):
+    """Remove a member and refresh the group detail."""
+    async with api_client(request) as client:
+        await client.delete(f"/api/auth/groups/{entity_id}/members/{user_id}")
+    return await group_detail(request, entity_id)
 
 
 # ---------------------------------------------------------------------------

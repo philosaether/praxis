@@ -241,6 +241,9 @@
                 <button class="btn btn-primary btn-sm" onclick="openInviteModal()">
                     + Invite Friend
                 </button>
+                <button class="btn btn-secondary btn-sm" onclick="openGroupModal()">
+                    + New Group
+                </button>
             </div>
             <div id="add-rule-bar" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
@@ -300,6 +303,9 @@
 
 <!-- Invite Friend Modal -->
 {% include "partials/invite_modal.html" %}
+
+<!-- New Group Modal -->
+{% include "partials/group_modal.html" %}
 
 <!-- Confirmation Modal -->
 {% include "partials/confirm_modal.html" %}
@@ -438,12 +444,16 @@
 
         // Update detail pane based on mode
         if (mode === 'priorities') {
-            // Tree is always the primary priorities view
-            // Mobile: tree replaces the item list (single pane)
-            // Desktop: tree loads into detail pane (right side), list stays in left pane
             if (window.innerWidth <= 768) {
-                htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+                // Mobile: tree is the primary view. The nav button's hx-get loads the list,
+                // so we delay the tree fetch to ensure it overwrites the list.
+                setTimeout(function() {
+                    htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+                }, 50);
+                var toggle = document.getElementById('mobile-tree-toggle');
+                if (toggle) toggle.textContent = 'view as list';
             } else {
+                // Desktop: tree loads into detail pane, list stays in left pane
                 htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
             }
         } else if (mode === 'friends') {
@@ -1227,6 +1237,63 @@
         const originalText = btn.textContent;
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = originalText; }, 1500);
+    };
+
+    // -------------------------------------------------------------------------
+    // New Group Modal
+    // -------------------------------------------------------------------------
+
+    window.openGroupModal = function() {
+        document.getElementById('group-modal-backdrop').classList.add('open');
+        document.getElementById('group-name').value = '';
+        document.getElementById('create-group-btn').disabled = false;
+
+        // Load friends as checkboxes
+        fetch('/users', { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(friends => {
+                const list = document.getElementById('group-member-list');
+                if (!friends.length) {
+                    list.innerHTML = '<p class="text-muted">Add friends first to create a group.</p>';
+                    return;
+                }
+                list.innerHTML = friends.map(function(f) {
+                    return '<label class="checkbox-label">' +
+                        '<input type="checkbox" name="member_ids" value="' + f.id + '">' +
+                        '<span>' + f.username + '</span>' +
+                    '</label>';
+                }).join('');
+            });
+    };
+
+    window.closeGroupModal = function() {
+        document.getElementById('group-modal-backdrop').classList.remove('open');
+    };
+
+    window.createGroup = function() {
+        const name = document.getElementById('group-name').value.trim();
+        if (!name) { document.getElementById('group-name').focus(); return; }
+
+        const memberIds = Array.from(
+            document.querySelectorAll('#group-member-list input[name="member_ids"]:checked')
+        ).map(cb => parseInt(cb.value));
+
+        document.getElementById('create-group-btn').disabled = true;
+
+        fetch('/groups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, member_ids: memberIds })
+        })
+        .then(() => {
+            closeGroupModal();
+            // Refresh friends list to show new group
+            htmx.ajax('GET', '/friends/list', { target: '#item-list', swap: 'innerHTML' });
+        })
+        .catch(err => {
+            console.error('Failed to create group:', err);
+            document.getElementById('create-group-btn').disabled = false;
+        });
     };
 
     // -------------------------------------------------------------------------

@@ -57,8 +57,7 @@ class PriorityTree:
                 ("agent_context", "TEXT"),
                 ("description", "TEXT"),
                 ("rank", "INTEGER"),
-                ("auto_assign_owner", "INTEGER NOT NULL DEFAULT 1"),
-                ("auto_assign_creator", "INTEGER NOT NULL DEFAULT 0"),
+                ("assigned_to_entity_id", "TEXT REFERENCES entities(id)"),
                 ("complete_when", "TEXT"),
                 ("due_date", "TEXT"),
                 ("progress", "TEXT"),
@@ -132,11 +131,11 @@ class PriorityTree:
                 INSERT INTO priorities (
                     id, entity_id, priority_type, name, status, substatus,
                     agent_context, description, rank,
-                    auto_assign_owner, auto_assign_creator,
+                    assigned_to_entity_id,
                     complete_when, due_date, progress,
                     actions_config, last_triggered_at, last_engaged_at,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     entity_id = excluded.entity_id,
                     priority_type = excluded.priority_type,
@@ -146,8 +145,7 @@ class PriorityTree:
                     agent_context = excluded.agent_context,
                     description = excluded.description,
                     rank = excluded.rank,
-                    auto_assign_owner = excluded.auto_assign_owner,
-                    auto_assign_creator = excluded.auto_assign_creator,
+                    assigned_to_entity_id = excluded.assigned_to_entity_id,
                     complete_when = excluded.complete_when,
                     due_date = excluded.due_date,
                     progress = excluded.progress,

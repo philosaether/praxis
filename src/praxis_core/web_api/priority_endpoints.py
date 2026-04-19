@@ -14,6 +14,7 @@ from praxis_core.model import (
     Goal,
     Practice,
     Initiative,
+    Org,
     User,
 )
 from praxis_core.web_api.auth import get_current_user_optional
@@ -27,6 +28,10 @@ def _get_graph(entity_id: str | None = None):
     """Import here to avoid circular import."""
     from praxis_core.web_api.app import get_graph
     return get_graph(entity_id=entity_id)
+
+
+# Shared cache for entity name resolution within a request
+_entity_name_cache: dict = {}
 
 
 def _serialize_priority(
@@ -44,6 +49,7 @@ def _serialize_priority(
         current_entity_id=current_entity_id,
         shares=shares,
         include_action_cards=include_action_cards,
+        entity_name_cache=_entity_name_cache,
     )
 
 
@@ -63,6 +69,28 @@ def _get_priority_tasks(priority_id: str):
     return list_tasks(priority_id=priority_id, include_done=True)
 
 
+def _auto_share_with_group(priority_id: str, entity_id: str, graph, owner_user_id: int):
+    """If entity_id is a group, share the priority with all group members as contributors."""
+    from praxis_core.persistence.database import get_connection
+    from praxis_core.web_api.app import clear_graph_cache
+    with get_connection() as conn:
+        entity = conn.execute("SELECT type FROM entities WHERE id = ?", (entity_id,)).fetchone()
+        if not entity or entity["type"] != "group":
+            return
+        members = conn.execute(
+            """SELECT em.user_id, u.entity_id as user_entity_id
+               FROM entity_members em
+               JOIN users u ON em.user_id = u.id
+               WHERE em.entity_id = ?""",
+            (entity_id,)
+        ).fetchall()
+        for member in members:
+            if member["user_id"] != owner_user_id:
+                graph.share_with_user(priority_id, member["user_id"], "contributor", allow_adoption=False)
+            if member["user_entity_id"]:
+                clear_graph_cache(member["user_entity_id"])
+
+
 def _generate_priority_id(name: str, graph) -> str:
     """Generate a unique ULID for a priority."""
     from ulid import ULID
@@ -80,6 +108,8 @@ def _create_priority_by_type(priority_type: str, id: str, name: str, entity_id: 
         return Goal(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     elif priority_type == "practice":
         return Practice(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
+    elif priority_type == "org":
+        return Org(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
     else:
         # Default to Initiative
         return Initiative(id=id, name=name, entity_id=entity_id, created_at=now, updated_at=now)
@@ -118,9 +148,8 @@ async def create_priority_full(
     parent_id: Annotated[str | None, Form()] = None,
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Task assignment settings
-    auto_assign_owner: Annotated[str | None, Form()] = "on",
-    auto_assign_creator: Annotated[str | None, Form()] = None,
+    # Priority assignment
+    assigned_to_entity_id: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -142,9 +171,8 @@ async def create_priority_full(
     priority.agent_context = agent_context.strip() if agent_context else None
     priority.description = notes.strip() if notes else None
 
-    # Set task assignment settings (checkboxes: "on" if checked, None if not)
-    priority.auto_assign_owner = auto_assign_owner == "on"
-    priority.auto_assign_creator = auto_assign_creator == "on"
+    # Set priority assignment
+    priority.assigned_to_entity_id = assigned_to_entity_id.strip() if assigned_to_entity_id else None
 
     # Set type-specific fields
     if isinstance(priority, Goal):
@@ -157,6 +185,10 @@ async def create_priority_full(
                 priority.due_date = None
 
     graph.add(priority)
+
+    # Auto-share with group members if assigned to a group
+    if priority.assigned_to_entity_id and user:
+        _auto_share_with_group(priority.id, priority.assigned_to_entity_id, graph, user.id)
 
     # Handle parent link
     if parent_id and parent_id.strip():
@@ -343,12 +375,25 @@ async def get_priority_for_edit(
     priority_data = _serialize_priority(priority, current_entity_id=entity_id, shares=shares)
     priority_data["notes_raw"] = priority.description or ""
 
+    # Fetch friends and groups for assignee picker
+    friends = []
+    groups = []
+    if user and user.id:
+        from praxis_core.persistence.friend_repo import list_friends
+        from praxis_core.persistence.user_repo import list_user_groups
+        friends = list_friends(user.id)
+        # Include the current user in the list (for self-assignment)
+        friends.insert(0, {"id": user.id, "username": user.username, "entity_id": user.entity_id})
+        groups = list_user_groups(user.id)
+
     return {
         "priority": priority_data,
         "parents": [_serialize_priority(graph.get(pid), current_entity_id=entity_id) for pid in sorted(parent_ids) if graph.get(pid)],
         "all_priorities": [_serialize_priority(p, current_entity_id=entity_id) for p in all_priorities],
         "priority_types": [t.value for t in PriorityType],
         "priority_statuses": [s.value for s in PriorityStatus],
+        "friends": friends,
+        "groups": groups,
         "edit_mode": True,
     }
 
@@ -477,9 +522,8 @@ async def update_priority_properties(
     status: Annotated[str, Form()],
     agent_context: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    # Task assignment settings
-    auto_assign_owner: Annotated[str | None, Form()] = None,
-    auto_assign_creator: Annotated[str | None, Form()] = None,
+    # Priority assignment
+    assigned_to_entity_id: Annotated[str | None, Form()] = None,
     # Goal fields
     complete_when: Annotated[str | None, Form()] = None,
     progress: Annotated[str | None, Form()] = None,
@@ -512,9 +556,14 @@ async def update_priority_properties(
     priority.description = notes.strip() if notes else None
     priority.updated_at = datetime.now()
 
-    # Update task assignment settings (checkboxes: "on" if checked, None if not)
-    priority.auto_assign_owner = auto_assign_owner == "on"
-    priority.auto_assign_creator = auto_assign_creator == "on"
+    # Update priority assignment
+    new_assignee = assigned_to_entity_id.strip() if assigned_to_entity_id else None
+    old_assignee = priority.assigned_to_entity_id
+    priority.assigned_to_entity_id = new_assignee
+
+    # Auto-share with group members if assignment changed to a group
+    if new_assignee and new_assignee != old_assignee and user:
+        _auto_share_with_group(priority_id, new_assignee, graph, user.id)
 
     # Update type-specific fields
     if isinstance(priority, Goal):

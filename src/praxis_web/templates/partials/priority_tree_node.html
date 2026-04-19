@@ -35,6 +35,11 @@
             <span class="share-badge" title="{% if node.is_shared_with_me %}Shared with you{% else %}Shared with {{ node.share_count }} other(s){% endif %}">&#x263A;</span>
             {% endif %}
 
+            {# Assignee badge (only for explicit assignments) #}
+            {% if node.assigned_to_name %}
+            <span class="assignee-badge">{{ node.assigned_to_name }}</span>
+            {% endif %}
+
             {# Type badge #}
             <span class="type-badge {{ node.priority_type }}">{{ node.priority_type|upper }}</span>
 

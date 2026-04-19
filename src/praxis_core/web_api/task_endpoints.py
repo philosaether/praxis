@@ -58,18 +58,6 @@ def _get_owner_user_id(entity_id: str) -> int | None:
         return row["id"] if row else None
 
 
-def _parse_assigned_to(value: str | None) -> int:
-    """Parse assigned_to form value. Returns -1 (don't change), None (unassign), or user ID."""
-    if value is None:
-        return -1
-    if value.strip() in ("", "__unassigned__"):
-        return None
-    try:
-        return int(value)
-    except ValueError:
-        return -1
-
-
 # -----------------------------------------------------------------------------
 # Task Permission Helpers
 # -----------------------------------------------------------------------------
@@ -80,7 +68,6 @@ def get_task_permission(task, user: User | None, graph=None) -> str | None:
 
     Returns one of:
       - 'owner': User's entity owns the task
-      - 'assignee': User is assigned to the task
       - 'creator': User created the task
       - 'contributor': User has contributor/editor permission on the priority
       - 'viewer': User has viewer permission on the priority
@@ -92,10 +79,6 @@ def get_task_permission(task, user: User | None, graph=None) -> str | None:
     # Owner: task belongs to user's entity
     if task.entity_id == user.entity_id:
         return "owner"
-
-    # Assignee: task is assigned to user
-    if task.assigned_to == user.id:
-        return "assignee"
 
     # Creator: user created the task
     if task.created_by == user.id:
@@ -109,7 +92,6 @@ def get_task_permission(task, user: User | None, graph=None) -> str | None:
         if priority_perm == "viewer":
             return "viewer"
         if priority_perm == "owner":
-            # User owns the priority but not this specific task
             return "owner"
 
     return None
@@ -122,12 +104,12 @@ def can_view_task(permission: str | None) -> bool:
 
 def can_edit_task(permission: str | None) -> bool:
     """Check if user can edit task properties (name, notes, due date)."""
-    return permission in ("owner", "assignee", "creator")
+    return permission in ("owner", "creator")
 
 
 def can_toggle_task(permission: str | None) -> bool:
     """Check if user can toggle task done/undone."""
-    return permission in ("owner", "assignee", "creator")
+    return permission in ("owner", "creator")
 
 
 def can_delete_task(permission: str | None) -> bool:
@@ -163,27 +145,15 @@ async def create_task_endpoint(
         except ValueError:
             pass
 
-    # Determine entity_id and assigned_to based on priority settings
+    # Task belongs to priority owner's entity (or creator's if no priority)
     task_entity_id = creator_entity_id
-    assigned_to = None
 
     clean_priority_id = priority_id.strip() if priority_id else None
     if clean_priority_id:
-        # Look up priority to get assignment settings
         graph = _get_graph(creator_entity_id)
         priority = graph.get(clean_priority_id)
         if priority:
-            # Task belongs to priority owner's entity
             task_entity_id = priority.entity_id
-
-            # Determine assignment based on priority settings
-            if priority.auto_assign_owner and priority.entity_id:
-                # Assign to priority owner
-                assigned_to = _get_owner_user_id(priority.entity_id)
-            elif priority.auto_assign_creator:
-                # Assign to task creator
-                assigned_to = created_by
-            # else: unassigned (manual claim)
 
     task = create_task(
         name=name.strip(),
@@ -191,7 +161,6 @@ async def create_task_endpoint(
         due_date=parsed_due_date,
         priority_id=clean_priority_id,
         entity_id=task_entity_id,
-        assigned_to=assigned_to,
         created_by=created_by,
     )
 
@@ -241,20 +210,31 @@ async def list_tasks_endpoint(
     search_query = q.strip() if q else None
 
     entity_id = user.entity_id if user else None
-    user_id = user.id if user else None
+    graph = _get_graph(entity_id)
 
-    # Pass both entity_id and user_id for combined queue filtering
+    # For inbox: find Org-type priorities assigned to groups the user belongs to
+    org_priority_ids = None
+    if inbox and user:
+        from praxis_core.persistence.user_repo import list_user_groups
+        user_groups = list_user_groups(user.id)
+        group_entity_ids = {g["entity_id"] for g in user_groups}
+        if group_entity_ids:
+            org_priority_ids = [
+                p.id for p in graph.nodes.values()
+                if p.priority_type.value == "org"
+                and p.assigned_to_entity_id in group_entity_ids
+            ]
+
     tasks = list_tasks(
         priority_id=priority,
         status=task_status,
         entity_id=entity_id,
-        assigned_to=user_id,
         inbox_only=inbox,
         outbox_only=outbox,
         tag_names=tag_names,
         search_query=search_query,
+        org_priority_ids=org_priority_ids,
     )
-    graph = _get_graph(entity_id)
     priorities = sorted(graph.nodes.values(), key=lambda p: p.name)
 
     # Load rules and tags for rule-based scoring
@@ -319,31 +299,10 @@ async def get_task_for_edit(
     task_data = _serialize_task(task, render_markdown=False, current_user=user, graph=graph)
     task_data["notes_raw"] = task.description or ""
 
-    # Build assignable users list for shared priorities
-    assignable_users = []
-    if task.priority_id:
-        priority = graph.get(task.priority_id)
-        if priority:
-            from praxis_core.persistence.priority_sharing import get_shares
-            from praxis_core.persistence.database import get_connection as _get_conn
-            shares = get_shares(_get_conn, priority.id)
-            # Add priority owner
-            owner_user_id = _get_owner_user_id(priority.entity_id)
-            if owner_user_id:
-                from praxis_core.persistence.user_repo import get_user
-                owner = get_user(owner_user_id)
-                if owner:
-                    assignable_users.append({"id": owner.id, "username": owner.username})
-            # Add shared users
-            for share in shares:
-                if share.get("user_id") and share["user_id"] != owner_user_id:
-                    assignable_users.append({"id": share["user_id"], "username": share["username"]})
-
     return {
         "task": task_data,
         "priorities": [_serialize_priority(p) for p in priorities],
         "task_statuses": [s.value for s in TaskStatus],
-        "assignable_users": assignable_users,
         "edit_mode": True,
     }
 
@@ -356,7 +315,6 @@ async def update_task_endpoint(
     priority_id: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
-    assigned_to: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update a task and return updated data."""
@@ -378,8 +336,6 @@ async def update_task_endpoint(
         except ValueError:
             pass
 
-    parsed_assigned_to = _parse_assigned_to(assigned_to)
-
     update_task(
         task_id,
         name=name.strip(),
@@ -387,7 +343,6 @@ async def update_task_endpoint(
         priority_id=priority_id.strip() if priority_id else "",
         notes=notes.strip() if notes else "",
         due_date=parsed_due_date,
-        assigned_to=parsed_assigned_to,
     )
 
     # Return updated data
@@ -500,7 +455,6 @@ async def update_task_properties(
     priority_id: Annotated[str | None, Form()] = None,
     due_date: Annotated[str | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
-    assigned_to: Annotated[str | None, Form()] = None,
     user: User | None = Depends(get_current_user_optional),
 ):
     """Update task properties and notes together."""
@@ -526,16 +480,13 @@ async def update_task_properties(
         except ValueError:
             pass
 
-    parsed_assigned_to = _parse_assigned_to(assigned_to)
-
     update_task(
         task_id,
         name=name.strip(),
-        status=task.status,  # Preserve existing status
+        status=task.status,
         priority_id=priority_id.strip() if priority_id else "",
         notes=notes.strip() if notes else "",
         due_date=parsed_due_date,
-        assigned_to=parsed_assigned_to,
     )
 
     # Return updated task with both raw and rendered notes

@@ -19,7 +19,7 @@ Data structures. No behavior, no persistence, no imports outside this package.
 ```
 model/
 ├── __init__.py          — Re-exports all model classes
-├── priorities.py        — Priority, Value, Goal, Practice, Initiative dataclasses and PriorityType/PriorityStatus enums
+├── priorities.py        — Priority, Value, Goal, Practice, Initiative, Org dataclasses and PriorityType/PriorityStatus enums
 ├── tasks.py             — Task, Subtask dataclasses and TaskStatus enum
 ├── users.py             — User, Session dataclasses and UserRole enum
 ├── entities.py          — Entity dataclass for multi-tenancy

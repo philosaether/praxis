@@ -111,6 +111,8 @@
                           oninput="updateCharCount(this, 'desc-count', 800)">{{ priority.notes_raw or '' }}</textarea>
             </div>
 
+            {% include "partials/properties/_task_assignment.html" %}
+
             <!-- Type-specific fields -->
             {% if priority.priority_type == 'goal' %}
             <div class="type-specific-fields goal-fields">

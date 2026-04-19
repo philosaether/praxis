@@ -104,3 +104,23 @@
     <p>Search for users above, or invite someone with the link below.</p>
 </div>
 {% endif %}
+
+{# --- Groups --- #}
+{% if groups %}
+<div class="friends-section">
+    <div class="friends-section-header">groups</div>
+    {% for group in groups %}
+    <div class="friend-row"
+         hx-get="/groups/{{ group.entity_id }}"
+         hx-target="#detail-content"
+         hx-swap="innerHTML"
+         style="cursor: pointer;"
+         onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
+        <div class="friend-info">
+            <span class="friend-name">{{ group.name }}</span>
+            <span class="friend-status">{{ group.role }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
