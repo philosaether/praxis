@@ -117,6 +117,9 @@ function startTutorial() {
     id: 'name-task',
     attachTo: { element: '#quick-add-backdrop .modal', on: 'bottom' },
     text: 'Give your task a name, then click "Add Task."',
+    // Disable scroll on input steps: mobile keyboard resize triggers
+    // Shepherd overlay recalc which steals focus and dismisses the keyboard
+    scrollTo: false,
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
       pollFor(() => {
@@ -142,6 +145,8 @@ function startTutorial() {
     }),
     when: {
       show: () => {
+        // Hide overlay so mobile keyboard resize doesn't trigger recalc → blur
+        tour.modal?.hide();
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
           // Re-enable disabled elements
@@ -150,6 +155,8 @@ function startTutorial() {
             el.style.opacity = '';
             delete el.dataset.tutorialDisabled;
           });
+          // Restore overlay for subsequent steps
+          tour.modal?.show();
           tour.next();
         };
         addTrackedListener(document.body, 'taskCreated', handler);
@@ -220,6 +227,7 @@ function startTutorial() {
     id: 'name-priority',
     attachTo: { element: '#quick-add-priority-name', on: 'bottom' },
     text: 'What\'s most important to you? Type it in here.',
+    scrollTo: false,
     buttons: [{
       text: 'Done',
       action: () => {
@@ -230,6 +238,8 @@ function startTutorial() {
           return;
         }
         createdPriorityName = name;
+        // Restore overlay for subsequent steps
+        tour.modal?.show();
         tour.next();
       },
     }],
@@ -239,6 +249,12 @@ function startTutorial() {
         return input && input.offsetParent !== null;
       }, resolve);
     }),
+    when: {
+      show: () => {
+        // Hide overlay so mobile keyboard resize doesn't trigger recalc → blur
+        tour.modal?.hide();
+      },
+    },
   });
 
   // =========================================================================
