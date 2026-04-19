@@ -1,5 +1,4 @@
 import Shepherd from 'shepherd.js';
-import { offset, shift } from '@floating-ui/dom';
 
 // Only start if this is a new user
 const container = document.querySelector('.container');
@@ -116,10 +115,11 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'name-task',
-    attachTo: { element: '#quick-add-backdrop .modal', on: 'bottom' },
-    // No flip middleware — mobile keyboard resize causes Floating UI to flip
-    // the tooltip above the modal, which triggers reflow → blur → keyboard dismiss
-    floatingUIOptions: { middleware: [offset(12), shift()] },
+    attachTo: { element: '#quick-add-backdrop .modal', on: 'top' },
+    // Attach above modal + no middleware — mobile keyboard resizes viewport from
+    // below, so 'top' never needs to flip. Empty middleware prevents any
+    // repositioning that could cause reflow → blur → keyboard dismiss.
+    floatingUIOptions: { middleware: [] },
     text: 'Give your task a name, then click "Add Task."',
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
@@ -222,9 +222,9 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'name-priority',
-    attachTo: { element: '#quick-add-priority-name', on: 'bottom' },
-    // No flip middleware — same mobile keyboard fix as name-task
-    floatingUIOptions: { middleware: [offset(12), shift()] },
+    attachTo: { element: '#quick-add-priority-name', on: 'top' },
+    // Same mobile keyboard fix as name-task
+    floatingUIOptions: { middleware: [] },
     text: 'What\'s most important to you? Type it in here.',
     buttons: [{
       text: 'Done',
