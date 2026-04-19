@@ -184,7 +184,8 @@ praxis_web/
 │   ├── scss/
 │   │   ├── main.scss            — Entry point: @use imports only
 │   │   ├── base/
-│   │   │   ├── _variables.scss  — Design tokens: colors, spacing, typography, breakpoints
+│   │   │   ├── _variables.scss  — Design tokens: $palette, $type-colors, $chip-colors, spacing, typography
+│   │   │   ├── _icons.scss      — Material Symbols Outlined icon utility classes (.icon, .icon--sm, .icon--lg)
 │   │   │   ├── _reset.scss      — CSS reset
 │   │   │   └── _utilities.scss  — Utility classes (sr-only, text helpers)
 │   │   ├── layout/
@@ -196,7 +197,7 @@ praxis_web/
 │   │   │   └── _mobile.scss     — Mobile overrides: single-pane, back button, compact header
 │   │   ├── components/
 │   │   │   ├── _buttons.scss    — Button styles, new-item controls
-│   │   │   ├── _badges.scss     — Type badges, status indicators
+│   │   │   ├── _pills.scss      — Unified pill primitive (type/status/score/rank/shared badges)
 │   │   │   ├── _forms.scss      — Input fields, selects, labels
 │   │   │   ├── _tags.scss       — Tag pills and tag input
 │   │   │   ├── _links.scss      — Links list, friends list, invite display

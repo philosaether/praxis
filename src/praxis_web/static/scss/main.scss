@@ -6,6 +6,7 @@
 @use 'base/variables' as *;
 @use 'base/reset';
 @use 'base/utilities';
+@use 'base/icons';
 
 // Layout
 @use 'layout/container';
@@ -16,7 +17,7 @@
 
 // Components
 @use 'components/buttons';
-@use 'components/badges';
+@use 'components/pills';
 @use 'components/forms';
 @use 'components/tags';
 @use 'components/links';

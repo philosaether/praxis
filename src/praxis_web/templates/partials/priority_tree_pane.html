@@ -202,7 +202,7 @@
                     var updateRootRanks = function() {
                         var rootContainer = document.getElementById('priority-tree');
                         rootContainer.querySelectorAll(':scope > .tree-node').forEach(function(node, idx) {
-                            var badge = node.querySelector(':scope > .tree-node-row .rank-badge');
+                            var badge = node.querySelector(':scope > .tree-node-row .pill--rank');
                             var newRank = idx + 1;
                             if (badge) {
                                 badge.textContent = '#' + newRank;
@@ -210,7 +210,7 @@
                                 var content = node.querySelector(':scope > .tree-node-row .tree-node-content');
                                 if (content) {
                                     var newBadge = document.createElement('span');
-                                    newBadge.className = 'rank-badge';
+                                    newBadge.className = 'pill pill--xs pill--rank';
                                     newBadge.textContent = '#' + newRank;
                                     content.insertBefore(newBadge, content.firstChild);
                                 }
@@ -220,7 +220,7 @@
 
                     // Remove rank badge if node is no longer root
                     if (wasRoot && !isRoot) {
-                        var badge = item.querySelector(':scope > .tree-node-row .rank-badge');
+                        var badge = item.querySelector(':scope > .tree-node-row .pill--rank');
                         if (badge) badge.remove();
                     }
 

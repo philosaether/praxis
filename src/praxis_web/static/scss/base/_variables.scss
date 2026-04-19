@@ -1,6 +1,7 @@
 // =============================================================================
 // Variables - The Alchemist's Folio (Light Mode)
 // =============================================================================
+@use 'sass:map';
 
 // Colors - Parchment & Gold Palette
 $bg-primary: #fbf9f5;           // Surface - warm cream (the desk)
@@ -25,13 +26,43 @@ $warning: #f57c00;
 $error: #8c0d27;                // Deep burgundy instead of digital red
 $info: #1565c0;
 
-// Type badge colors - warmer, more muted
+// Classification Palette — The Alchemist's Nine
+// SOT: designs/color-scheme.md
+// Each role: (text-color, background-color)
+$palette: (
+  copper: (#b87333, #fde8d4),   // Amber | Fascination — practice, cadence, time
+  gold:   (#8a5a00, #ffecd0),   // Gold | Integrity — values, due dates
+  plum:   (#5c3d7a, #e8daef),   // Violet | Expression — goals
+  rose:   (#994d5a, #f5dfe0),   // Red | Urge — task creation
+  sage:   (#2e5a30, #d4edda),   // Green | Affinity — groups, days
+  slate:  (#2a5082, #d6e5f5),   // Blue | Reflection — initiatives, references
+  stone:  (#6b5e4f, #e8e4dc),   // Neutral — inbox, tags
+  teal:   (#2a7d75, #d6f0ee),   // Events, automation
+  umber:  (#7d6b3a, #f5ecd6),   // Aggregation, collation
+);
+
+// Badge aliases — priority type → hue role
 $type-colors: (
-  initiative: (#2a5082, #d6e5f5),
-  value: (#2e5a30, #d4edda),
-  goal: (#5c3d7a, #e8daef),
-  practice: (#8a5a00, #ffecd0),
-  inbox: (#6b5e4f, #e8e4dc),
+  value:      map.get($palette, gold),
+  goal:       map.get($palette, plum),
+  practice:   map.get($palette, copper),
+  initiative: map.get($palette, slate),
+  group:      map.get($palette, sage),
+  org:        map.get($palette, sage),   // DB type is "org", same color as group
+  inbox:      map.get($palette, stone),
+);
+
+// Chip aliases — data field → hue role
+$chip-colors: (
+  interval: map.get($palette, copper),
+  day:      map.get($palette, sage),
+  time:     map.get($palette, copper),
+  priority: map.get($palette, slate),
+  tag:      map.get($palette, stone),
+  due:      map.get($palette, gold),
+  collate:  map.get($palette, umber),
+  event:    map.get($palette, teal),
+  task:     map.get($palette, rose),
 );
 
 // Spacing - generous, luxurious

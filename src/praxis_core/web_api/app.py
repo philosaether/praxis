@@ -214,6 +214,7 @@ def serialize_priority(
     render_markdown: bool = False,
     current_entity_id: str | None = None,
     shares: list[dict] | None = None,
+    share_counts: dict[str, int] | None = None,
     include_action_cards: bool = False,
     entity_name_cache: dict | None = None,
 ) -> dict:
@@ -224,6 +225,7 @@ def serialize_priority(
         render_markdown: Whether to render description as markdown
         current_entity_id: Current user's entity_id for ownership check
         shares: List of share dicts from graph.get_shares() for share indicators
+        share_counts: Pre-loaded {priority_id: count} dict for batch share count lookups
     """
     description = p.description
     if render_markdown and description:
@@ -271,6 +273,10 @@ def serialize_priority(
         if shares is not None:
             data["share_count"] = len(shares)
             data["shares"] = shares
+        elif share_counts is not None:
+            # Batch-loaded counts (tree view) — O(1) lookup per node
+            data["share_count"] = share_counts.get(p.id, 0)
+            data["shares"] = []
         else:
             data["share_count"] = 0
             data["shares"] = []

@@ -4,10 +4,10 @@
 @use 'sass:color';
 @use '../base/variables' as *;
 
-// Priority mode colors (initiative blue)
-$initiative-blue: #2a5082;
-$initiative-blue-hover: #1e3d63;
-$initiative-blue-light: #4a7ab5;
+// Rose palette for default FAB
+$fab-rose: #994d5a;
+$fab-rose-light: #c47080;
+$fab-rose-dark: #7a3d48;
 
 .fab {
   position: fixed;
@@ -16,11 +16,19 @@ $initiative-blue-light: #4a7ab5;
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  // Gold gradient per design guide
-  background: linear-gradient(135deg, $accent 0%, $accent-bright 100%);
+  // Rose gradient for task creation
+  background: linear-gradient(135deg, $fab-rose 0%, $fab-rose-light 100%);
   color: white;
   border: none;
   font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .icon {
+    font-size: 2rem;
+    font-weight: 300;
+  }
   cursor: pointer;
   // Tinted shadow (not black)
   box-shadow: $shadow-lg;
@@ -28,21 +36,21 @@ $initiative-blue-light: #4a7ab5;
   transition: all $transition-base;
 
   &:hover {
-    background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
+    background: linear-gradient(135deg, $fab-rose-dark 0%, $fab-rose 100%);
     transform: scale(1.05);
-    box-shadow: 0 16px 40px rgba(77, 70, 53, 0.15);
+    box-shadow: 0 16px 40px rgba(77, 53, 60, 0.15);
   }
 
   &:active {
     transform: scale(0.95);
   }
 
-  // Priority mode variant (initiative blue)
+  // Priority mode variant (gold)
   &.fab-priority {
-    background: linear-gradient(135deg, $initiative-blue 0%, $initiative-blue-light 100%);
+    background: linear-gradient(135deg, #735c00 0%, $accent-bright 100%);
 
     &:hover {
-      background: linear-gradient(135deg, $initiative-blue-hover 0%, $initiative-blue 100%);
+      background: linear-gradient(135deg, $accent-dim 0%, $accent 100%);
     }
   }
 }

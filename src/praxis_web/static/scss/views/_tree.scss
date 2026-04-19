@@ -113,6 +113,14 @@
   white-space: nowrap;
 }
 
+.tree-node-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .tree-node-id {
   font-size: $font-size-xs;
   color: $text-muted;
@@ -170,38 +178,8 @@
 }
 
 // -----------------------------------------------------------------------------
-// Badges
+// Status Dim
 // -----------------------------------------------------------------------------
-
-.rank-badge {
-  background: $accent;
-  color: white;
-  padding: 0.1rem $spacing-xs;
-  border-radius: $radius-sm;
-  font-size: 0.65rem;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.assignee-badge {
-  background: $bg-tertiary;
-  color: $text-secondary;
-  padding: 0.1rem $spacing-sm;
-  border-radius: $radius-sm;
-  font-size: 0.65rem;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.share-badge {
-  background: #3d8c5c;
-  color: $bg-primary;
-  padding: 0.1rem $spacing-xs;
-  border-radius: $radius-sm;
-  font-size: 0.65rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
 
 .status-dim {
   color: $text-muted;

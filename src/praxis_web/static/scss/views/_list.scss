@@ -61,23 +61,6 @@
 }
 
 // -----------------------------------------------------------------------------
-// Share Indicators
-// -----------------------------------------------------------------------------
-
-.share-indicator {
-  font-size: 0.85em;
-  cursor: help;
-
-  &.shared-with-me {
-    color: #3d8c5c;
-  }
-
-  &.shared-by-me {
-    color: #3d8c5c;
-  }
-}
-
-// -----------------------------------------------------------------------------
 // Task Rows
 // -----------------------------------------------------------------------------
 
@@ -135,21 +118,17 @@
     gap: $spacing-md;
   }
 
-  .score-badge {
-    background: $bg-tertiary;
-    color: $text-muted;
-    padding: 0.1rem $spacing-sm;
-    border-radius: $radius-md;
-    font-family: monospace;
-    font-size: 0.7rem;
-    cursor: help;
-  }
-
-  .type-badge {
-    max-width: 120px;
+  .pill {
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .task-row .pill {
+    max-width: 100px;
   }
 }
 

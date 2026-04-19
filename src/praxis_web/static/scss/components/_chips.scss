@@ -5,21 +5,7 @@
 @use 'sass:map';
 @use '../base/variables' as *;
 
-// -----------------------------------------------------------------------------
-// Chip Color Palette (pastel, semantic)
-// -----------------------------------------------------------------------------
-
-$chip-colors: (
-  interval: (#7c5cad, #ece0f5),   // Purple - cadence, frequency
-  day:      (#3d8c5c, #d8f0e3),   // Green - days of week
-  time:     (#b87333, #fde8d4),   // Orange/peach - time of day
-  priority: (#2a5082, #d6e5f5),   // Blue - priority references
-  tag:      (#6b5e4f, #e8e4dc),   // Warm gray - tags
-  due:      (#8a5a00, #fff3d6),   // Gold - due dates
-  collate:  (#7d6b3a, #f5ecd6),   // Warm brown - collation
-  event:    (#2a7d75, #d6f0ee),   // Teal - events
-  task:     (#994d5a, #f5dfe0),   // Rose - tasks/create
-);
+// Chip colors now defined in _variables.scss via $chip-colors (draws from $palette)
 
 // -----------------------------------------------------------------------------
 // Base Chip
@@ -390,20 +376,23 @@ $chip-colors: (
 }
 
 .chip-popup__option--time {
+  $time-text: list.nth(map.get($chip-colors, time), 1);
+  $time-bg: list.nth(map.get($chip-colors, time), 2);
+
   padding: $spacing-xs $spacing-sm;
   font-size: $font-size-sm;
 
-  background: #fde8d4;
-  color: #b87333;
+  background: $time-bg;
+  color: $time-text;
   border-color: transparent;
 
   &:hover {
-    border-color: #b87333;
+    border-color: $time-text;
   }
 
   &.selected {
-    border-color: #b87333;
-    background: #b87333;
+    border-color: $time-text;
+    background: $time-text;
     color: white;
   }
 }
@@ -417,20 +406,22 @@ $chip-colors: (
 }
 
 .chip-popup__time-field {
+  $time-text: list.nth(map.get($chip-colors, time), 1);
+
   flex: 1;
   height: 32px;
   padding: $spacing-xs $spacing-sm;
-  border: 1px solid #b87333;
+  border: 1px solid $time-text;
   border-radius: $radius-md;
   background: white;
-  color: #b87333;
+  color: $time-text;
   font-family: $font-family-body;
   font-size: $font-size-sm;
   font-weight: 500;
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(#b87333, 0.2);
+    box-shadow: 0 0 0 2px rgba($time-text, 0.2);
   }
 }
 
@@ -492,21 +483,23 @@ $chip-colors: (
 }
 
 .chip-popup__option--interval {
+  $interval-text: list.nth(map.get($chip-colors, interval), 1);
+  $interval-bg: list.nth(map.get($chip-colors, interval), 2);
+
   padding: $spacing-xs $spacing-sm;
   font-size: $font-size-sm;
 
-  // Use interval colors (purple)
-  background: #ece0f5;
-  color: #7c5cad;
+  background: $interval-bg;
+  color: $interval-text;
   border-color: transparent;
 
   &:hover {
-    border-color: #7c5cad;
+    border-color: $interval-text;
   }
 
   &.selected {
-    border-color: #7c5cad;
-    background: #7c5cad;
+    border-color: $interval-text;
+    background: $interval-text;
     color: white;
   }
 
@@ -522,20 +515,23 @@ $chip-colors: (
 
 // Due/Start options (gold)
 .chip-popup__option--due {
+  $due-text: list.nth(map.get($chip-colors, due), 1);
+  $due-bg: list.nth(map.get($chip-colors, due), 2);
+
   padding: $spacing-xs $spacing-sm;
   font-size: $font-size-sm;
 
-  background: #fff3d6;
-  color: #8a5a00;
+  background: $due-bg;
+  color: $due-text;
   border-color: transparent;
 
   &:hover {
-    border-color: #8a5a00;
+    border-color: $due-text;
   }
 
   &.selected {
-    border-color: #8a5a00;
-    background: #8a5a00;
+    border-color: $due-text;
+    background: $due-text;
     color: white;
   }
 }
@@ -551,24 +547,26 @@ $chip-colors: (
 }
 
 .chip-popup__option--day {
+  $day-text: list.nth(map.get($chip-colors, day), 1);
+  $day-bg: list.nth(map.get($chip-colors, day), 2);
+
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   padding: $spacing-xs $spacing-sm;
   font-size: $font-size-sm;
 
-  // Use day colors (green)
-  background: #d8f0e3;
-  color: #3d8c5c;
+  background: $day-bg;
+  color: $day-text;
   border-color: transparent;
 
   &:hover {
-    border-color: #3d8c5c;
+    border-color: $day-text;
   }
 
   &.selected {
-    border-color: #3d8c5c;
-    background: #3d8c5c;
+    border-color: $day-text;
+    background: $day-text;
     color: white;
   }
 }
@@ -625,6 +623,9 @@ $chip-colors: (
 }
 
 .chip-popup__number-btn {
+  $interval-text: list.nth(map.get($chip-colors, interval), 1);
+  $interval-bg: list.nth(map.get($chip-colors, interval), 2);
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -633,8 +634,8 @@ $chip-colors: (
   padding: 0;
   border: 1px solid transparent;
   border-radius: $radius-md;
-  background: #ece0f5;
-  color: #7c5cad;
+  background: $interval-bg;
+  color: $interval-text;
   font-size: 1.25rem;
   font-weight: 500;
   line-height: 1;
@@ -642,23 +643,25 @@ $chip-colors: (
   transition: all $transition-fast;
 
   &:hover {
-    border-color: #7c5cad;
+    border-color: $interval-text;
   }
 
   &:active {
-    background: #7c5cad;
+    background: $interval-text;
     color: white;
   }
 }
 
 .chip-popup__number-field {
+  $interval-text: list.nth(map.get($chip-colors, interval), 1);
+
   width: 52px;
   height: 32px;
   padding: $spacing-xs;
-  border: 1px solid #7c5cad;
+  border: 1px solid $interval-text;
   border-radius: $radius-md;
   background: white;
-  color: #7c5cad;
+  color: $interval-text;
   font-family: $font-family-body;
   font-size: $font-size-base;
   font-weight: 500;
@@ -673,7 +676,7 @@ $chip-colors: (
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(#7c5cad, 0.2);
+    box-shadow: 0 0 0 2px rgba($interval-text, 0.2);
   }
 }
 
@@ -720,7 +723,7 @@ $chip-colors: (
 
 .chip-popup__tab--active {
   background: $bg-elevated;
-  color: #3d8c5c;
+  color: list.nth(map.get($chip-colors, day), 1);
   box-shadow: $shadow-sm;
 }
 
@@ -756,6 +759,9 @@ $chip-colors: (
 }
 
 .chip-popup__date-btn {
+  $day-text: list.nth(map.get($chip-colors, day), 1);
+  $day-bg: list.nth(map.get($chip-colors, day), 2);
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -764,19 +770,19 @@ $chip-colors: (
   padding: 0;
   border: 1px solid transparent;
   border-radius: $radius-sm;
-  background: #d8f0e3;
-  color: #3d8c5c;
+  background: $day-bg;
+  color: $day-text;
   font-size: $font-size-sm;
   cursor: pointer;
   transition: all $transition-fast;
 
   &:hover {
-    border-color: #3d8c5c;
+    border-color: $day-text;
   }
 
   &.selected {
-    border-color: #3d8c5c;
-    background: #3d8c5c;
+    border-color: $day-text;
+    background: $day-text;
     color: white;
   }
 }
@@ -827,27 +833,30 @@ $chip-colors: (
   padding-top: $spacing-sm;
   border-top: 1px solid $border-subtle;
 
+  $due-text: list.nth(map.get($chip-colors, due), 1);
+  $due-bg: list.nth(map.get($chip-colors, due), 2);
+
   // Gold-colored number buttons for start chip
   .chip-popup__number-btn {
-    background: #fff3d6;
-    color: #8a5a00;
+    background: $due-bg;
+    color: $due-text;
 
     &:hover {
-      border-color: #8a5a00;
+      border-color: $due-text;
     }
 
     &:active {
-      background: #8a5a00;
+      background: $due-text;
       color: white;
     }
   }
 
   .chip-popup__number-field {
-    border-color: #8a5a00;
-    color: #8a5a00;
+    border-color: $due-text;
+    color: $due-text;
 
     &:focus {
-      box-shadow: 0 0 0 2px rgba(#8a5a00, 0.2);
+      box-shadow: 0 0 0 2px rgba($due-text, 0.2);
     }
   }
 }
@@ -879,8 +888,8 @@ $chip-colors: (
 
   &:focus {
     outline: none;
-    border-color: #8a5a00;
-    box-shadow: 0 0 0 2px rgba(#8a5a00, 0.2);
+    border-color: list.nth(map.get($chip-colors, due), 1);
+    box-shadow: 0 0 0 2px rgba(list.nth(map.get($chip-colors, due), 1), 0.2);
   }
 }
 
@@ -967,7 +976,7 @@ $chip-colors: (
 }
 
 .chip-popup__breadcrumb-sep {
-  color: #b0ada8;
+  color: $text-muted;
   margin: 0 0.1rem;
 }
 
@@ -1010,7 +1019,7 @@ $chip-colors: (
   padding: 0;
   border: 1px solid transparent;
   border-radius: $radius-md;
-  background: #eef3f9;
+  background: list.nth(map.get($chip-colors, priority), 2);
   color: list.nth(map.get($chip-colors, priority), 1);
   font-size: 0.9rem;
   cursor: pointer;
@@ -1063,7 +1072,7 @@ $chip-colors: (
   // TODO: refactor chip option selected styles to avoid this.
   &.selected {
     background: list.nth(map.get($chip-colors, collate), 1) !important;
-    color: #fff8e6 !important;
+    color: $accent-glow !important;
   }
 }
 

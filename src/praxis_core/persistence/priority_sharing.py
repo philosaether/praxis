@@ -131,6 +131,22 @@ def unshare_user(connection_factory, priority_id: str, user_id: int) -> bool:
     return unshare(connection_factory, priority_id, target_entity_id)
 
 
+def get_share_counts_for_entity(connection_factory, entity_id: str) -> dict[str, int]:
+    """Batch-load share counts for all priorities owned by an entity.
+
+    Returns {priority_id: share_count} for priorities that have at least one share.
+    """
+    with connection_factory() as conn:
+        rows = conn.execute("""
+            SELECT es.priority_id, COUNT(*) as share_count
+            FROM entity_shares es
+            JOIN priorities p ON es.priority_id = p.id
+            WHERE p.entity_id = ?
+            GROUP BY es.priority_id
+        """, (entity_id,)).fetchall()
+        return {row["priority_id"]: row["share_count"] for row in rows}
+
+
 def get_shares(connection_factory, priority_id: str) -> list[dict]:
     """
     Get all entities a priority is shared with.

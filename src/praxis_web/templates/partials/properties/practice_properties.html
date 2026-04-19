@@ -112,12 +112,12 @@
     <!-- Sharing Status -->
     {% if priority.is_shared_with_me %}
     <div class="share-status shared-with-me">
-        <span class="share-badge">&#x263A;</span>
+        <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
         <span>Shared with you</span>
     </div>
     {% elif priority.shares and priority.shares|length > 0 %}
     <div class="share-status shared-by-me">
-        <span class="share-badge">&#x263A;</span>
+        <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
         <span>Shared with {{ priority.shares|length }} user(s):</span>
         <ul class="share-list">
             {% for share in priority.shares %}
