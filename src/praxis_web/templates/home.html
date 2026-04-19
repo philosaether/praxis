@@ -642,6 +642,9 @@
 
     // Listen for task creation to refresh the list
     document.body.addEventListener('taskCreated', function(event) {
+        // During tutorial, the quick-add afterbegin swap is sufficient —
+        // a full list refresh would detach Shepherd's DOM reference
+        if (document.querySelector('.tutorial-active')) return;
         // Refresh the task list based on current mode, respecting filter
         if (window.currentMode === 'inbox') {
             htmx.ajax('GET', '/tasks/inbox', {target: '#item-list', swap: 'innerHTML'});
@@ -1690,6 +1693,9 @@
     }
 
     async function pollCycle() {
+        // Suppress polling during onboarding tutorial to avoid replacing DOM nodes
+        // that Shepherd.js is attached to
+        if (document.querySelector('.tutorial-active')) return;
         // First check triggers (may create new tasks), then refresh list
         await checkTriggers();
         refreshTaskList();
