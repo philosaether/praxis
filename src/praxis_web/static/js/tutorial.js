@@ -146,6 +146,8 @@ function startTutorial() {
     }),
     when: {
       show: () => {
+        // Hide overlay so mobile keyboard resize doesn't redraw SVG over input
+        tour.modal?.hide();
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
           // Re-enable disabled elements
@@ -154,6 +156,8 @@ function startTutorial() {
             el.style.opacity = '';
             delete el.dataset.tutorialDisabled;
           });
+          // Restore overlay for subsequent steps
+          tour.modal?.show();
           tour.next();
         };
         addTrackedListener(document.body, 'taskCreated', handler);
@@ -245,6 +249,15 @@ function startTutorial() {
         return input && input.offsetParent !== null;
       }, resolve);
     }),
+    when: {
+      show: () => {
+        // Hide overlay so mobile keyboard resize doesn't redraw SVG over input
+        tour.modal?.hide();
+      },
+      hide: () => {
+        tour.modal?.show();
+      },
+    },
   });
 
   // =========================================================================
