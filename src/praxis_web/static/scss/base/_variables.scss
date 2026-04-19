@@ -48,6 +48,7 @@ $type-colors: (
   practice:   map.get($palette, copper),
   initiative: map.get($palette, slate),
   group:      map.get($palette, sage),
+  org:        map.get($palette, sage),   // DB type is "org", same color as group
   inbox:      map.get($palette, stone),
 );
 

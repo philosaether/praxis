@@ -21,6 +21,14 @@ $fab-rose-dark: #7a3d48;
   color: white;
   border: none;
   font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .icon {
+    font-size: 2rem;
+    font-weight: 300;
+  }
   cursor: pointer;
   // Tinted shadow (not black)
   box-shadow: $shadow-lg;

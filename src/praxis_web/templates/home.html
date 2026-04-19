@@ -24,7 +24,7 @@
                 hx-push-url="/tasks"
                 onclick="setMode('tasks')"
                 title="Queue">
-            <span class="icon">task_alt</span>
+            <span class="icon">playlist_add_check</span>
             <span class="mode-nav-label">tasks</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'priorities' %}active{% endif %}"
@@ -57,7 +57,7 @@
                 hx-push-url="/rules"
                 onclick="setMode('rules')"
                 title="Rules">
-            <span class="icon">equalizer</span>
+            <span class="icon">discover_tune</span>
             <span class="mode-nav-label">rules</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'outbox' %}active{% endif %}"
@@ -67,7 +67,7 @@
                 hx-push-url="/tasks/outbox"
                 onclick="setMode('outbox')"
                 title="Outbox">
-            <span class="icon">auto_delete</span>
+            <span class="icon">delete_outline</span>
             <span class="mode-nav-label">outbox</span>
         </button>
     </nav>

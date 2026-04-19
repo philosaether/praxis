@@ -49,6 +49,12 @@
   }
 }
 
+// Value: inverted (dark bg, light text) to distinguish from copper Practice
+.pill--value {
+  color: #ffecd0;
+  background: #8a5a00;
+}
+
 // -----------------------------------------------------------------------------
 // Status pills
 // -----------------------------------------------------------------------------

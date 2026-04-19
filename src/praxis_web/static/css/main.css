@@ -469,6 +469,15 @@ a:hover {
   color: white;
   border: none;
   font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab .icon {
+  font-size: 2rem;
+  font-weight: 300;
+}
+.fab {
   cursor: pointer;
   box-shadow: 0 12px 32px rgba(77, 70, 53, 0.1);
   z-index: 100;
@@ -602,9 +611,19 @@ a:hover {
   background: #d4edda;
 }
 
+.pill--org {
+  color: #2e5a30;
+  background: #d4edda;
+}
+
 .pill--inbox {
   color: #6b5e4f;
   background: #e8e4dc;
+}
+
+.pill--value {
+  color: #ffecd0;
+  background: #8a5a00;
 }
 
 .pill--status-queued {
@@ -2860,6 +2879,10 @@ select.property-input {
 }
 
 .group-properties {
+  border-left: 3px solid #2e5a30;
+}
+
+.org-properties {
   border-left: 3px solid #2e5a30;
 }
 
