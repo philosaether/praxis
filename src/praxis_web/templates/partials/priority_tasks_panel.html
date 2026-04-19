@@ -23,7 +23,7 @@
                hx-swap="innerHTML">
                 {{ task.name }}
             </a>
-            <span class="task-status {{ task.status }}">{{ task.status }}</span>
+            <span class="pill pill--xs pill--status-{{ task.status }}">{{ task.status }}</span>
         </li>
         {% endfor %}
     </ul>

@@ -205,7 +205,7 @@ function startTutorial() {
   tour.addStep({
     id: 'fab-priority',
     attachTo: { element: '#fab-button', on: 'top' },
-    text: 'On the priority tab, the quick-add button turns blue, and will make a new priority.<br><br>Click it now!',
+    text: 'On the priority tab, the quick-add button turns gold, and will make a new priority.<br><br>Click it now!',
     advanceOn: { selector: '#fab-button', event: 'click' },
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {

@@ -1,0 +1,112 @@
+// =============================================================================
+// Pills — Unified badge/status/metadata primitive
+// Replaces _badges.scss. SOT: designs/ui-design-pass.md
+// =============================================================================
+@use 'sass:list';
+@use 'sass:map';
+@use '../base/variables' as *;
+
+// -----------------------------------------------------------------------------
+// Base pill
+// -----------------------------------------------------------------------------
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border-radius: $radius-md;
+  line-height: 1;
+  vertical-align: middle;
+  font-family: $font-family-body;
+
+  // Default size — list rows, tree nodes, metadata
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.pill--xs {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.3rem;
+  letter-spacing: 0.04em;
+}
+
+.pill--md {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.55rem;
+}
+
+// -----------------------------------------------------------------------------
+// Type pills — generated from $type-colors
+// -----------------------------------------------------------------------------
+
+@each $type, $colors in $type-colors {
+  .pill--#{$type} {
+    color: list.nth($colors, 1);
+    background: list.nth($colors, 2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Status pills
+// -----------------------------------------------------------------------------
+
+.pill--status-queued  { color: $accent;     background: $accent-glow; }
+.pill--status-active  { color: $warning;    background: rgba($warning, 0.12); }
+.pill--status-done    { color: $success;    background: rgba($success, 0.12); }
+.pill--status-dropped { color: $text-muted; background: rgba($text-muted, 0.12); }
+.pill--status-dormant { color: $text-muted; background: rgba($text-muted, 0.12); }
+
+// -----------------------------------------------------------------------------
+// Special pills
+// -----------------------------------------------------------------------------
+
+.pill--score {
+  font-family: $font-family-mono;
+  font-weight: 400;
+  text-transform: none;
+  color: $text-muted;
+  background: $bg-tertiary;
+  cursor: help;
+
+  // Hide scores in production — diagnostic tool for rule tuning
+  .env-production & {
+    display: none;
+  }
+}
+
+.pill--rank {
+  color: white;
+  background: $accent;
+}
+
+.pill--assignee {
+  color: $text-secondary;
+  background: $bg-tertiary;
+  font-weight: 500;
+  text-transform: none;
+}
+
+// Combined share + assignee indicator (sage / Green | Affinity)
+.pill--shared {
+  $sage: map.get($palette, sage);
+  color: list.nth($sage, 1);
+  background: list.nth($sage, 2);
+  font-weight: 500;
+  text-transform: none;
+  gap: 0.2rem;
+
+  .icon {
+    font-size: 0.75rem;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Due date text (not a pill, just colored text)
+// -----------------------------------------------------------------------------
+
+.due-date {
+  color: $warning;
+}

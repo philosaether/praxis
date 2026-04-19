@@ -24,7 +24,7 @@ RULE_TEMPLATES = [
     {
         "id": "morning_boost",
         "name": "Morning Boost",
-        "icon": "🌅",
+        "icon": "light_mode",
         "description": "Increase aptness for tasks during morning hours when focus is high.",
         "conditions": [{"type": "time_window", "params": {"start": "06:00", "end": "12:00"}}],
         "effects": [{"target": "aptness", "operator": "multiply", "value": 1.5}],
@@ -32,7 +32,7 @@ RULE_TEMPLATES = [
     {
         "id": "evening_wind_down",
         "name": "Evening Wind-down",
-        "icon": "🌙",
+        "icon": "dark_mode",
         "description": "Reduce aptness in the evening to favor lighter tasks.",
         "conditions": [{"type": "time_window", "params": {"start": "20:00", "end": "23:59"}}],
         "effects": [{"target": "aptness", "operator": "multiply", "value": 0.5}],
@@ -40,7 +40,7 @@ RULE_TEMPLATES = [
     {
         "id": "weekend_rest",
         "name": "Weekend Rest",
-        "icon": "🛋️",
+        "icon": "weekend",
         "description": "Lower task urgency on weekends to encourage rest.",
         "conditions": [{"type": "day_of_week", "params": {"days": ["saturday", "sunday"]}}],
         "effects": [{"target": "aptness", "operator": "multiply", "value": 0.3}],
@@ -48,7 +48,7 @@ RULE_TEMPLATES = [
     {
         "id": "deadline_crunch",
         "name": "Deadline Crunch",
-        "icon": "⏰",
+        "icon": "alarm",
         "description": "Boost urgency when a task's due date is approaching.",
         "conditions": [{"type": "due_date_proximity", "params": {"due_type": "within_hours", "hours": 24}}],
         "effects": [{"target": "urgency", "operator": "add", "value": 5}],
@@ -56,7 +56,7 @@ RULE_TEMPLATES = [
     {
         "id": "overdue_penalty",
         "name": "Overdue Penalty",
-        "icon": "🚨",
+        "icon": "warning",
         "description": "Significantly boost urgency for overdue tasks.",
         "conditions": [{"type": "due_date_proximity", "params": {"due_type": "overdue"}}],
         "effects": [{"target": "urgency", "operator": "set", "value": 10}],
@@ -64,7 +64,7 @@ RULE_TEMPLATES = [
     {
         "id": "stale_nudge",
         "name": "Stale Task Nudge",
-        "icon": "🧹",
+        "icon": "hourglass_bottom",
         "description": "Increase urgency for tasks untouched for several days.",
         "conditions": [{"type": "staleness", "params": {"days": 7}}],
         "effects": [{"target": "urgency", "operator": "add", "value": 3}],
@@ -72,7 +72,7 @@ RULE_TEMPLATES = [
     {
         "id": "deep_work",
         "name": "Deep Work Focus",
-        "icon": "🎯",
+        "icon": "center_focus_strong",
         "description": "Boost aptness for tasks tagged with 'deep-work'.",
         "conditions": [{"type": "tag_match", "params": {"tag": "deep-work"}}],
         "effects": [{"target": "aptness", "operator": "multiply", "value": 2.0}],
@@ -80,7 +80,7 @@ RULE_TEMPLATES = [
     {
         "id": "custom",
         "name": "Custom Rule",
-        "icon": "✨",
+        "icon": "edit_note",
         "description": "Start from scratch with a blank rule.",
         "conditions": [],
         "effects": [],

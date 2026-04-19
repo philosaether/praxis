@@ -9,10 +9,10 @@
     <div class="name">{{ p.name }}</div>
     <div class="meta">
         {% if p.is_shared_with_me or (p.share_count and p.share_count > 0) %}
-        <span class="share-badge" title="{% if p.is_shared_with_me %}Shared with you{% else %}Shared{% endif %}">&#x263A;</span>
+        <span class="icon icon--sm" style="color: #2e5a30" title="{% if p.is_shared_with_me %}Shared with you{% else %}Shared{% endif %}">handshake</span>
         {% endif %}
-        <span class="type-badge {{ p.priority_type }}">{{ p.priority_type|upper }}</span>
-        <span class="status-indicator {% if p.status == 'active' %}active{% endif %}">
+        <span class="pill pill--{{ p.priority_type }}">{{ p.priority_type|upper }}</span>
+        <span class="pill pill--xs pill--status-{{ p.status }}">
             {{ p.status }}
         </span>
     </div>

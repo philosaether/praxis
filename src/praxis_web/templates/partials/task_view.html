@@ -10,14 +10,14 @@
         <div class="detail-priority">
             {% if task.priority_id and task.priority_name %}
                 <a href="#"
-                   class="type-badge {{ task.priority_type }}"
+                   class="pill pill--{{ task.priority_type }}"
                    hx-get="/priorities/{{ task.priority_id }}?from_task={{ task.id }}"
                    hx-target="#detail-content"
                    hx-swap="innerHTML">
                     {{ task.priority_name }}
                 </a>
             {% else %}
-                <span class="type-badge inbox">Inbox</span>
+                <span class="pill pill--inbox">Inbox</span>
             {% endif %}
         </div>
 

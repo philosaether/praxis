@@ -44,44 +44,25 @@
   line-height: $line-height-tight;
   flex-wrap: wrap;
 
-  .rank-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.2rem 0.5rem;
-    background: $accent;
-    border-radius: $radius-sm;
-    font-size: $font-size-base;
-    font-weight: 700;
-    color: white;
-    font-family: $font-family-body;
+  .pill--rank {
     flex-shrink: 0;
-    // Align with first line baseline
     margin-top: 0.15em;
   }
 
-  .type-badge {
+  .pill {
     flex-shrink: 0;
-    // Align with first line baseline
-    margin-top: .45em;
+    margin-top: 0.45em;
   }
 
   .title-text {
     flex: 1;
-  }
-
-  .status-badge {
-    font-size: $font-size-sm;
-    font-weight: 500;
-    flex-shrink: 0;
-    margin-top: 0.15em;
   }
 }
 
 .detail-priority {
   margin-bottom: $spacing-xl;
 
-  .type-badge {
+  .pill {
     text-decoration: none;
     cursor: pointer;
     transition: opacity $transition-fast;
@@ -183,19 +164,18 @@
 .property-input {
   width: 100%;
   padding: $spacing-sm $spacing-md;
-  background: $bg-tertiary;
+  background: $bg-elevated;
   color: $text-primary;
-  border: none;
-  border-bottom: 1px solid $border;
-  border-radius: $radius-sm $radius-sm 0 0;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-sm;
   font-size: $font-size-base;
   font-family: $font-family-body;
-  transition: border-color $transition-base, box-shadow $transition-base;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
 
   &:focus {
     outline: none;
-    border-bottom-color: $accent;
-    box-shadow: 0 2px 0 $accent-glow;
+    border-color: $accent;
+    box-shadow: 0 0 0 2px rgba($accent, 0.15);
   }
 
   &::placeholder {
@@ -260,8 +240,18 @@ textarea.property-input {
 }
 
 .title-input {
+  font-family: $font-family-display;
   font-size: $font-size-lg;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+select.property-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a48' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right $spacing-sm center;
+  padding-right: $spacing-2xl;
+  cursor: pointer;
 }
 
 .property-actions {
@@ -570,32 +560,10 @@ textarea.property-input {
     }
   }
 
-  .task-status {
-    font-size: $font-size-xs;
-    padding: 0.1rem 0.5rem;
-    border-radius: $radius-md;
+  // Status pills — colors handled by _pills.scss
+  .pill {
     margin-left: $spacing-sm;
     flex-shrink: 0;
-
-    &.queued {
-      background: $accent-glow;
-      color: $accent;
-    }
-
-    &.active {
-      background: rgba($warning, 0.15);
-      color: $warning;
-    }
-
-    &.done {
-      background: rgba($success, 0.15);
-      color: $success;
-    }
-
-    &.dropped {
-      background: rgba($text-muted, 0.15);
-      color: $text-muted;
-    }
   }
 }
 

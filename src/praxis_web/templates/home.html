@@ -13,7 +13,7 @@
                 hx-push-url="/tasks/inbox"
                 onclick="setMode('inbox')"
                 title="Inbox">
-            <span class="mode-nav-icon mode-nav-icon--inbox"></span>
+            <span class="icon">inbox</span>
             <span class="mode-nav-label">inbox</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'tasks' %}active{% endif %}"
@@ -24,7 +24,7 @@
                 hx-push-url="/tasks"
                 onclick="setMode('tasks')"
                 title="Queue">
-            <span class="mode-nav-icon mode-nav-icon--tasks"></span>
+            <span class="icon">task_alt</span>
             <span class="mode-nav-label">tasks</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'priorities' %}active{% endif %}"
@@ -34,7 +34,7 @@
                 hx-push-url="/priorities"
                 onclick="setMode('priorities')"
                 title="Priorities">
-            <span class="mode-nav-icon mode-nav-icon--priorities"></span>
+            <span class="icon">star</span>
             <span class="mode-nav-label">priorities</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'friends' %}active{% endif %}"
@@ -44,7 +44,7 @@
                 hx-push-url="/friends"
                 onclick="setMode('friends')"
                 title="Friends">
-            <span class="mode-nav-icon mode-nav-icon--friends"></span>
+            <span class="icon">handshake</span>
             <span class="mode-nav-label">friends</span>
             {% if notification_count and notification_count > 0 %}
             <span class="notification-badge">{{ notification_count }}</span>
@@ -57,7 +57,7 @@
                 hx-push-url="/rules"
                 onclick="setMode('rules')"
                 title="Rules">
-            <span class="mode-nav-icon mode-nav-icon--rules"></span>
+            <span class="icon">equalizer</span>
             <span class="mode-nav-label">rules</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'outbox' %}active{% endif %}"
@@ -67,7 +67,7 @@
                 hx-push-url="/tasks/outbox"
                 onclick="setMode('outbox')"
                 title="Outbox">
-            <span class="mode-nav-icon mode-nav-icon--outbox"></span>
+            <span class="icon">auto_delete</span>
             <span class="mode-nav-label">outbox</span>
         </button>
     </nav>
@@ -100,10 +100,7 @@
             <div id="task-filters" class="search-filter-bar" style="display: {% if default_mode == 'tasks' %}flex{% else %}none{% endif %};">
                 <!-- Search input -->
                 <div class="search-input-wrapper">
-                    <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="M21 21l-4.35-4.35"></path>
-                    </svg>
+                    <span class="icon icon--sm search-icon">search</span>
                     <input type="text"
                            name="q"
                            class="search-input"
@@ -121,9 +118,7 @@
                             class="btn btn-sm filters-toggle"
                             onclick="toggleFiltersDropdown()"
                             title="Filters">
-                        <svg class="filter-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                        </svg>
+                        <span class="icon icon--sm filter-icon">filter_list</span>
                         <span class="filter-badge" id="filter-badge" style="display: none;"></span>
                     </button>
                     <div class="filters-dropdown" id="filters-dropdown">
@@ -276,7 +271,7 @@
     <!-- Right Pane: Detail View -->
     <div class="right-pane" id="detail-pane">
         <button class="mobile-back-btn" onclick="mobileBack()">
-            <span>&larr;</span> Back
+            <span class="icon icon--sm">chevron_left</span> Back
         </button>
         <div id="detail-content">
         {% if initial_detail_html %}
@@ -291,7 +286,7 @@
     </div>
 
     <!-- Floating Action Button -->
-    <button class="fab" id="fab-button" onclick="handleFabClick()" title="Quick add">+</button>
+    <button class="fab" id="fab-button" onclick="handleFabClick()" title="Quick add"><span class="icon">add</span></button>
 </div>
 
 <!-- Quick Add Modals -->
@@ -316,16 +311,16 @@
 <!-- Tree Context Menu -->
 <div class="tree-context-menu" id="tree-context-menu">
     <button class="tree-context-menu-item" onclick="handleTreeMenuEdit()">
-        <span class="menu-icon">✎</span>
+        <span class="icon icon--sm">edit</span>
         <span>Edit</span>
     </button>
     <button class="tree-context-menu-item" onclick="handleTreeMenuAddChild()">
-        <span class="menu-icon">+</span>
+        <span class="icon icon--sm">add</span>
         <span>Add child</span>
     </button>
     <div class="tree-context-menu-divider"></div>
     <button class="tree-context-menu-item destructive" onclick="handleTreeMenuDelete()">
-        <span class="menu-icon">×</span>
+        <span class="icon icon--sm">delete_outline</span>
         <span>Delete</span>
     </button>
 </div>
@@ -788,9 +783,9 @@
                 if (newDepth === 0) {
                     const rootCount = treeContainer.querySelectorAll(':scope > .tree-node').length;
                     const content = newNode.querySelector(':scope > .tree-node-row .tree-node-content');
-                    if (content && !content.querySelector('.rank-badge')) {
+                    if (content && !content.querySelector('.pill--rank')) {
                         const badge = document.createElement('span');
-                        badge.className = 'rank-badge';
+                        badge.className = 'pill pill--xs pill--rank';
                         badge.textContent = '#' + (rootCount + 1);
                         content.insertBefore(badge, content.firstChild);
                     }
@@ -1046,7 +1041,7 @@
         if (!treeContainer) return;
 
         treeContainer.querySelectorAll(':scope > .tree-node').forEach((node, idx) => {
-            const badge = node.querySelector(':scope > .tree-node-row .rank-badge');
+            const badge = node.querySelector(':scope > .tree-node-row .pill--rank');
             const newRank = idx + 1;
             if (badge) {
                 badge.textContent = '#' + newRank;

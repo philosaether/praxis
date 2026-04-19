@@ -40,12 +40,12 @@
         <h2 class="detail-title-row">
             {% if not parents or parents|length == 0 %}
             {# Top-level: show rank badge #}
-            <span class="rank-badge">#{{ priority.rank or 1 }}</span>
+            <span class="pill pill--xs pill--rank">#{{ priority.rank or 1 }}</span>
             {% endif %}
-            <span class="type-badge {{ priority.priority_type }} large">{{ priority.priority_type|upper }}</span>
+            <span class="pill pill--md pill--{{ priority.priority_type }}">{{ priority.priority_type|upper }}</span>
             <span class="title-text">{{ priority.name }}</span>
             {% if priority.status and priority.status != 'active' %}
-            <span class="status-badge {{ priority.status }}">{{ priority.status }}</span>
+            <span class="pill pill--status-{{ priority.status }}">{{ priority.status }}</span>
             {% endif %}
         </h2>
 
@@ -120,7 +120,7 @@
         <!-- Sharing Status -->
         {% if priority.is_shared_with_me %}
         <div class="share-status shared-with-me">
-            <span class="share-badge">&#x263A;</span>
+            <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
             <span>Shared with you</span>
             {% if priority.is_adopted %}
             <button type="button"
@@ -138,7 +138,7 @@
         </div>
         {% elif priority.shares and priority.shares|length > 0 %}
         <div class="share-status shared-by-me">
-            <span class="share-badge">&#x263A;</span>
+            <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
             <span>Shared with {{ priority.shares|length }} user(s)</span>
         </div>
         {% endif %}
@@ -158,7 +158,7 @@
         {% for child in children %}
         <li class="child-item {% if child.status != 'active' %}status-{{ child.status }}{% endif %}">
             <span class="indent-arrow">&#8627;</span>
-            <span class="type-badge {{ child.priority_type }} small">{{ child.priority_type|upper }}</span>
+            <span class="pill pill--xs pill--{{ child.priority_type }}">{{ child.priority_type|upper }}</span>
             <a href="#"
                class="child-link"
                hx-get="/priorities/{{ child.id }}"
@@ -168,7 +168,7 @@
                 {{ child.name }}
             </a>
             {% if child.status and child.status != 'active' %}
-            <span class="status-indicator">{{ child.status }}</span>
+            <span class="pill pill--xs pill--status-{{ child.status }}">{{ child.status }}</span>
             {% endif %}
         </li>
         {% endfor %}
@@ -200,7 +200,7 @@
                     {{ task.name }}
                 </a>
                 {% if task.status == 'done' %}
-                <span class="task-status done">done</span>
+                <span class="pill pill--xs pill--status-done">done</span>
                 {% endif %}
             </li>
             {% endfor %}

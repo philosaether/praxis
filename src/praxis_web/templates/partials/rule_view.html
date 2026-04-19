@@ -6,9 +6,9 @@
         <!-- Status badge -->
         <div class="detail-priority">
             {% if rule.enabled %}
-            <span class="type-badge practice">ENABLED</span>
+            <span class="pill pill--practice">ENABLED</span>
             {% else %}
-            <span class="type-badge" style="background: var(--bg-tertiary); color: var(--text-muted);">DISABLED</span>
+            <span class="pill" style="background: var(--bg-tertiary); color: var(--text-muted);">DISABLED</span>
             {% endif %}
             <span class="priority-badge">Priority: {{ rule.priority }}</span>
         </div>
@@ -30,22 +30,22 @@
                     {% for condition in rule.conditions %}
                     <li class="rule-condition-item">
                         {% if condition.type == 'time_window' %}
-                        <span class="condition-icon">🕐</span>
+                        <span class="condition-icon"><span class="icon icon--sm">schedule</span></span>
                         Time is between <strong>{{ condition.params.start or '00:00' }}</strong> and <strong>{{ condition.params.end or '23:59' }}</strong>
                         {% elif condition.type == 'day_of_week' %}
-                        <span class="condition-icon">📅</span>
+                        <span class="condition-icon"><span class="icon icon--sm">calendar_today</span></span>
                         Day is {% for day in condition.params.days %}<strong>{{ day|capitalize }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}
                         {% elif condition.type == 'tag_match' %}
-                        <span class="condition-icon">🏷️</span>
+                        <span class="condition-icon"><span class="icon icon--sm">label</span></span>
                         Task has tag <strong>{{ condition.params.tag }}</strong>
                         {% elif condition.type == 'tag_missing' %}
-                        <span class="condition-icon">🏷️</span>
+                        <span class="condition-icon"><span class="icon icon--sm">label</span></span>
                         Task is missing tag <strong>{{ condition.params.tag }}</strong>
                         {% elif condition.type == 'engagement_recency' %}
-                        <span class="condition-icon">📅</span>
+                        <span class="condition-icon"><span class="icon icon--sm">trending_flat</span></span>
                         Priority not engaged for <strong>{{ condition.params.days or 7 }}+ days</strong>
                         {% elif condition.type == 'due_date_proximity' %}
-                        <span class="condition-icon">⏰</span>
+                        <span class="condition-icon"><span class="icon icon--sm">event_upcoming</span></span>
                         {% if condition.params.due_type == 'overdue' %}
                         Task is <strong>overdue</strong>
                         {% elif condition.params.due_type == 'within_hours' %}
@@ -56,7 +56,7 @@
                         Task is <strong>not overdue</strong>
                         {% endif %}
                         {% elif condition.type == 'staleness' %}
-                        <span class="condition-icon">🧹</span>
+                        <span class="condition-icon"><span class="icon icon--sm">hourglass_bottom</span></span>
                         Task untouched for <strong>{{ condition.params.days }} days</strong>
                         {% else %}
                         {{ condition.type }}: {{ condition.params }}

@@ -9,16 +9,8 @@
 $mode-nav-width: 48px;
 $mode-nav-btn-size: 40px;
 
-// Unicode icons (no dependencies)
-$mode-icons: (
-  inbox: "\2709",      // envelope
-  tasks: "\2630",      // three lines (queue)
-  priorities: "\2605", // star
-  friends: "\263A",    // smiley face
-  rules: "\2696",      // scales (balance/rules)
-  triggers: "\23F0",   // alarm clock (automation)
-  outbox: "\1F5D1"     // wastebasket (outbox/trash)
-);
+// Icons now rendered via Material Symbols .icon class in templates
+// See designs/ui-design-pass.md for icon selections
 
 // -----------------------------------------------------------------------------
 // Navigation Container
@@ -96,19 +88,7 @@ $mode-icons: (
   border-radius: 8px;
 }
 
-// -----------------------------------------------------------------------------
-// Icon Styling
-// -----------------------------------------------------------------------------
-.mode-nav-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-
-  @each $mode, $unicode in $mode-icons {
-    &--#{$mode}::before {
-      content: $unicode;
-    }
-  }
-}
+// Icon styling handled by .icon class (base/_icons.scss)
 
 // -----------------------------------------------------------------------------
 // Label (hidden on desktop, shown on mobile)
