@@ -151,18 +151,9 @@ function startTutorial() {
         // Prevent by making the step element unfocusable.
         const stepEl = tour.getCurrentStep()?.el;
         if (stepEl) stepEl.setAttribute('tabindex', '-1');
-        // Also intercept: if Shepherd re-sets tabindex, block focus steal
-        const input = document.getElementById('quick-add-name');
-        const refocus = (e) => {
-          if (e.relatedTarget?.classList?.contains('shepherd-element')) {
-            input?.focus();
-          }
-        };
-        if (input) addTrackedListener(input, 'focusout', refocus);
 
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
-          if (input) input.removeEventListener('focusout', refocus);
           // Re-enable disabled elements
           document.querySelectorAll('[data-tutorial-disabled]').forEach(el => {
             el.style.pointerEvents = '';
@@ -265,13 +256,6 @@ function startTutorial() {
         // Same focus-steal prevention as name-task
         const stepEl = tour.getCurrentStep()?.el;
         if (stepEl) stepEl.setAttribute('tabindex', '-1');
-        const input = document.getElementById('quick-add-priority-name');
-        const refocus = (e) => {
-          if (e.relatedTarget?.classList?.contains('shepherd-element')) {
-            input?.focus();
-          }
-        };
-        if (input) addTrackedListener(input, 'focusout', refocus);
       },
     },
   });
