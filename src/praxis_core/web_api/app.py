@@ -271,6 +271,13 @@ def serialize_priority(
         if shares is not None:
             data["share_count"] = len(shares)
             data["shares"] = shares
+        elif is_owner:
+            # shares not passed (e.g., tree view) — look up count for owner
+            from praxis_core.persistence.priority_sharing import get_shares
+            from praxis_core.persistence.database import get_connection as _get_conn2
+            looked_up = get_shares(_get_conn2, p.id)
+            data["share_count"] = len(looked_up)
+            data["shares"] = []  # Don't include full share details in tree
         else:
             data["share_count"] = 0
             data["shares"] = []
