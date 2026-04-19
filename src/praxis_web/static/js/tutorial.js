@@ -146,18 +146,29 @@ function startTutorial() {
     }),
     when: {
       show: () => {
-        // Hide overlay so mobile keyboard resize doesn't redraw SVG over input
-        tour.modal?.hide();
+        // Shepherd steals focus to the step element after a 300ms delay
+        // (for keyboard nav). On mobile this dismisses the keyboard.
+        // Prevent by making the step element unfocusable.
+        const stepEl = tour.getCurrentStep()?.el;
+        if (stepEl) stepEl.setAttribute('tabindex', '-1');
+        // Also intercept: if Shepherd re-sets tabindex, block focus steal
+        const input = document.getElementById('quick-add-name');
+        const refocus = (e) => {
+          if (e.relatedTarget?.classList?.contains('shepherd-element')) {
+            input?.focus();
+          }
+        };
+        if (input) addTrackedListener(input, 'focusout', refocus);
+
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
+          if (input) input.removeEventListener('focusout', refocus);
           // Re-enable disabled elements
           document.querySelectorAll('[data-tutorial-disabled]').forEach(el => {
             el.style.pointerEvents = '';
             el.style.opacity = '';
             delete el.dataset.tutorialDisabled;
           });
-          // Restore overlay for subsequent steps
-          tour.modal?.show();
           tour.next();
         };
         addTrackedListener(document.body, 'taskCreated', handler);
@@ -251,11 +262,16 @@ function startTutorial() {
     }),
     when: {
       show: () => {
-        // Hide overlay so mobile keyboard resize doesn't redraw SVG over input
-        tour.modal?.hide();
-      },
-      hide: () => {
-        tour.modal?.show();
+        // Same focus-steal prevention as name-task
+        const stepEl = tour.getCurrentStep()?.el;
+        if (stepEl) stepEl.setAttribute('tabindex', '-1');
+        const input = document.getElementById('quick-add-priority-name');
+        const refocus = (e) => {
+          if (e.relatedTarget?.classList?.contains('shepherd-element')) {
+            input?.focus();
+          }
+        };
+        if (input) addTrackedListener(input, 'focusout', refocus);
       },
     },
   });
