@@ -12,6 +12,7 @@ from praxis_core.model import (
     Goal,
     Practice,
     Initiative,
+    Org,
     User,
 )
 from praxis_core.web_api.auth import get_current_user
@@ -106,6 +107,8 @@ def _create_by_type(priority_type: str, id: str, name: str, entity_id: str | Non
             return Practice(id=id, name=name, entity_id=entity_id)
         case "initiative":
             return Initiative(id=id, name=name, entity_id=entity_id)
+        case "org":
+            return Org(id=id, name=name, entity_id=entity_id)
         case _:
             return Initiative(id=id, name=name, entity_id=entity_id)
 
@@ -221,6 +224,40 @@ async def update_priority(
     graph.save_priority(priority)
     _clear_cache(user.entity_id)
     return _serialize(priority)
+
+
+class ChangeTypeRequest(BaseModel):
+    priority_type: str
+
+
+@router.post("/{priority_id}/change-type")
+async def change_priority_type(
+    priority_id: str,
+    body: ChangeTypeRequest,
+    user: User = Depends(get_current_user),
+):
+    """Change a priority's type, preserving common fields."""
+    graph = _get_graph(user.entity_id)
+    old_priority = graph.get(priority_id)
+    if not old_priority:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    if old_priority.priority_type.value == body.priority_type:
+        return _serialize(old_priority)
+
+    new_priority = _create_by_type(body.priority_type, priority_id, old_priority.name, user.entity_id)
+    new_priority.status = old_priority.status
+    new_priority.description = old_priority.description
+    new_priority.agent_context = old_priority.agent_context
+    new_priority.rank = old_priority.rank
+    new_priority.created_at = old_priority.created_at
+    new_priority.updated_at = datetime.now()
+
+    graph.nodes[priority_id] = new_priority
+    graph.save_priority(new_priority)
+    _clear_cache(user.entity_id)
+    return _serialize(new_priority)
 
 
 @router.delete("/{priority_id}")
