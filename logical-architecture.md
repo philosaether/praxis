@@ -122,7 +122,7 @@ JSON-first API for AI agents. Mounted on web app at /agent/*. Uses web_api/auth.
 ```
 agent_api/
 ├── __init__.py          — Package docstring
-├── priorities.py        — Priority CRUD for agents
+├── priorities.py        — Priority CRUD for agents (all types incl. org), change-type endpoint
 ├── tasks.py             — Task CRUD for agents
 ├── rules.py             — Rule CRUD for agents
 └── graph.py             — Priority tree queries (roots, tree, ancestors, descendants)
