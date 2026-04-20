@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,200,0,0" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/main.css?v={{ asset_v }}">
 
 
     <!-- HTMX -->
@@ -31,6 +31,6 @@
     {% include "partials/chips/chip_scripts.html" %}
 
     <!-- Tutorial (loads Shepherd.js, auto-starts for new users) -->
-    <script src="/static/js/dist/tutorial.js"></script>
+    <script src="/static/js/dist/tutorial.js?v={{ asset_v }}"></script>
 </body>
 </html>

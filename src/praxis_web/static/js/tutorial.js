@@ -115,11 +115,12 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'name-task',
-    attachTo: { element: '#quick-add-backdrop .modal', on: 'bottom' },
+    attachTo: { element: '#quick-add-backdrop .modal', on: 'top' },
+    // Attach above modal + no middleware — mobile keyboard resizes viewport from
+    // below, so 'top' never needs to flip. Empty middleware prevents any
+    // repositioning that could cause reflow → blur → keyboard dismiss.
+    floatingUIOptions: { middleware: [] },
     text: 'Give your task a name, then click "Add Task."',
-    // Disable scroll on input steps: mobile keyboard resize triggers
-    // Shepherd overlay recalc which steals focus and dismisses the keyboard
-    scrollTo: false,
     buttons: [],
     beforeShowPromise: () => new Promise(resolve => {
       pollFor(() => {
@@ -144,9 +145,13 @@ function startTutorial() {
       });
     }),
     when: {
-      show: () => {
-        // Hide overlay so mobile keyboard resize doesn't trigger recalc → blur
-        tour.modal?.hide();
+      show() {
+        // Shepherd calls .focus() on the step element after positioning,
+        // which steals focus from the input and dismisses mobile keyboards.
+        // Neuter it for this step. (github.com/shipshapecode/shepherd/issues/1143)
+        const el = this.getElement();
+        if (el) el.focus = () => {};
+
         const handler = () => {
           document.body.removeEventListener('taskCreated', handler);
           // Re-enable disabled elements
@@ -155,8 +160,6 @@ function startTutorial() {
             el.style.opacity = '';
             delete el.dataset.tutorialDisabled;
           });
-          // Restore overlay for subsequent steps
-          tour.modal?.show();
           tour.next();
         };
         addTrackedListener(document.body, 'taskCreated', handler);
@@ -225,9 +228,10 @@ function startTutorial() {
   // =========================================================================
   tour.addStep({
     id: 'name-priority',
-    attachTo: { element: '#quick-add-priority-name', on: 'bottom' },
+    attachTo: { element: '#quick-add-priority-name', on: 'top' },
+    // Same mobile keyboard fix as name-task
+    floatingUIOptions: { middleware: [] },
     text: 'What\'s most important to you? Type it in here.',
-    scrollTo: false,
     buttons: [{
       text: 'Done',
       action: () => {
@@ -238,8 +242,6 @@ function startTutorial() {
           return;
         }
         createdPriorityName = name;
-        // Restore overlay for subsequent steps
-        tour.modal?.show();
         tour.next();
       },
     }],
@@ -250,9 +252,10 @@ function startTutorial() {
       }, resolve);
     }),
     when: {
-      show: () => {
-        // Hide overlay so mobile keyboard resize doesn't trigger recalc → blur
-        tour.modal?.hide();
+      show() {
+        // Same focus-steal prevention as name-task
+        const el = this.getElement();
+        if (el) el.focus = () => {};
       },
     },
   });
