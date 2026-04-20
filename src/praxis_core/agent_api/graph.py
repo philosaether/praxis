@@ -1,6 +1,7 @@
-"""Agent API — Priority graph queries (read-only)."""
+"""Agent API — Priority graph queries and mutations."""
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from praxis_core.model import User
 from praxis_core.web_api.auth import get_current_user
@@ -10,7 +11,23 @@ def _get_graph(entity_id):
     from praxis_core.web_api.app import get_graph
     return get_graph(entity_id)
 
+
+def _clear_cache(entity_id):
+    from praxis_core.web_api.app import clear_graph_cache
+    clear_graph_cache(entity_id)
+
+
 router = APIRouter()
+
+
+class LinkRequest(BaseModel):
+    child_id: str
+    parent_id: str
+
+
+class MoveRequest(BaseModel):
+    child_id: str
+    new_parent_id: str | None  # None = make root
 
 
 @router.get("/roots")
@@ -70,6 +87,52 @@ async def get_children(priority_id: str, user: User = Depends(get_current_user))
         for cid in child_ids
         if graph.get(cid)
     ]
+
+
+@router.post("/link")
+async def link_priority(body: LinkRequest, user: User = Depends(get_current_user)):
+    """Create a parent-child edge."""
+    graph = _get_graph(user.entity_id)
+    try:
+        graph.link(body.child_id, body.parent_id)
+    except ValueError as e:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": str(e)}, status_code=400)
+    _clear_cache(user.entity_id)
+    return {"linked": {"child": body.child_id, "parent": body.parent_id}}
+
+
+@router.post("/unlink")
+async def unlink_priority(body: LinkRequest, user: User = Depends(get_current_user)):
+    """Remove a parent-child edge."""
+    graph = _get_graph(user.entity_id)
+    graph.unlink(body.child_id, body.parent_id)
+    _clear_cache(user.entity_id)
+    return {"unlinked": {"child": body.child_id, "parent": body.parent_id}}
+
+
+@router.post("/move")
+async def move_priority(body: MoveRequest, user: User = Depends(get_current_user)):
+    """Move a priority: unlink from all current parents, link to new parent (or make root)."""
+    graph = _get_graph(user.entity_id)
+    if body.child_id not in graph.nodes:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "Priority not found"}, status_code=404)
+
+    # Unlink from all current parents
+    for parent_id in list(graph.parents.get(body.child_id, set())):
+        graph.unlink(body.child_id, parent_id)
+
+    # Link to new parent if specified
+    if body.new_parent_id:
+        try:
+            graph.link(body.child_id, body.new_parent_id)
+        except ValueError as e:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"error": str(e)}, status_code=400)
+
+    _clear_cache(user.entity_id)
+    return {"moved": body.child_id, "new_parent": body.new_parent_id}
 
 
 @router.get("/tree")
