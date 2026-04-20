@@ -125,7 +125,7 @@ agent_api/
 ├── priorities.py        — Priority CRUD for agents (all types incl. org), change-type endpoint
 ├── tasks.py             — Task CRUD for agents
 ├── rules.py             — Rule CRUD for agents
-└── graph.py             — Priority tree queries (roots, tree, ancestors, descendants)
+└── graph.py             — Priority tree queries (roots, tree, ancestors, descendants) and mutations (link, unlink, move)
 ```
 
 ### migrations/
