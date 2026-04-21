@@ -14,9 +14,7 @@ from praxis_core.model import (
     Goal,
     Practice,
 )
-from praxis_core.persistence import get_connection, PriorityGraph, ensure_default_rules
-from praxis_core.persistence.user_repo import ensure_schema as ensure_user_schema
-from praxis_core.persistence.task_repo import ensure_schema as ensure_task_schema
+from praxis_core.persistence import get_connection, PriorityGraph, ensure_default_rules, ensure_all_schemas
 
 from praxis_core.web_api.priority_endpoints import router as priority_router
 from praxis_core.web_api.task_endpoints import router as task_router
@@ -47,8 +45,7 @@ _log = logging.getLogger("praxis.api")
 async def lifespan(app: FastAPI):
     """Handle app startup and shutdown."""
     # Ensure all tables exist (safe on existing DBs, required for fresh ones)
-    ensure_user_schema()
-    ensure_task_schema()
+    ensure_all_schemas()
 
     # Startup: seed default rules
     ensure_default_rules()
