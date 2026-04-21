@@ -1,0 +1,16 @@
+<div class="rule-block effect-block" data-index="{{ idx }}">
+    <span class="block-drag-handle">⋮⋮</span>
+    <select name="effects[{{ idx }}][target]" class="block-type-select">
+        <option value="aptness" {% if effect.target == 'aptness' %}selected{% endif %}>Aptness</option>
+        <option value="urgency" {% if effect.target == 'urgency' %}selected{% endif %}>Urgency</option>
+        <option value="importance" {% if effect.target == 'importance' %}selected{% endif %}>Importance</option>
+    </select>
+    <select name="effects[{{ idx }}][operator]" class="block-select">
+        <option value="multiply" {% if effect.operator == 'multiply' %}selected{% endif %}>× multiply by</option>
+        <option value="add" {% if effect.operator == 'add' %}selected{% endif %}>+ add</option>
+        <option value="set" {% if effect.operator == 'set' %}selected{% endif %}>= set to</option>
+        <option value="formula" {% if effect.operator == 'formula' %}selected{% endif %}>formula</option>
+    </select>
+    <input type="text" name="effects[{{ idx }}][value]" value="{{ effect.formula or effect.value }}" placeholder="value or formula" class="block-input">
+    <button type="button" class="block-delete" onclick="this.closest('.rule-block').remove()">×</button>
+</div>

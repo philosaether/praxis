@@ -1,0 +1,127 @@
+{# Inline trigger editor for Practice detail view #}
+{# Expects: priority, trigger (parsed trigger config or None) #}
+
+<div class="trigger-editor">
+    <form hx-post="/priorities/{{ priority.id }}/trigger"
+          hx-target="#detail-content"
+          hx-swap="innerHTML">
+
+        <h4>Trigger Configuration</h4>
+
+        <!-- Schedule Type -->
+        <div class="form-group">
+            <label for="trigger-interval">Schedule</label>
+            <select name="interval" id="trigger-interval" class="form-control" onchange="updateTriggerForm(this)">
+                <option value="">-- Select Schedule --</option>
+                <option value="daily" {% if trigger and trigger.interval == 'daily' %}selected{% endif %}>Daily</option>
+                <option value="weekdays" {% if trigger and trigger.interval == 'weekdays' %}selected{% endif %}>Weekdays (Mon-Fri)</option>
+                <option value="weekly" {% if trigger and trigger.interval == 'weekly' %}selected{% endif %}>Weekly</option>
+            </select>
+        </div>
+
+        <!-- Time -->
+        <div class="form-group">
+            <label for="trigger-time">Time</label>
+            <input type="time"
+                   name="at"
+                   id="trigger-time"
+                   class="form-control"
+                   value="{{ trigger.at if trigger and trigger.at else '09:00' }}">
+        </div>
+
+        <!-- Day (for weekly) -->
+        <div class="form-group" id="trigger-day-group" style="{% if not trigger or trigger.interval != 'weekly' %}display: none;{% endif %}">
+            <label for="trigger-day">Day of Week</label>
+            <select name="day" id="trigger-day" class="form-control">
+                <option value="monday" {% if trigger and trigger.day == 'monday' %}selected{% endif %}>Monday</option>
+                <option value="tuesday" {% if trigger and trigger.day == 'tuesday' %}selected{% endif %}>Tuesday</option>
+                <option value="wednesday" {% if trigger and trigger.day == 'wednesday' %}selected{% endif %}>Wednesday</option>
+                <option value="thursday" {% if trigger and trigger.day == 'thursday' %}selected{% endif %}>Thursday</option>
+                <option value="friday" {% if trigger and trigger.day == 'friday' %}selected{% endif %}>Friday</option>
+                <option value="saturday" {% if trigger and trigger.day == 'saturday' %}selected{% endif %}>Saturday</option>
+                <option value="sunday" {% if trigger and trigger.day == 'sunday' %}selected{% endif %}>Sunday</option>
+            </select>
+        </div>
+
+        <hr>
+        <h4>Task Template</h4>
+
+        <!-- Task Name Pattern -->
+        <div class="form-group">
+            <label for="trigger-task-name">Task Name</label>
+            <input type="text"
+                   name="task_name"
+                   id="trigger-task-name"
+                   class="form-control"
+                   placeholder="e.g., {{'{{practice.name}}'}} for {{'{{date}}'}}"
+                   value="{{ trigger.task_name if trigger and trigger.task_name else (priority.name ~ ' for ' ~ '{{date}}') }}">
+            <small class="form-hint">Variables: <code>{{'{{date}}'}}</code>, <code>{{'{{practice.name}}'}}</code>, <code>{{'{{day_of_week}}'}}</code></small>
+        </div>
+
+        <!-- Due Date Offset -->
+        <div class="form-group">
+            <label for="trigger-due">Due</label>
+            <select name="due" id="trigger-due" class="form-control">
+                <option value="">No due date</option>
+                <option value="end_of_day" {% if trigger and trigger.due == 'end_of_day' %}selected{% endif %}>End of day</option>
+                <option value="+1d" {% if trigger and trigger.due == '+1d' %}selected{% endif %}>Tomorrow</option>
+                <option value="+2d" {% if trigger and trigger.due == '+2d' %}selected{% endif %}>In 2 days</option>
+                <option value="end_of_week" {% if trigger and trigger.due == 'end_of_week' %}selected{% endif %}>End of week</option>
+                <option value="+1h" {% if trigger and trigger.due == '+1h' %}selected{% endif %}>In 1 hour</option>
+                <option value="+2h" {% if trigger and trigger.due == '+2h' %}selected{% endif %}>In 2 hours</option>
+            </select>
+        </div>
+
+        <!-- Notes Pattern -->
+        <div class="form-group">
+            <label for="trigger-notes">Task Notes (optional)</label>
+            <textarea name="task_notes"
+                      id="trigger-notes"
+                      class="form-control"
+                      rows="2"
+                      placeholder="Optional notes for generated tasks">{{ trigger.task_notes if trigger and trigger.task_notes else '' }}</textarea>
+        </div>
+
+        <!-- Enabled -->
+        <div class="form-group checkbox-group">
+            <label>
+                <input type="checkbox"
+                       name="enabled"
+                       value="on"
+                       {% if not trigger or trigger.enabled != false %}checked{% endif %}>
+                Trigger enabled
+            </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Trigger</button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    onclick="document.getElementById('trigger-editor-container').innerHTML = ''">
+                Cancel
+            </button>
+            {% if trigger %}
+            <button type="button"
+                    class="btn btn-danger"
+                    hx-delete="/priorities/{{ priority.id }}/trigger"
+                    hx-target="#detail-content"
+                    hx-swap="innerHTML"
+                    hx-confirm="Remove trigger configuration?">
+                Remove Trigger
+            </button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<script>
+function updateTriggerForm(select) {
+    const dayGroup = document.getElementById('trigger-day-group');
+    if (select.value === 'weekly') {
+        dayGroup.style.display = 'block';
+    } else {
+        dayGroup.style.display = 'none';
+    }
+}
+</script>

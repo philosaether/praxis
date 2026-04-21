@@ -1,0 +1,16 @@
+{# Parent context header with badge and indent arrow #}
+{# Expects: parent (priority object with id, name, priority_type) #}
+
+{% if parent %}
+<div class="parent-header">
+    <a href="#"
+       class="parent-link"
+       hx-get="/priorities/{{ parent.id }}"
+       hx-target="#detail-content"
+       hx-swap="innerHTML"
+       hx-push-url="/priorities/{{ parent.id }}">
+        <span class="pill pill--xs pill--{{ parent.priority_type }}">{{ parent.priority_type|upper }}</span>
+        <span class="parent-name">{{ parent.name }}</span>
+    </a>
+</div>
+{% endif %}

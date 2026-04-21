@@ -4,20 +4,20 @@
      onclick="selectRow(this)">
     <div class="task-content"
          hx-get="/tasks/{{ task.id }}"
-         hx-target="#detail-pane"
+         hx-target="#detail-content"
          hx-swap="innerHTML"
          hx-push-url="true">
         <div class="task-title">{{ task.name }}</div>
         <div class="meta">
             {% if task.score is defined %}
-            <span class="score-badge" title="Score: {{ task.score }} (imp={{ task.importance }}, urg={{ task.urgency }})">
+            <span class="pill pill--xs pill--score" title="Score: {{ task.score }} (imp={{ task.importance }}, urg={{ task.urgency }})">
                 {{ task.score }}
             </span>
             {% endif %}
             {% if task.priority_name %}
-            <span class="type-badge {{ task.priority_type or 'inbox' }}">{{ task.priority_name }}</span>
+            <span class="pill pill--{{ task.priority_type or 'inbox' }}">{{ task.priority_name }}</span>
             {% endif %}
-            <span class="status-indicator {{ task.status }}">
+            <span class="pill pill--status-{{ task.status }}">
                 {{ task.status }}
             </span>
             {% if task.due_date %}

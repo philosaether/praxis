@@ -122,14 +122,16 @@
                         hx-delete="/priorities/{{ priority.id }}"
                         hx-swap="none"
                         hx-confirm="Delete '{{ priority.name }}'? This cannot be undone."
-                        hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'}); }">
+                        hx-on::after-request="if(event.detail.successful) { htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'}); }">
                     Delete
                 </button>
             </div>
             <div class="actions-right">
                 <button type="button"
                         class="btn btn-secondary"
-                        onclick="openShareModal('{{ priority.id }}', '{{ priority.name }}')">
+                        data-share-priority-id="{{ priority.id }}"
+                        data-share-priority-name="{{ priority.name }}"
+                        onclick="openShareModal(this.dataset.sharePriorityId, this.dataset.sharePriorityName)">
                     Share
                 </button>
             </div>
@@ -142,12 +144,12 @@
     <!-- Sharing Status -->
     {% if priority.is_shared_with_me %}
     <div class="share-status shared-with-me">
-        <span class="share-icon">&#x1F517;</span>
+        <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
         <span>Shared with you</span>
     </div>
     {% elif priority.shares and priority.shares|length > 0 %}
     <div class="share-status shared-by-me">
-        <span class="share-icon">&#x1F91D;</span>
+        <span class="icon icon--sm" style="color: #2e5a30">handshake</span>
         <span>Shared with {{ priority.shares|length }} user(s):</span>
         <ul class="share-list">
             {% for share in priority.shares %}

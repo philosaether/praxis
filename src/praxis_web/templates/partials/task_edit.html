@@ -4,7 +4,7 @@
 <div class="detail-view">
     <div class="properties-section task-properties">
         <form hx-post="/tasks/{{ task.id }}/properties"
-              hx-target="#detail-pane"
+              hx-target="#detail-content"
               hx-swap="innerHTML">
 
             <!-- Name -->
@@ -27,7 +27,7 @@
                     <option value="">Inbox (no priority)</option>
                     {% for p in priorities %}
                     <option value="{{ p.id }}" {% if task.priority_id == p.id %}selected{% endif %}>
-                        {{ p.name }}
+                        [{{ p.priority_type[:3]|upper }}] {{ p.name }}
                     </option>
                     {% endfor %}
                 </select>
@@ -50,7 +50,7 @@
                           name="notes"
                           rows="6"
                           class="property-input"
-                          placeholder="Add notes... (supports Markdown)">{{ task.notes or '' }}</textarea>
+                          placeholder="Add notes... (supports Markdown)">{{ task.notes_raw or task.notes or '' }}</textarea>
             </div>
 
             <!-- Actions -->
@@ -60,7 +60,7 @@
                     <button type="button"
                             class="btn btn-secondary"
                             hx-get="/tasks/{{ task.id }}"
-                            hx-target="#detail-pane"
+                            hx-target="#detail-content"
                             hx-swap="innerHTML">
                         Cancel
                     </button>
@@ -71,7 +71,7 @@
                             hx-delete="/tasks/{{ task.id }}"
                             hx-swap="none"
                             hx-confirm="Delete '{{ task.name }}'? This cannot be undone."
-                            hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
+                            hx-on::after-request="if(event.detail.successful) { document.getElementById('task-row-{{ task.id }}')?.remove(); document.getElementById('detail-content').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; }">
                         Delete
                     </button>
                 </div>

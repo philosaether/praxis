@@ -1,0 +1,17 @@
+{# Badge-styled parent priority picker #}
+{# Expects: priorities (list), selected_id (string), exclude_id (string), field_name (optional, default 'parent_id') #}
+
+{% set field_name = field_name or 'parent_id' %}
+
+<select id="{{ field_name }}" name="{{ field_name }}" class="property-input parent-picker">
+    <option value="">None (top-level)</option>
+    {% for p in priorities %}
+    {% if p.id != exclude_id %}
+    <option value="{{ p.id }}"
+            data-type="{{ p.priority_type }}"
+            {% if p.id == selected_id %}selected{% endif %}>
+        [{{ p.priority_type|upper }}] {{ p.name }}
+    </option>
+    {% endif %}
+    {% endfor %}
+</select>

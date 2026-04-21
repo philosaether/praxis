@@ -19,11 +19,11 @@
         <li class="task-item-compact {% if task.status == 'done' %}done{% endif %}">
             <a href="#"
                hx-get="/tasks/{{ task.id }}"
-               hx-target="#detail-pane"
+               hx-target="#detail-content"
                hx-swap="innerHTML">
                 {{ task.name }}
             </a>
-            <span class="task-status {{ task.status }}">{{ task.status }}</span>
+            <span class="pill pill--xs pill--status-{{ task.status }}">{{ task.status }}</span>
         </li>
         {% endfor %}
     </ul>

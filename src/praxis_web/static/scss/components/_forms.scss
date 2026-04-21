@@ -1,0 +1,55 @@
+// =============================================================================
+// Forms
+// =============================================================================
+@use '../base/variables' as *;
+
+.form-group {
+  margin-bottom: $spacing-lg;
+
+  label {
+    display: block;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: $spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: $font-family-body;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: $bg-tertiary;
+    color: $text-primary;
+    border: none;
+    border-bottom: 1px solid $border;
+    border-radius: $radius-sm $radius-sm 0 0;
+    font-size: $font-size-base;
+    font-family: $font-family-body;
+    transition: border-color $transition-base, box-shadow $transition-base;
+
+    &:focus {
+      outline: none;
+      border-bottom-color: $accent;
+      box-shadow: 0 2px 0 $accent-glow;
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+
+  textarea {
+    min-height: 80px;
+    resize: vertical;
+    border-radius: $radius-sm;
+    border: 1px solid $border-subtle;
+
+    &:focus {
+      border-color: $accent;
+      box-shadow: 0 0 0 2px $accent-glow;
+    }
+  }
+}

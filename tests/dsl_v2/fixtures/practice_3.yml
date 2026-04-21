@@ -1,0 +1,43 @@
+practice:
+  name: Technical Interview Prep
+  description: Build and maintain technical interview capacity
+  actions:
+    - on:
+        schedule:
+          interval: weekdays #interpreted as "at 00:00 (midnight cron) on monday, tuesday, wednesday, thursday, friday"
+        when:
+          capacity: #capacities will be implemented post-beta, but pre-release
+            id: ${technical_interview_capacity_ulid}
+            less_than: 4.5 # exclusive
+        create:
+          - task:
+              name: "Practice Leetcode"
+              notes: "Choose a medium from one of the following categories: Arrays & Hashmaps, Two Pointers, ..."
+              due:
+                day: today
+                time: 17:00
+              tags:
+                - code
+                - deep_work
+          - task:
+              name: "Practice Leetcode"
+              notes: "Choose a medium from one of the following categories: Arrays & Hashmaps, Two Pointers, ..."
+              due: end_of_day # means the same as today at 17:00
+              tags:
+                - code
+                - deep_work
+    - on:
+        schedule:
+          interval: monday #interpreted as "at 00:00 on monday"
+        when:
+          capacity:
+            id: ${technical_interview_capacity_ulid}
+            at_least: 4.5 # inclusive
+        create:
+          - task:
+              name: "Practice Leetcode"
+              notes: "Choose a medium from one of the following categories: Arrays & Hashmaps, Two Pointers, ..."
+              due: end_of_week # means friday at 17:00
+              tags:
+                - code
+                - deep_work

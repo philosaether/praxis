@@ -1,0 +1,204 @@
+// =============================================================================
+// List Views (Priorities & Tasks)
+// =============================================================================
+@use '../base/variables' as *;
+
+.priority-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// -----------------------------------------------------------------------------
+// Priority Rows
+// -----------------------------------------------------------------------------
+
+.priority-row {
+  padding: $spacing-md $spacing-lg;
+  // Soft dividers via spacing, not hard lines
+  margin-bottom: 1px;
+  background: $bg-secondary;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.selected {
+    background: $accent-glow;
+    border-left: 3px solid $accent;
+  }
+
+  &.shared-with-me {
+    background: rgba(#3d8c5c, 0.03);
+    border-left: 2px solid rgba(#3d8c5c, 0.5);
+
+    &:hover {
+      background: rgba(#3d8c5c, 0.08);
+    }
+
+    &.selected {
+      background: rgba(#3d8c5c, 0.1);
+      border-left: 3px solid #3d8c5c;
+    }
+  }
+
+  .name {
+    font-family: $font-family-display;
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .meta {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    display: flex;
+    gap: $spacing-md;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Task Rows
+// -----------------------------------------------------------------------------
+
+.task-row {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm $spacing-lg;
+  // Soft dividers via spacing
+  margin-bottom: 1px;
+  background: $bg-secondary;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.selected {
+    background: $accent-glow;
+    border-left: 3px solid $accent;
+  }
+
+  &.done {
+    opacity: 0.6;
+
+    .task-title {
+      text-decoration: line-through;
+      color: $text-muted;
+    }
+
+    .meta {
+      color: $text-muted;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .task-content {
+    flex: 1;
+    cursor: pointer;
+    padding: $spacing-xs 0;
+  }
+
+  .task-title {
+    font-family: $font-family-body;
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
+  }
+
+  .meta {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    display: flex;
+    gap: $spacing-md;
+  }
+
+  .pill {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .task-row .pill {
+    max-width: 100px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Quick Done Button
+// -----------------------------------------------------------------------------
+
+.quick-done {
+  width: 28px;
+  height: 28px;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-lg;
+  background: transparent;
+  color: $text-muted;
+  cursor: pointer;
+  font-size: $font-size-base;
+  transition: all $transition-base;
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
+
+  &:hover {
+    background: rgba($success, 0.15);
+    border-color: $success;
+    color: $success;
+  }
+
+  &.checked {
+    background: rgba($success, 0.15);
+    border-color: $success;
+    color: $success;
+    opacity: 0.7;
+
+    &:hover {
+      opacity: 1;
+      background: $bg-tertiary;
+      border-color: $border;
+      color: $text-secondary;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Inbox Triage Picker
+// -----------------------------------------------------------------------------
+
+.inbox-picker {
+  padding: $spacing-sm $spacing-lg;
+  background: $bg-tertiary;
+  border-bottom: 1px solid $border-subtle;
+
+  // The chip inside needs relative positioning for its popup
+  .chip {
+    display: block;
+  }
+
+  .chip-trigger {
+    width: 100%;
+    text-align: left;
+  }
+
+  .chip-popup {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-top: $spacing-sm;
+    width: 100%;
+    min-width: auto;
+
+    &::before {
+      display: none;  // no arrow — picker is inline
+    }
+  }
+}

@@ -5,7 +5,7 @@
     <div id="properties-section">
         <div class="properties-section priority-properties">
             <form hx-post="/priorities/create"
-                  hx-target="#detail-pane"
+                  hx-target="#detail-content"
                   hx-swap="innerHTML">
 
                 <!-- Type selector -->
@@ -19,7 +19,7 @@
                             hx-swap="innerHTML"
                             hx-trigger="change">
                         {% for t in priority_types %}
-                        <option value="{{ t }}" {% if t == 'goal' %}selected{% endif %}>
+                        <option value="{{ t }}" {% if t == 'initiative' %}selected{% endif %}>
                             {{ t|title }}
                         </option>
                         {% endfor %}
@@ -63,7 +63,7 @@
 
                 <!-- Type-specific fields (dynamic) -->
                 <div id="type-specific-fields">
-                    {% include "partials/type_fields/goal_fields.html" %}
+                    {% include "partials/type_fields/initiative_fields.html" %}
                 </div>
 
                 <!-- Notes -->
@@ -81,7 +81,7 @@
                     <button type="submit" class="btn btn-primary">Create Priority</button>
                     <button type="button"
                             class="btn btn-secondary"
-                            onclick="document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});">
+                            onclick="document.getElementById('detail-content').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>'; htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});">
                         Cancel
                     </button>
                 </div>

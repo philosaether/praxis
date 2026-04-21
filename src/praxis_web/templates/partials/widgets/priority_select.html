@@ -1,0 +1,17 @@
+{# Priority selector widget #}
+{# Params: name (field name), priorities (list), selected (id string), include_any (bool) #}
+
+{% set include_any = include_any if include_any is defined else false %}
+
+<select name="{{ name }}" class="property-input priority-select">
+    {% if include_any %}
+    <option value="" {% if not selected %}selected{% endif %}>Any priority</option>
+    {% endif %}
+    {% for p in priorities %}
+    <option value="{{ p.id }}"
+            data-type="{{ p.priority_type }}"
+            {% if p.id == selected %}selected{% endif %}>
+        {{ p.name }}
+    </option>
+    {% endfor %}
+</select>

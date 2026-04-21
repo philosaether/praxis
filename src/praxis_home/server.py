@@ -87,7 +87,7 @@ def run_api_server(config: PraxisHomeConfig):
     """Run the API server."""
     os.environ["PRAXIS_DB_PATH"] = config.db_path
     uvicorn.run(
-        "praxis_core.api.app:app",
+        "praxis_core.web_api.app:app",
         host=config.api_host,
         port=config.api_port,
         log_level="info",
@@ -159,8 +159,8 @@ def migrate(config: PraxisHomeConfig | None = None):
 
     # Import after setting env var
     from praxis_core.persistence import get_user_by_username, get_connection
-    from praxis_core.persistence.task_persistence import ensure_schema as ensure_task_schema
-    from praxis_core.persistence.priority_persistence import PriorityGraph
+    from praxis_core.persistence.task_repo import ensure_schema as ensure_task_schema
+    from praxis_core.persistence.priority_tree import PriorityTree as PriorityGraph
 
     print("Praxis Home Migration")
     print("=" * 40)

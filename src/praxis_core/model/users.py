@@ -27,6 +27,7 @@ class User:
     email: str | None = None
     role: UserRole = UserRole.USER
     is_active: bool = True
+    tutorial_completed: bool = False
     created_at: datetime | None = None
     last_login: datetime | None = None
 

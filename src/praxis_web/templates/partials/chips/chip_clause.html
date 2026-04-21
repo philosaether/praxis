@@ -1,0 +1,55 @@
+{#
+Clause Wrapper
+==============
+A structural unit of a chip sentence. May be required or optional.
+
+Optional clauses have an inactive state that displays a dim placeholder
+phrase prefixed with the ↳ glyph. Clicking the ↳ activates the clause
+(reveals real chip content). When active, the ↳ becomes ×, which
+deactivates the clause when clicked.
+
+Params:
+  - kind: "required" or "optional" (default: "required")
+  - active: bool — only meaningful for optional clauses (default: true for required, false for optional)
+  - lead: lead-in text (e.g. "at", "when", "and notify")
+  - placeholder: dim phrase shown when inactive (e.g. "a specific time of day")
+  - scaffold: bool — if true, no real content; clause never activates (used to preview future clauses)
+  - clause_id: unique id for the active content container
+
+Usage:
+  {% call clause(kind="optional", lead="at", placeholder="a specific time of day") %}
+    {# active chip content here #}
+  {% endcall %}
+
+Or via include:
+  {% set clause_lead = "at" %}
+  {% set clause_placeholder = "a specific time of day" %}
+  {% include "partials/chips/chip_clause.html" %}
+#}
+
+{% set kind = kind or 'required' %}
+{% set active = active if active is defined else (kind == 'required') %}
+{% set scaffold = scaffold if scaffold is defined else false %}
+
+<div class="chip-clause chip-clause--{{ kind }}{% if active %} chip-clause--active{% endif %}{% if scaffold %} chip-clause--scaffold{% endif %}"
+     data-clause-active="{{ 'true' if active else 'false' }}"
+     {% if scaffold %}title="coming soon"{% endif %}>
+  {% if kind == 'optional' %}
+  <button type="button"
+          class="chip-clause__toggle"
+          aria-label="{% if active %}Remove{% else %}Add{% endif %} optional clause"
+          {% if scaffold %}disabled{% endif %}
+          onclick="toggleOptionalClause(this)">
+    <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+    <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+  </button>
+  {% endif %}
+
+  <span class="chip-clause__lead">{{ lead }}</span>
+
+  <span class="chip-clause__placeholder">{{ placeholder }}</span>
+
+  <span class="chip-clause__content">
+    {% if caller is defined and caller %}{{ caller() }}{% endif %}
+  </span>
+</div>

@@ -1,0 +1,955 @@
+{% extends "base.html" %}
+
+{% block title %}Chip Demo{% endblock %}
+
+{% block body %}
+<div class="demo-page">
+  <header class="demo-header">
+    <h1>Input Chip Components</h1>
+    <p>Editable sentence fragments for plain-English configuration</p>
+  </header>
+
+  <main class="demo-content">
+    <!-- Chip Color Variants -->
+    <section class="demo-section">
+      <h2>Color Variants</h2>
+      <p class="demo-description">Each chip type has a semantic color to help users understand what kind of value they're editing.</p>
+
+      <div class="demo-row">
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--interval" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">2 weeks</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Interval (purple)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--day" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">tuesday</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Day (green)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--time" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">morning</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Time (orange)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--priority" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">Keep in Touch</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Priority (blue)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--tag" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">errands</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Tag (gray)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--due" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">tomorrow</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Due (gold)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--task" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">Practice Leetcode</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Task name (rose)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--event" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">completed</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Event (teal)</div>
+          </div>
+        </span>
+
+        <span class="chip">
+          <button type="button" class="chip-trigger chip-trigger--collate" onclick="toggleChipPopup(this)">
+            <span class="chip-trigger__text">children</span>
+          </button>
+          <div class="chip-popup">
+            <div class="chip-popup__title">Collate (amber)</div>
+          </div>
+        </span>
+      </div>
+    </section>
+
+    <!-- Sentence Examples -->
+    <section class="demo-section">
+      <h2>Sentence Composition</h2>
+      <p class="demo-description">Chips form readable sentences. Click any chip to edit.</p>
+
+      <div class="demo-example">
+        <h3>Schedule Example</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval", value="2 weeks", variant="interval" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">How often?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'daily', 'day')">day</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'weekdays', 'weekday')">weekday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '1 week', '1 week')">1 week</button>
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, '2 weeks', '2 weeks')">2 weeks</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '1 month', '1 month')">1 month</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+
+          <span class="chip-sentence__text">on</span>
+
+          {% with name="day", value="tuesday", variant="day" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">Which day?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'monday')">monday</button>
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'tuesday')">tuesday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'wednesday')">wednesday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'thursday')">thursday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'friday')">friday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'saturday')">saturday</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'sunday')">sunday</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+
+          <button type="button" class="chip-add" title="Add another day">+</button>
+
+          {% with name="time", value="morning", variant="time" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">What time?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'morning')">morning</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'afternoon')">afternoon</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'evening')">evening</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '9:00 am')">9:00 am</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, '2:00 pm')">2:00 pm</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Task Creation Example</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Create a task under</span>
+          {% with name="priority", value="Keep in Touch", variant="priority" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">Which priority?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'Health')">Health</button>
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'Keep in Touch')">Keep in Touch</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'Career Growth')">Career Growth</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+
+          <span class="chip-sentence__text">due</span>
+
+          {% with name="due", value="end of day", variant="due" %}
+          <span class="chip" data-chip="{{ name }}">
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+            <button type="button" class="chip-trigger chip-trigger--{{ variant }}" onclick="toggleChipPopup(this)">
+              <span class="chip-trigger__text">{{ value }}</span>
+            </button>
+            <div class="chip-popup">
+              <div class="chip-popup__title">When is it due?</div>
+              <div class="chip-popup__options">
+                <button type="button" class="chip-popup__option selected" onclick="selectChipOption(this, 'end of day')">end of day</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'tomorrow')">tomorrow</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'end of week')">end of week</button>
+                <button type="button" class="chip-popup__option" onclick="selectChipOption(this, 'no due date')">no due date</button>
+              </div>
+            </div>
+          </span>
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Clause-Based Sentence (Optional Clauses) -->
+    <section class="demo-section">
+      <h2>Clause-Based Sentence</h2>
+      <p class="demo-description">
+        Required clauses (every…, create…) sit at the root level. Optional clauses
+        nest beneath their parent, prefixed with ↳ when inactive. Click the ↳ to
+        activate; the glyph becomes × so you can deactivate again.
+      </p>
+
+      <div class="demo-example">
+        <h3>Schedule + Task with Optional Time-of-Day</h3>
+        <div class="chip-sentence chip-sentence--clauses">
+
+          {# Required clause: every... #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">Every</span>
+            <span class="chip-clause__content">
+              {% with name="clause_interval", value="weekdays", show_day_chip=false %}
+                {% include "partials/chips/chip_interval.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: time-of-day chip (no lead text — chip is self-contained) #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__content">
+              {% with name="clause_time", value="" %}
+                {% include "partials/chips/chip_time.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: when [conditions are met] — visual preview only #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">when</span>
+            <span class="chip-clause__placeholder">conditions are met</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Required clause: create a task named [name] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">create a task named</span>
+            <span class="chip-clause__content">
+              {% with name="clause_task_name" %}
+                {% include "partials/chips/chip_task_name.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: due [end of day] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">due</span>
+            <span class="chip-clause__placeholder">end of day</span>
+            <span class="chip-clause__content">
+              {% with name="clause_due" %}
+                {% include "partials/chips/chip_due.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: tagged [tags] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">tagged with</span>
+            <span class="chip-clause__placeholder">one or more tags</span>
+            <span class="chip-clause__content">
+              {% with name="clause_tags" %}
+                {% include "partials/chips/chip_tags.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: described as [description] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">described as</span>
+            <span class="chip-clause__placeholder">a new task under Daily Leetcode</span>
+            <span class="chip-clause__content">
+              {% with name="clause_description", practice_name="Daily Leetcode" %}
+                {% include "partials/chips/chip_description.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: and notify [me] — visual preview only #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">and notify</span>
+            <span class="chip-clause__placeholder">me</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+      <div class="demo-example">
+        <h3>Event Trigger + Task</h3>
+        <div class="chip-sentence chip-sentence--clauses">
+
+          {# Required clause: whenever [any priority] is [created] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">Whenever</span>
+            <span class="chip-clause__content">
+              {% with name="event_subject" %}
+                {% include "partials/chips/chip_event_subject.html" %}
+              {% endwith %}
+              <span class="chip-sentence__text">is</span>
+              {% with name="event_outcome" %}
+                {% include "partials/chips/chip_event_outcome.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: under [priority] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">under</span>
+            <span class="chip-clause__placeholder">any priority</span>
+            <span class="chip-clause__content">
+              {% with name="event_ancestor" %}
+                {% include "partials/chips/chip_event_ancestor.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: when [conditions are met] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">when</span>
+            <span class="chip-clause__placeholder">conditions are met</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Required clause: create a task named [name] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">create a task named</span>
+            <span class="chip-clause__content">
+              {% with name="event_task_name" %}
+                {% include "partials/chips/chip_task_name.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Optional clause: due [end of day] #}
+          <div class="chip-clause chip-clause--optional" data-clause-active="false">
+            <button type="button"
+                    class="chip-clause__toggle"
+                    aria-label="Add optional clause"
+                    onclick="toggleOptionalClause(this)">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--active">×</span>
+            </button>
+            <span class="chip-clause__lead">due</span>
+            <span class="chip-clause__placeholder">end of day</span>
+            <span class="chip-clause__content">
+              {% with name="event_due" %}
+                {% include "partials/chips/chip_due.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: and notify [me] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">and notify</span>
+            <span class="chip-clause__placeholder">me</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Schedule + Collate</h3>
+        <div class="chip-sentence chip-sentence--clauses">
+
+          {# Required clause: every [2 weeks] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">Every</span>
+            <span class="chip-clause__content">
+              {% with name="collate_interval", value="weekdays" %}
+                {% include "partials/chips/chip_interval.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Required clause: collate [children] as [name] #}
+          <div class="chip-clause chip-clause--required chip-clause--active" data-clause-active="true">
+            <span class="chip-clause__lead">collate</span>
+            <span class="chip-clause__content">
+              {% with name="collate_target" %}
+                {% include "partials/chips/chip_collate_target.html" %}
+              {% endwith %}
+              <span class="chip-sentence__text">as</span>
+              {% with name="collate_name", practice_name="Biweekly Shopping" %}
+                {% include "partials/chips/chip_collate_name.html" %}
+              {% endwith %}
+            </span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: matching [filter] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">matching</span>
+            <span class="chip-clause__placeholder">filter criteria</span>
+            <span class="chip-clause__terminator">,</span>
+          </div>
+
+          {# Scaffold clause: excluding [filter] #}
+          <div class="chip-clause chip-clause--optional chip-clause--scaffold"
+               data-clause-active="false" title="coming soon">
+            <button type="button" class="chip-clause__toggle" disabled aria-label="Coming soon">
+              <span class="chip-clause__toggle-glyph chip-clause__toggle-glyph--inactive">↳</span>
+            </button>
+            <span class="chip-clause__lead">excluding</span>
+            <span class="chip-clause__placeholder">completed tasks</span>
+            <span class="chip-clause__terminator">.</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Wizard -->
+    <section class="demo-section">
+      <h2>Action Creation Wizard</h2>
+      <p class="demo-description">
+        One click to pick a trigger×action combination. Creates an action card in edit mode.
+        In production this is a modal; here it's shown inline.
+      </p>
+
+      <div class="demo-example">
+        <h3>Wizard (Inline Preview)</h3>
+        <div class="wizard-modal wizard-modal--compact" style="position: relative; box-shadow: none; border: 1px solid #d0c5af;">
+          <div class="modal-header">
+            <h3>Add action</h3>
+          </div>
+          <div class="modal-body">
+            <div class="wizard-grid">
+              <div class="wizard-grid__group">
+                <h4 class="wizard-grid__heading">On a schedule...</h4>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: schedule + create')">
+                  <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+                  <span class="wizard-grid__label">create a task</span>
+                </button>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: schedule + collate')">
+                  <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+                  <span class="wizard-grid__label">collate tasks</span>
+                </button>
+              </div>
+              <div class="wizard-grid__group">
+                <h4 class="wizard-grid__heading">In response to an event...</h4>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: event + create')">
+                  <span class="wizard-grid__icon wizard-grid__icon--create"></span>
+                  <span class="wizard-grid__label">create a task</span>
+                </button>
+                <button type="button" class="wizard-grid__option" onclick="alert('Would create: event + collate')">
+                  <span class="wizard-grid__icon wizard-grid__icon--collate"></span>
+                  <span class="wizard-grid__label">collate tasks</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Cards -->
+    <section class="demo-section">
+      <h2>Action Cards</h2>
+      <p class="demo-description">
+        Each action is a card with view mode (compact summary) and edit mode (full chipset).
+        Header shows trigger type and action type badges. Controls for edit, duplicate, and delete.
+      </p>
+
+      <div class="demo-example">
+        <h3>View Mode — Schedule + Create</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "create", "interval": "weekdays", "task_name": "Practice Leetcode"}, idx=0, priority_id="demo", editable=true, mode="view" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>View Mode — Event + Create</h3>
+        {% with action={"trigger_type": "event", "action_type": "create", "event_subject": "goal", "event_outcome": "completed", "task_name": "Show your work"}, idx=1, priority_id="demo", editable=true, mode="view" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>View Mode — Schedule + Collate</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "collate", "interval": "weekdays", "collate_target": "children"}, idx=2, priority_id="demo", priority_name="Biweekly Shopping", editable=true, mode="view" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>Edit Mode — Schedule + Create</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "create", "interval": "weekdays", "task_name": "Practice Leetcode"}, idx=3, priority_id="demo", priority_name="Daily Leetcode", editable=true, mode="edit" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>Edit Mode — Event + Create</h3>
+        {% with action={"trigger_type": "event", "action_type": "create", "event_subject": "goal", "event_outcome": "completed"}, idx=4, priority_id="demo", priority_name="Show Your Work", editable=true, mode="edit" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="demo-example">
+        <h3>Edit Mode — Schedule + Collate</h3>
+        {% with action={"trigger_type": "schedule", "action_type": "collate", "interval": "weekdays", "collate_target": "children"}, idx=5, priority_id="demo", priority_name="Biweekly Shopping", editable=true, mode="edit" %}
+          {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+      </div>
+    </section>
+
+    <!-- Interval Chip (New) -->
+    <section class="demo-section">
+      <h2>Interval Chip</h2>
+      <p class="demo-description">Progressive disclosure: simple options are one click, complex patterns spawn additional chips.</p>
+
+      <div class="demo-example">
+        <h3>Empty State (Required Field)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_empty", value="", show_day_chip=false %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Simple Selection (Weekdays)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_weekdays", value="weekdays", show_day_chip=false %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Weekly with Day Selection (Spawned Chip)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_weekly", value="weekly", show_day_chip=true %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Custom Interval (Click "custom interval" above to test)</h3>
+        <p class="demo-description">Selecting "custom interval" spawns: [number] [period] on [day selection]</p>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Every</span>
+          {% with name="interval_custom" %}
+            {% include "partials/chips/chip_interval.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">, create a task</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task Name Chip -->
+    <section class="demo-section">
+      <h2>Task Name Chip</h2>
+      <p class="demo-description">Freeform text input. Click the chip, type a name, press Enter or click away to confirm.</p>
+
+      <div class="demo-example">
+        <h3>Default Value</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">create a task named</span>
+          {% with name="task_name_default" %}
+            {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Custom Value</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">create a task named</span>
+          {% with name="task_name_filled", value="Practice Leetcode" %}
+            {% include "partials/chips/chip_task_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Collate Chips -->
+    <section class="demo-section">
+      <h2>Collate Chips</h2>
+      <p class="demo-description">Collation gathers existing tasks into a batch. Target selects scope, name supports template variables.</p>
+
+      <div class="demo-example">
+        <h3>Collate Target</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">collate</span>
+          {% with name="demo_collate_target" %}
+            {% include "partials/chips/chip_collate_target.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Batch Name with Variables</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">as</span>
+          {% with name="demo_collate_name", practice_name="Biweekly Shopping" %}
+            {% include "partials/chips/chip_collate_name.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Priority Picker Chip -->
+    <section class="demo-section">
+      <h2>Priority Picker Chip</h2>
+      <p class="demo-description">Hierarchical priority selector. Click a name to select, click ▸ to drill into children. Breadcrumb navigates back.</p>
+
+      <div class="demo-example">
+        <h3>Empty State</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">under</span>
+          {% with name="picker_empty" %}
+            {% include "partials/chips/chip_priority_picker.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Pre-Selected (Deep Path)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">under</span>
+          {% with name="picker_filled", value="Software Engineering", value_path="Career > Proper Elevation > Software Engineering" %}
+            {% include "partials/chips/chip_priority_picker.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Event Trigger Chips -->
+    <section class="demo-section">
+      <h2>Event Trigger Chips</h2>
+      <p class="demo-description">Three chips compose an event trigger: what to watch, where to watch, and what happened.</p>
+
+      <div class="demo-example">
+        <h3>Default (Any Priority Created)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Whenever</span>
+          {% with name="demo_event_subject" %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="demo_event_outcome" %}
+            {% include "partials/chips/chip_event_outcome.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Goal Completed (Completable)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Whenever</span>
+          {% with name="demo_event_subject2", value="goal" %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="demo_event_outcome2", value="completed" %}
+            {% include "partials/chips/chip_event_outcome.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Status Change Variant</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">Whenever</span>
+          {% with name="demo_event_subject3", value="task" %}
+            {% include "partials/chips/chip_event_subject.html" %}
+          {% endwith %}
+          <span class="chip-sentence__text">is</span>
+          {% with name="demo_event_outcome3", value="status_change:dormant" %}
+            {% include "partials/chips/chip_event_outcome.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Description Chip -->
+    <section class="demo-section">
+      <h2>Description Chip</h2>
+      <p class="demo-description">Freeform textarea with markdown support and 800 character limit. Cmd+Enter to confirm. Click away also saves.</p>
+
+      <div class="demo-example">
+        <h3>Default (Context-Aware)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">described as</span>
+          {% with name="desc_default", practice_name="Daily Leetcode" %}
+            {% include "partials/chips/chip_description.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>With Value</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">described as</span>
+          {% with name="desc_filled", value="Solve one problem from the blind 75 list. Focus on understanding the pattern, not speed." %}
+            {% include "partials/chips/chip_description.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Tags Chip -->
+    <section class="demo-section">
+      <h2>Tags Chip</h2>
+      <p class="demo-description">Multi-select with checkmarks. Type a new tag name and press Enter to create it on the fly.</p>
+
+      <div class="demo-example">
+        <h3>Empty State</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">tagged with</span>
+          {% with name="tags_empty" %}
+            {% include "partials/chips/chip_tags.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>With Selections</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">tagged with</span>
+          {% with name="tags_filled", value="code,deep_work" %}
+            {% include "partials/chips/chip_tags.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Due Date Chip -->
+    <section class="demo-section">
+      <h2>Due Date Chip</h2>
+      <p class="demo-description">Quick presets for common deadlines, custom N days/weeks, or "never" for the whimsical.</p>
+
+      <div class="demo-example">
+        <h3>Default (End of Day)</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">due</span>
+          {% with name="due_default" %}
+            {% include "partials/chips/chip_due.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Custom Duration</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">due in</span>
+          {% with name="due_custom", value="+3d" %}
+            {% include "partials/chips/chip_due.html" %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="demo-example">
+        <h3>Never</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">due</span>
+          {% with name="due_never", value="never" %}
+            {% include "partials/chips/chip_due.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Day Chip -->
+    <section class="demo-section">
+      <h2>Day Chip</h2>
+      <p class="demo-description">Multi-select checkboxes for days of the week. Displays as comma-separated list.</p>
+
+      <div class="demo-example">
+        <h3>Multi-day Selection</h3>
+        <div class="chip-sentence">
+          <span class="chip-sentence__text">On</span>
+          {% with name="days_multi", value="tuesday,thursday" %}
+            {% include "partials/chips/chip_day.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<style>
+/* Demo page needs scrolling (main app uses overflow:hidden on body) */
+body {
+  overflow: auto;
+  height: auto;
+}
+
+/* Demo page styles */
+.demo-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.demo-header {
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border, #d0c5af);
+}
+
+.demo-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 2rem;
+  color: #1b1c1a;
+}
+
+.demo-header p {
+  margin: 0;
+  color: #7a7976;
+}
+
+.demo-section {
+  margin-bottom: 3rem;
+}
+
+.demo-section h2 {
+  margin: 0 0 0.5rem 0;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 1.25rem;
+  color: #1b1c1a;
+}
+
+.demo-description {
+  margin: 0 0 1.5rem 0;
+  color: #7a7976;
+  font-size: 0.9rem;
+}
+
+.demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.demo-example {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f5f3ef;
+  border-radius: 0.5rem;
+}
+
+.demo-example h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a4a48;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+</style>
+{% endblock %}

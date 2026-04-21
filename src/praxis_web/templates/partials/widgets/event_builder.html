@@ -1,0 +1,102 @@
+{# Event builder - sentence-style event trigger selector #}
+{# Params: prefix (field name prefix), event (dict with current values), priorities (list for filter), practice_name (string) #}
+
+{% set prefix = prefix if prefix is defined else "event_" %}
+{% set event = event if event is defined else {} %}
+
+<div class="event-builder" id="event-builder">
+    <div class="sentence-builder">
+        <span class="sentence-static">When</span>
+
+        <select name="{{ prefix }}entity_lifecycle"
+                id="{{ prefix }}entity_lifecycle"
+                class="sentence-dropdown"
+                onchange="updateEventFilterOptions()">
+            <optgroup label="Tasks">
+                <option value="task_created" {% if event.entity == "task" and event.lifecycle == "created" %}selected{% endif %}>a task is created</option>
+                <option value="task_completed" {% if (event.entity == "task" and event.lifecycle == "completed") or not event.entity %}selected{% endif %}>a task is completed</option>
+            </optgroup>
+            <optgroup label="Goals">
+                <option value="goal_created" {% if event.entity == "goal" and event.lifecycle == "created" %}selected{% endif %}>a goal is created</option>
+                <option value="goal_completed" {% if event.entity == "goal" and event.lifecycle == "completed" %}selected{% endif %}>a goal is completed</option>
+            </optgroup>
+            <optgroup label="Priorities">
+                <option value="priority_created" {% if event.entity == "priority" and event.lifecycle == "created" %}selected{% endif %}>a priority is created</option>
+                <option value="priority_completed" {% if event.entity == "priority" and event.lifecycle == "completed" %}selected{% endif %}>a priority is completed</option>
+            </optgroup>
+        </select>
+
+        <select name="{{ prefix }}filter_type"
+                id="{{ prefix }}filter_type"
+                class="sentence-dropdown"
+                onchange="updateFilterValueInput()">
+            <option value="any" {% if event.filter.type == "any" or not event.filter %}selected{% endif %}>anywhere</option>
+            <option value="under_practice" {% if event.filter.type == "under_practice" %}selected{% endif %}>under this Practice</option>
+            <option value="under_priority" {% if event.filter.type == "under_priority" %}selected{% endif %}>under...</option>
+            <option value="tagged" {% if event.filter.type == "tagged" %}selected{% endif %}>tagged...</option>
+        </select>
+    </div>
+
+    {# Dynamic filter value inputs #}
+    <div class="event-filter-value" id="event-filter-value">
+        {# Priority selector (shown when filter_type = under_priority) #}
+        <div id="filter-priority-container" style="display: none;">
+            <select name="{{ prefix }}filter_priority_id"
+                    id="{{ prefix }}filter_priority_id"
+                    class="property-input">
+                {% for p in priorities %}
+                <option value="{{ p.id }}" {% if event.filter.priority_id == p.id %}selected{% endif %}>
+                    {{ p.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# Tag input (shown when filter_type = tagged) #}
+        <div id="filter-tag-container" style="display: none;">
+            <input type="text"
+                   name="{{ prefix }}filter_tag"
+                   id="{{ prefix }}filter_tag"
+                   class="property-input"
+                   placeholder="tag name"
+                   value="{{ event.filter.tag or '' }}">
+        </div>
+    </div>
+
+    {# Hidden fields for parsed values #}
+    <input type="hidden" name="{{ prefix }}entity" id="{{ prefix }}entity" value="{{ event.entity or 'task' }}">
+    <input type="hidden" name="{{ prefix }}lifecycle" id="{{ prefix }}lifecycle" value="{{ event.lifecycle or 'completed' }}">
+</div>
+
+<script>
+(function() {
+    window.updateEventFilterOptions = function() {
+        var select = document.getElementById('{{ prefix }}entity_lifecycle');
+        var parts = select.value.split('_');
+        var entity = parts[0];
+        var lifecycle = parts[1];
+
+        document.getElementById('{{ prefix }}entity').value = entity;
+        document.getElementById('{{ prefix }}lifecycle').value = lifecycle;
+    };
+
+    window.updateFilterValueInput = function() {
+        var filterType = document.getElementById('{{ prefix }}filter_type').value;
+        var priorityContainer = document.getElementById('filter-priority-container');
+        var tagContainer = document.getElementById('filter-tag-container');
+
+        priorityContainer.style.display = 'none';
+        tagContainer.style.display = 'none';
+
+        if (filterType === 'under_priority') {
+            priorityContainer.style.display = 'block';
+        } else if (filterType === 'tagged') {
+            tagContainer.style.display = 'block';
+        }
+    };
+
+    // Initialize
+    updateEventFilterOptions();
+    updateFilterValueInput();
+})();
+</script>

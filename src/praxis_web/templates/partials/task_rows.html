@@ -1,23 +1,29 @@
 {% for task in tasks %}
 <div class="task-row {% if task.status == 'done' %}done{% endif %}"
      id="task-row-{{ task.id }}"
-     onclick="selectRow(this)">
+     {% if inbox_mode %}
+     onclick="toggleInboxPicker(this, '{{ task.id }}')"
+     {% else %}
+     onclick="selectRow(this)"
+     {% endif %}>
     <div class="task-content"
+         {% if not inbox_mode %}
          hx-get="/tasks/{{ task.id }}"
-         hx-target="#detail-pane"
+         hx-target="#detail-content"
          hx-swap="innerHTML"
-         hx-push-url="true">
+         hx-push-url="true"
+         {% endif %}>
         <div class="task-title">{{ task.name }}</div>
         <div class="meta">
             {% if task.score is defined %}
-            <span class="score-badge" title="Score: {{ task.score }} (imp={{ task.importance }}, urg={{ task.urgency }})">
+            <span class="pill pill--xs pill--score" title="Score: {{ task.score }} (imp={{ task.importance }}, urg={{ task.urgency }})">
                 {{ task.score }}
             </span>
             {% endif %}
             {% if task.priority_name %}
-            <span class="type-badge {{ task.priority_type or 'inbox' }}">{{ task.priority_name }}</span>
+            <span class="pill pill--{{ task.priority_type or 'inbox' }}">{{ task.priority_name }}</span>
             {% endif %}
-            <span class="status-indicator {{ task.status }}">
+            <span class="pill pill--status-{{ task.status }}">
                 {{ task.status }}
             </span>
             {% if task.due_date %}
@@ -25,7 +31,16 @@
             {% endif %}
         </div>
     </div>
-    {% if task.can_toggle %}
+    {% if outbox_mode %}
+    <button class="quick-done"
+            hx-post="/api/tasks/{{ task.id }}/restore"
+            hx-target="closest .task-row"
+            hx-swap="delete"
+            onclick="event.stopPropagation();"
+            title="Restore to queue">
+        ↩
+    </button>
+    {% elif task.can_toggle %}
     <button class="quick-done {% if task.status == 'done' %}checked{% endif %}"
             hx-post="/tasks/{{ task.id }}/toggle"
             hx-target="closest .task-row"
@@ -36,9 +51,22 @@
     </button>
     {% endif %}
 </div>
+{% if inbox_mode %}
+<div class="inbox-picker" id="inbox-picker-{{ task.id }}" data-task-id="{{ task.id }}" style="display: none;">
+    {% set name = "inbox_priority_" ~ task.id %}
+    {% set placeholder = "choose a priority" %}
+    {% set variant = "priority" %}
+    {% include "partials/chips/chip_priority_picker.html" %}
+</div>
+{% endif %}
 {% else %}
 <div class="empty-state">
+    {% if outbox_mode %}
+    <h3>Outbox is empty</h3>
+    <p>Completed tasks will appear here before deletion.</p>
+    {% else %}
     <h3>No tasks found</h3>
     <p>All caught up!</p>
+    {% endif %}
 </div>
 {% endfor %}

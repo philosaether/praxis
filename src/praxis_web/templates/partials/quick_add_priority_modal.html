@@ -13,6 +13,7 @@
               hx-on::after-request="handleQuickAddPriorityResponse(event)">
             <div class="modal-body">
                 <input type="text"
+                       id="quick-add-priority-name"
                        name="name"
                        placeholder="What's the priority?"
                        class="quick-add-input"
@@ -22,40 +23,31 @@
                 <details class="more-options">
                     <summary>More options</summary>
                     <div class="property-row">
-                        <label for="qap-type">Type</label>
-                        <select id="qap-type"
+                        <label for="quick-add-priority-type">Type</label>
+                        <select id="quick-add-priority-type"
                                 name="priority_type"
                                 hx-get="/priorities/quick-add/fields"
-                                hx-target="#qap-type-fields"
+                                hx-target="#quick-add-priority-type-fields"
                                 hx-swap="innerHTML"
                                 hx-trigger="change">
                             {% for t in priority_types %}
-                            <option value="{{ t }}" {% if t == 'goal' %}selected{% endif %}>
+                            <option value="{{ t }}" {% if t == 'initiative' %}selected{% endif %}>
                                 {{ t|title }}
                             </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="property-row">
-                        <label for="qap-parent">Parent</label>
-                        <select id="qap-parent" name="parent_id">
+                        <label for="quick-add-priority-parent">Parent</label>
+                        <select id="quick-add-priority-parent" name="parent_id">
                             <option value="">None</option>
                             {% for p in priorities %}
                             <option value="{{ p.id }}">{{ p.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div id="qap-type-fields">
-                        {# Goal fields by default #}
-                        <div class="property-row">
-                            <label for="qap-complete-when">Complete When</label>
-                            <textarea id="qap-complete-when" name="complete_when" rows="2"
-                                      placeholder="What does done look like?"></textarea>
-                        </div>
-                        <div class="property-row">
-                            <label for="qap-due">Due Date</label>
-                            <input type="date" id="qap-due" name="due_date">
-                        </div>
+                    <div id="quick-add-priority-type-fields">
+                        {# Initiative has no type-specific fields #}
                     </div>
                 </details>
             </div>

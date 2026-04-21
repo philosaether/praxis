@@ -23,6 +23,8 @@ dependencies = [
     "jinja2>=3.1.0",
     "python-ulid>=2.0.0",
     "python-multipart>=0.0.6",
+    "simpleeval>=1.0.0",
+    "pyyaml>=6.0.0",
 ]
 
 [project.optional-dependencies]
@@ -32,7 +34,7 @@ dev = [
 ]
 
 [project.scripts]
-praxis = "praxis_core.cli:app"
+praxis = "praxis_home.cli:app"
 praxis-home = "praxis_home.server:main"
 
 [tool.hatch.build.targets.wheel]

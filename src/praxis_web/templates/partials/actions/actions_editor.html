@@ -1,0 +1,72 @@
+{# Actions editor container for Practice priorities — Chip-based cards #}
+{# Expects: priority (dict with id, name, actions_config), action_cards (list of card data dicts),
+            editable (bool), priority_name (string) #}
+
+<div class="actions-editor-visual" id="actions-editor-{{ priority.id }}">
+    {% if action_cards and action_cards|length > 0 %}
+    <div class="actions-list" id="actions-list-{{ priority.id }}">
+        {% for action in action_cards %}
+        {% with idx=loop.index0, priority_id=priority.id, priority_name=priority_name, mode=('edit' if editable else 'view') %}
+        {% include "partials/actions/action_card.html" %}
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-hint">No actions configured. Add an action to automate task creation.</p>
+    {% endif %}
+
+    {% if editable %}
+    <button type="button"
+            class="btn btn-sm btn-secondary add-action-btn"
+            hx-get="/priorities/{{ priority.id }}/actions/wizard"
+            hx-target="#action-wizard-container"
+            hx-swap="innerHTML">
+        + Add Action
+    </button>
+    {% endif %}
+</div>
+
+<script>
+// Reindex action cards so data-action-idx and input names stay sequential
+function reindexActionCards() {
+    const cards = document.querySelectorAll('.action-card');
+    cards.forEach((card, i) => {
+        card.dataset.actionIdx = i;
+        card.querySelectorAll('input, textarea').forEach(input => {
+            if (input.name && input.name.startsWith('action_')) {
+                input.name = input.name.replace(/^action_\d+_/, `action_${i}_`);
+            }
+        });
+        card.querySelectorAll('[data-chip]').forEach(chip => {
+            const attr = chip.dataset.chip;
+            if (attr && attr.startsWith('action_')) {
+                chip.dataset.chip = attr.replace(/^action_\d+_/, `action_${i}_`);
+            }
+        });
+    });
+}
+
+function removeAction(priorityId, actionIdx) {
+    if (!confirm('Remove this action?')) return;
+
+    // Remove card from DOM
+    const card = document.querySelector(`.action-card[data-action-idx="${actionIdx}"]`);
+    if (card) card.remove();
+
+    // Reindex remaining cards
+    reindexActionCards();
+
+    // If no cards left, show empty hint
+    const list = document.getElementById('actions-list-' + priorityId);
+    if (list && list.children.length === 0) {
+        list.remove();
+        const editor = document.getElementById('actions-editor-' + priorityId);
+        if (editor) {
+            const btn = editor.querySelector('.add-action-btn');
+            if (btn) {
+                btn.insertAdjacentHTML('beforebegin', '<p class="empty-hint">No actions configured. Add an action to automate task creation.</p>');
+            }
+        }
+    }
+}
+</script>

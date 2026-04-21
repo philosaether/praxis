@@ -1,0 +1,76 @@
+{#
+Event Outcome Chip
+==================
+Selects what happened to the entity: created, completed, or status changes to X.
+"Completed" is only valid for goals and tasks — hidden for other subject types.
+
+Params:
+  - name: Form field name (default: "event_outcome")
+  - value: Current value (default: "created")
+
+Display rules:
+  - created                -> "created"
+  - completed              -> "completed"
+  - status_change:active   -> "status changes to active"
+  - status_change:dormant  -> "status changes to dormant"
+  - status_change:blocked  -> "status changes to blocked"
+
+DSL mapping:
+  - created        → event_type: *_creation (engine: Phase 4)
+  - completed      → event_type: *_completion
+  - status_change:X → event_type: *_status_change, to: X
+#}
+
+{% set name = name or 'event_outcome' %}
+{% set value = value if value is defined else 'created' %}
+{% set variant = 'event' %}
+
+{% set is_status_change = value.startswith('status_change:') %}
+{% if is_status_change %}
+  {% set status_target = value.split(':')[1] %}
+  {% set display = 'status changes to ' ~ status_target %}
+{% elif value == 'created' %}
+  {% set display = 'created' %}
+{% else %}
+  {% set display = value %}
+{% endif %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="event_outcome">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select event outcome">
+    <div class="chip-popup__options chip-popup__options--event-outcome">
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--event{% if value == 'created' %} selected{% endif %}"
+              data-value="created"
+              data-display="created"
+              onclick="selectEventOutcome(this)">created</button>
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--event chip-popup__option--completable{% if value == 'completed' %} selected{% endif %}"
+              data-value="completed"
+              data-display="completed"
+              onclick="selectEventOutcome(this)">completed</button>
+    </div>
+
+    <div class="chip-popup__event-status-change">
+      <span class="chip-popup__prefix">status changes to</span>
+      <div class="chip-popup__options chip-popup__options--event-status">
+        {% for status in ['active', 'dormant', 'blocked'] %}
+        <button type="button"
+                class="chip-popup__option chip-popup__option--chip chip-popup__option--event{% if value == 'status_change:' ~ status %} selected{% endif %}"
+                data-value="status_change:{{ status }}"
+                data-display="status changes to {{ status }}"
+                onclick="selectEventOutcome(this)">{{ status }}</button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</span>

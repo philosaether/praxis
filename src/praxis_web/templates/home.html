@@ -3,7 +3,7 @@
 {% block title %}Praxis{% endblock %}
 
 {% block body %}
-<div class="container">
+<div class="container" data-is-new-user="{{ is_new_user|lower }}">
     <!-- Mode Navigation (Icon Bar) -->
     <nav class="mode-nav" role="navigation" aria-label="View mode">
         <button class="mode-nav-btn {% if default_mode == 'inbox' %}active{% endif %}"
@@ -13,7 +13,8 @@
                 hx-push-url="/tasks/inbox"
                 onclick="setMode('inbox')"
                 title="Inbox">
-            <span class="mode-nav-icon mode-nav-icon--inbox"></span>
+            <span class="icon">inbox</span>
+            <span class="mode-nav-label">inbox</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'tasks' %}active{% endif %}"
                 id="tasks-nav-btn"
@@ -23,7 +24,8 @@
                 hx-push-url="/tasks"
                 onclick="setMode('tasks')"
                 title="Queue">
-            <span class="mode-nav-icon mode-nav-icon--tasks"></span>
+            <span class="icon">playlist_add_check</span>
+            <span class="mode-nav-label">tasks</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'priorities' %}active{% endif %}"
                 id="priorities-nav-btn"
@@ -32,7 +34,8 @@
                 hx-push-url="/priorities"
                 onclick="setMode('priorities')"
                 title="Priorities">
-            <span class="mode-nav-icon mode-nav-icon--priorities"></span>
+            <span class="icon">star</span>
+            <span class="mode-nav-label">priorities</span>
         </button>
         <button class="mode-nav-btn {% if default_mode == 'friends' %}active{% endif %}"
                 id="friends-nav-btn"
@@ -41,7 +44,31 @@
                 hx-push-url="/friends"
                 onclick="setMode('friends')"
                 title="Friends">
-            <span class="mode-nav-icon mode-nav-icon--friends"></span>
+            <span class="icon">handshake</span>
+            <span class="mode-nav-label">friends</span>
+            {% if notification_count and notification_count > 0 %}
+            <span class="notification-badge">{{ notification_count }}</span>
+            {% endif %}
+        </button>
+        <button class="mode-nav-btn {% if default_mode == 'rules' %}active{% endif %}"
+                id="rules-nav-btn"
+                hx-get="/rules/list"
+                hx-target="#item-list"
+                hx-push-url="/rules"
+                onclick="setMode('rules')"
+                title="Rules">
+            <span class="icon">discover_tune</span>
+            <span class="mode-nav-label">rules</span>
+        </button>
+        <button class="mode-nav-btn {% if default_mode == 'outbox' %}active{% endif %}"
+                id="outbox-nav-btn"
+                hx-get="/tasks/outbox"
+                hx-target="#item-list"
+                hx-push-url="/tasks/outbox"
+                onclick="setMode('outbox')"
+                title="Outbox">
+            <span class="icon">delete_outline</span>
+            <span class="mode-nav-label">outbox</span>
         </button>
     </nav>
 
@@ -67,18 +94,83 @@
             {% endif %}
         </div>
 
-        <!-- Filters -->
+        <!-- Search and Filters -->
         <div class="filters">
-            <!-- Task filters (shown for tasks mode) -->
-            <div id="task-filters" class="filter-group" style="display: {% if default_mode == 'tasks' %}flex{% else %}none{% endif %};">
-                <select name="priority"
-                        hx-get="/tasks/list"
-                        hx-target="#item-list">
-                    <option value="">All Priorities</option>
-                    {% for p in priorities %}
-                    <option value="{{ p.id }}">{{ p.name }}</option>
-                    {% endfor %}
-                </select>
+            <!-- Task search and filters (shown for tasks mode) -->
+            <div id="task-filters" class="search-filter-bar" style="display: {% if default_mode == 'tasks' %}flex{% else %}none{% endif %};">
+                <!-- Search input -->
+                <div class="search-input-wrapper">
+                    <span class="icon icon--sm search-icon">search</span>
+                    <input type="text"
+                           name="q"
+                           class="search-input"
+                           placeholder="Search tasks..."
+                           autocomplete="off"
+                           hx-get="/tasks/list"
+                           hx-target="#item-list"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-include="#task-filters select, #task-filters input">
+                </div>
+
+                <!-- Filters dropdown -->
+                <div class="filters-dropdown-wrapper">
+                    <button type="button"
+                            class="btn btn-sm filters-toggle"
+                            onclick="toggleFiltersDropdown()"
+                            title="Filters">
+                        <span class="icon icon--sm filter-icon">filter_list</span>
+                        <span class="filter-badge" id="filter-badge" style="display: none;"></span>
+                    </button>
+                    <div class="filters-dropdown" id="filters-dropdown">
+                        <div class="filter-row">
+                            <label>Priority</label>
+                            <select name="priority"
+                                    id="filter-priority-select"
+                                    hx-get="/tasks/list"
+                                    hx-target="#item-list"
+                                    hx-include="#task-filters select, #task-filters input"
+                                    onchange="updateFilterBadge()">
+                                <option value="">All</option>
+                                {% for p in priorities %}
+                                <option value="{{ p.id }}">[{{ p.priority_type[:3]|upper }}] {{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-row">
+                            <label>Tag</label>
+                            <select name="tag"
+                                    id="filter-tag-select"
+                                    hx-get="/tasks/list"
+                                    hx-target="#item-list"
+                                    hx-include="#task-filters select, #task-filters input"
+                                    onchange="updateFilterBadge()">
+                                <option value="">All</option>
+                                {% for t in user_tags %}
+                                <option value="{{ t.name }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-row">
+                            <label>Status</label>
+                            <select name="status"
+                                    hx-get="/tasks/list"
+                                    hx-target="#item-list"
+                                    hx-include="#task-filters select, #task-filters input"
+                                    onchange="updateFilterBadge()">
+                                <option value="">All</option>
+                                <option value="queued">Queued</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        <div class="filter-row filter-actions">
+                            <button type="button"
+                                    class="btn btn-sm"
+                                    onclick="clearTaskFilters()">
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Priority filters (shown for priorities mode) -->
@@ -103,6 +195,16 @@
                     Active only
                 </label>
             </div>
+
+            <!-- Rules toolbar (shown for rules mode) -->
+            <div id="rule-filters" class="filter-group" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %}">
+                <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+                    Import
+                </button>
+                <a class="btn btn-secondary btn-sm" href="/rules/export" download="praxis-rules.yml">
+                    Export
+                </a>
+            </div>
         </div>
 
         <!-- Add New Item Bar -->
@@ -110,22 +212,48 @@
             <div id="add-task-bar" style="display: {% if default_mode in ['tasks', 'inbox'] %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/tasks/new"
-                        hx-target="#detail-pane"
-                        hx-swap="innerHTML">
+                        hx-target="#detail-content"
+                        hx-swap="innerHTML"
+                        onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
                     + New Task
                 </button>
             </div>
             <div id="add-priority-bar" style="display: {% if default_mode == 'priorities' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm"
                         hx-get="/priorities/new"
-                        hx-target="#detail-pane"
-                        hx-swap="innerHTML">
+                        hx-target="#detail-content"
+                        hx-swap="innerHTML"
+                        onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
                     + New Priority
+                </button>
+                <button class="btn btn-secondary btn-sm mobile-only"
+                        id="mobile-tree-toggle"
+                        onclick="mobileTogglePriorityView()">
+                    view as list
                 </button>
             </div>
             <div id="add-friend-bar" style="display: {% if default_mode == 'friends' %}flex{% else %}none{% endif %};">
                 <button class="btn btn-primary btn-sm" onclick="openInviteModal()">
                     + Invite Friend
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="openGroupModal()">
+                    + New Group
+                </button>
+            </div>
+            <div id="add-rule-bar" style="display: {% if default_mode == 'rules' %}flex{% else %}none{% endif %};">
+                <button class="btn btn-primary btn-sm"
+                        hx-get="/rules/new"
+                        hx-target="#detail-content"
+                        hx-swap="innerHTML"
+                        onclick="if(window.innerWidth<=768) document.querySelector('.container').classList.add('mobile-detail')">
+                    + New Rule
+                </button>
+                <button class="btn btn-secondary btn-sm"
+                        hx-post="/rules/restore-defaults"
+                        hx-target="#item-list"
+                        hx-swap="innerHTML"
+                        hx-confirm="Replace all your rules with defaults? This cannot be undone.">
+                    Restore Defaults
                 </button>
             </div>
         </div>
@@ -142,6 +270,10 @@
 
     <!-- Right Pane: Detail View -->
     <div class="right-pane" id="detail-pane">
+        <button class="mobile-back-btn" onclick="mobileBack()">
+            <span class="icon icon--sm">chevron_left</span> Back
+        </button>
+        <div id="detail-content">
         {% if initial_detail_html %}
             {{ initial_detail_html|safe }}
         {% else %}
@@ -150,10 +282,11 @@
                 <p>Click an item on the left to view details</p>
             </div>
         {% endif %}
+        </div>
     </div>
 
     <!-- Floating Action Button -->
-    <button class="fab" id="fab-button" onclick="handleFabClick()" title="Quick add">+</button>
+    <button class="fab" id="fab-button" onclick="handleFabClick()" title="Quick add"><span class="icon">add</span></button>
 </div>
 
 <!-- Quick Add Modals -->
@@ -166,18 +299,28 @@
 <!-- Invite Friend Modal -->
 {% include "partials/invite_modal.html" %}
 
+<!-- New Group Modal -->
+{% include "partials/group_modal.html" %}
+
 <!-- Confirmation Modal -->
 {% include "partials/confirm_modal.html" %}
 
+<!-- Import Rules Modal -->
+{% include "partials/import_rules_modal.html" %}
+
 <!-- Tree Context Menu -->
 <div class="tree-context-menu" id="tree-context-menu">
+    <button class="tree-context-menu-item" onclick="handleTreeMenuEdit()">
+        <span class="icon icon--sm">edit</span>
+        <span>Edit</span>
+    </button>
     <button class="tree-context-menu-item" onclick="handleTreeMenuAddChild()">
-        <span class="menu-icon">+</span>
+        <span class="icon icon--sm">add</span>
         <span>Add child</span>
     </button>
     <div class="tree-context-menu-divider"></div>
     <button class="tree-context-menu-item destructive" onclick="handleTreeMenuDelete()">
-        <span class="menu-icon">×</span>
+        <span class="icon icon--sm">delete_outline</span>
         <span>Delete</span>
     </button>
 </div>
@@ -186,17 +329,100 @@
     // Current view mode (set from server)
     window.currentMode = '{{ default_mode }}';
 
+    // Mobile: return to list view
+    window.mobileBack = function() {
+        document.querySelector('.container').classList.remove('mobile-detail');
+    };
+
+    // Inbox triage: toggle inline priority picker beneath a task row
+    window.toggleInboxPicker = function(row, taskId) {
+        var picker = document.getElementById('inbox-picker-' + taskId);
+        if (!picker) return;
+
+        // Close any other open pickers
+        document.querySelectorAll('.inbox-picker.open').forEach(function(p) {
+            if (p !== picker) {
+                p.style.display = 'none';
+                p.classList.remove('open');
+            }
+        });
+
+        // Toggle this picker
+        var isOpen = picker.classList.contains('open');
+        if (isOpen) {
+            picker.style.display = 'none';
+            picker.classList.remove('open');
+        } else {
+            picker.style.display = 'block';
+            picker.classList.add('open');
+        }
+    };
+
+    // Inbox triage: handle priority selection — assign task and remove row
+    document.addEventListener('prioritySelected', function(event) {
+        var picker = event.target.closest('.inbox-picker');
+        if (!picker) return;
+
+        var taskId = picker.dataset.taskId;
+        var priorityId = event.detail.priorityId;
+        if (!taskId || !priorityId) return;
+
+        // POST quick-assign
+        fetch('/tasks/' + taskId + '/quick-assign', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'priority_id=' + encodeURIComponent(priorityId)
+        }).then(function(response) {
+            if (response.ok) {
+                // Remove the task row and picker with a fade-out
+                var row = document.getElementById('task-row-' + taskId);
+                if (row) {
+                    row.style.transition = 'opacity 0.3s ease';
+                    row.style.opacity = '0';
+                    setTimeout(function() { row.remove(); }, 300);
+                }
+                picker.remove();
+            } else {
+                // Close picker on failure — task stays in inbox
+                picker.style.display = 'none';
+                picker.classList.remove('open');
+            }
+        }).catch(function() {
+            // Network error — close picker, task stays in inbox
+            picker.style.display = 'none';
+            picker.classList.remove('open');
+        });
+    });
+
+    // Mobile: toggle priority list/tree view
+    window.mobileTogglePriorityView = function() {
+        var btn = document.getElementById('mobile-tree-toggle');
+        if (btn.textContent.trim() === 'view as tree') {
+            htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+            btn.textContent = 'view as list';
+        } else {
+            htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+            btn.textContent = 'view as tree';
+        }
+    };
+
     window.setMode = function(mode) {
         window.currentMode = mode;
+
+        // Mobile: return to list view on mode switch
+        document.querySelector('.container').classList.remove('mobile-detail');
 
         // Toggle button states
         document.getElementById('inbox-nav-btn').classList.toggle('active', mode === 'inbox');
         document.getElementById('tasks-nav-btn').classList.toggle('active', mode === 'tasks');
         document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
         document.getElementById('friends-nav-btn').classList.toggle('active', mode === 'friends');
+        document.getElementById('rules-nav-btn').classList.toggle('active', mode === 'rules');
+        document.getElementById('outbox-nav-btn').classList.toggle('active', mode === 'outbox');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
+        document.getElementById('rule-filters').style.display = mode === 'rules' ? 'flex' : 'none';
         // Hide task filters in inbox mode (all inbox tasks have no priority)
         document.getElementById('task-filters').style.display = mode === 'tasks' ? 'flex' : 'none';
 
@@ -204,6 +430,7 @@
         document.getElementById('add-task-bar').style.display = (mode === 'tasks' || mode === 'inbox') ? 'flex' : 'none';
         document.getElementById('add-priority-bar').style.display = mode === 'priorities' ? 'flex' : 'none';
         document.getElementById('add-friend-bar').style.display = mode === 'friends' ? 'flex' : 'none';
+        document.getElementById('add-rule-bar').style.display = mode === 'rules' ? 'flex' : 'none';
 
         // Update FAB color based on mode
         const fab = document.getElementById('fab-button');
@@ -212,14 +439,27 @@
 
         // Update detail pane based on mode
         if (mode === 'priorities') {
-            // Load tree view in detail pane
-            htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+            if (window.innerWidth <= 768) {
+                // Mobile: tree is the primary view. The nav button's hx-get loads the list,
+                // so we delay the tree fetch to ensure it overwrites the list.
+                setTimeout(function() {
+                    htmx.ajax('GET', '/priorities/tree-pane', {target: '#item-list', swap: 'innerHTML'});
+                }, 50);
+                var toggle = document.getElementById('mobile-tree-toggle');
+                if (toggle) toggle.textContent = 'view as list';
+            } else {
+                // Desktop: tree loads into detail pane, list stays in left pane
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
+            }
         } else if (mode === 'friends') {
             // Friends mode: left-pane only, clear detail pane
-            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
+            document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Friends</h3><p>Invite friends to share priorities with them</p></div>';
+        } else if (mode === 'rules') {
+            // Rules mode: show rules help in detail pane
+            document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Rules</h3><p>Rules control how tasks are prioritized based on time, tags, and due dates</p></div>';
         } else {
             // Clear detail pane for tasks/inbox mode
-            document.getElementById('detail-pane').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
+            document.getElementById('detail-content').innerHTML = '<div class="empty-state"><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';
         }
     };
 
@@ -233,22 +473,31 @@
     };
 
     // Task Quick Add Modal
-    let currentQuickAddPriorityId = null;
+    var currentQuickAddPriorityId = null;
 
-    window.openQuickAdd = function(priorityId) {
+    window.openQuickAdd = async function(priorityId) {
         const backdrop = document.getElementById('quick-add-backdrop');
+        const select = document.getElementById('quick-add-priority');
+
+        // Fetch fresh priorities (in case user created new ones)
+        try {
+            const response = await fetch('/tasks/quick-add/priorities');
+            if (response.ok) {
+                select.innerHTML = await response.text();
+            }
+        } catch (e) {
+            console.error('Failed to refresh priorities:', e);
+        }
+
         backdrop.classList.add('open');
         currentQuickAddPriorityId = priorityId || null;
 
         // Pre-select priority if provided
-        if (priorityId) {
-            const select = document.getElementById('qa-priority');
-            if (select) {
-                select.value = priorityId;
-                // Open the details to show the priority is set
-                const details = backdrop.querySelector('.more-options');
-                if (details) details.open = true;
-            }
+        if (priorityId && select) {
+            select.value = priorityId;
+            // Open the details to show the priority is set
+            const details = backdrop.querySelector('.more-options');
+            if (details) details.open = true;
         }
 
         setTimeout(() => {
@@ -267,7 +516,7 @@
     window.handleQuickAddResponse = function(event) {
         if (event.detail.successful) {
             // Get the priority ID from the form (in case user changed it)
-            const select = document.getElementById('qa-priority');
+            const select = document.getElementById('quick-add-priority');
             const priorityId = select ? select.value : currentQuickAddPriorityId;
 
             closeQuickAdd();
@@ -298,10 +547,10 @@
         // Reset form
         const form = document.querySelector('#quick-add-priority-backdrop form');
         if (form) form.reset();
-        // Reset type-specific fields to goal defaults
-        const typeFieldsContainer = document.getElementById('qap-type-fields');
+        // Reset type-specific fields to initiative defaults (none)
+        const typeFieldsContainer = document.getElementById('quick-add-priority-type-fields');
         if (typeFieldsContainer) {
-            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=goal', {target: '#qap-type-fields', swap: 'innerHTML'});
+            htmx.ajax('GET', '/priorities/quick-add/fields?priority_type=initiative', {target: '#quick-add-priority-type-fields', swap: 'innerHTML'});
         }
     };
 
@@ -327,6 +576,10 @@
             .forEach(el => el.classList.remove('selected'));
         // Add selected class to clicked node
         element.classList.add('selected');
+        // Show detail pane on mobile
+        if (window.innerWidth <= 768) {
+            document.querySelector('.container').classList.add('mobile-detail');
+        }
     };
 
     window.loadNewTask = function(event) {
@@ -338,11 +591,11 @@
             if (newRow) selectRow(newRow);
 
             // Load the detail view
-            htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-pane', swap: 'innerHTML'})
+            htmx.ajax('GET', '/tasks/' + taskId, {target: '#detail-content', swap: 'innerHTML'})
                 .then(() => {
                     // Focus the name input after detail loads
                     setTimeout(() => {
-                        const nameInput = document.querySelector('#detail-pane #name');
+                        const nameInput = document.querySelector('#detail-content #name');
                         if (nameInput) {
                             nameInput.focus();
                             nameInput.select();
@@ -361,11 +614,11 @@
             if (newRow) selectRow(newRow);
 
             // Load the detail view
-            htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-pane', swap: 'innerHTML'})
+            htmx.ajax('GET', '/priorities/' + priorityId, {target: '#detail-content', swap: 'innerHTML'})
                 .then(() => {
                     // Focus the name input after detail loads
                     setTimeout(() => {
-                        const nameInput = document.querySelector('#detail-pane #name');
+                        const nameInput = document.querySelector('#detail-content #name');
                         if (nameInput) {
                             nameInput.focus();
                             nameInput.select();
@@ -377,14 +630,21 @@
 
     window.selectRow = function(element) {
         // Remove selected class from all rows
-        document.querySelectorAll('.task-row.selected, .priority-row.selected')
+        document.querySelectorAll('.task-row.selected, .priority-row.selected, .rule-row.selected')
             .forEach(el => el.classList.remove('selected'));
         // Add selected class to clicked row
         element.classList.add('selected');
+        // Show detail pane on mobile
+        if (window.innerWidth <= 768) {
+            document.querySelector('.container').classList.add('mobile-detail');
+        }
     };
 
     // Listen for task creation to refresh the list
     document.body.addEventListener('taskCreated', function(event) {
+        // During tutorial, the quick-add afterbegin swap is sufficient —
+        // a full list refresh would detach Shepherd's DOM reference
+        if (document.querySelector('.tutorial-active')) return;
         // Refresh the task list based on current mode, respecting filter
         if (window.currentMode === 'inbox') {
             htmx.ajax('GET', '/tasks/inbox', {target: '#item-list', swap: 'innerHTML'});
@@ -401,19 +661,60 @@
         const priorityId = detail?.id;
         const parentId = detail?.parent_id;
 
-        // Refresh the priority list, then select the new row
-        htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'})
-            .then(() => {
-                if (priorityId) {
-                    const newRow = document.getElementById('priority-row-' + priorityId);
-                    if (newRow) selectRow(newRow);
-                }
-            });
-
-        // If in priorities mode, also add to the tree view
-        if (window.currentMode === 'priorities' && priorityId) {
-            addPriorityToTree(priorityId, parentId);
+        if (window.currentMode === 'priorities') {
+            // Reload the tree view (primary view for priorities)
+            var treeTarget = window.innerWidth <= 768 ? '#item-list' : '#detail-content';
+            htmx.ajax('GET', '/priorities/tree-pane', {target: treeTarget, swap: 'innerHTML'});
+            // Also refresh the list if it's visible (desktop left pane)
+            if (window.innerWidth > 768) {
+                htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
+            }
+        } else {
+            // Refresh the priority list
+            htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'})
+                .then(() => {
+                    if (priorityId) {
+                        const newRow = document.getElementById('priority-row-' + priorityId);
+                        if (newRow) selectRow(newRow);
+                    }
+                });
         }
+
+        // Refresh parent dropdowns in any open forms
+        refreshParentDropdowns();
+    });
+
+    // Refresh all parent_id dropdowns with fresh options
+    window.refreshParentDropdowns = async function() {
+        const dropdowns = document.querySelectorAll('select[name="parent_id"]');
+        if (dropdowns.length === 0) return;
+
+        try {
+            const response = await fetch('/priorities/parent-options');
+            if (response.ok) {
+                const optionsHtml = await response.text();
+                dropdowns.forEach(select => {
+                    const currentValue = select.value;
+                    select.innerHTML = optionsHtml;
+                    // Restore selection if still valid
+                    if (currentValue) {
+                        const option = select.querySelector(`option[value="${currentValue}"]`);
+                        if (option) select.value = currentValue;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to refresh parent dropdowns:', e);
+        }
+    };
+
+    // Listen for rule creation/update to refresh the list
+    document.body.addEventListener('ruleCreated', function(event) {
+        htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
+    });
+
+    document.body.addEventListener('ruleUpdated', function(event) {
+        htmx.ajax('GET', '/rules/list', {target: '#item-list', swap: 'innerHTML'});
     });
 
     // Add a newly created priority to the tree without collapsing existing nodes
@@ -425,6 +726,10 @@
         fetch('/priorities/' + priorityId + '/tree-node')
             .then(response => response.text())
             .then(html => {
+                // Remove empty state if present
+                const emptyState = treeContainer.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
+
                 // Create a temporary container to parse the HTML
                 const temp = document.createElement('div');
                 temp.innerHTML = html;
@@ -481,16 +786,17 @@
                 if (newDepth === 0) {
                     const rootCount = treeContainer.querySelectorAll(':scope > .tree-node').length;
                     const content = newNode.querySelector(':scope > .tree-node-row .tree-node-content');
-                    if (content && !content.querySelector('.rank-badge')) {
+                    if (content && !content.querySelector('.pill--rank')) {
                         const badge = document.createElement('span');
-                        badge.className = 'rank-badge';
+                        badge.className = 'pill pill--xs pill--rank';
                         badge.textContent = '#' + (rootCount + 1);
                         content.insertBefore(badge, content.firstChild);
                     }
                 }
 
-                // Append to target container
+                // Append to target container and activate HTMX on the new node
                 targetContainer.appendChild(newNode);
+                htmx.process(newNode);
 
                 // Select the new node
                 const nodeContent = newNode.querySelector('.tree-node-content');
@@ -566,11 +872,28 @@
         document.querySelectorAll('.tree-node-menu-btn.active').forEach(b => b.classList.remove('active'));
     };
 
+    window.handleTreeMenuEdit = function() {
+        closeTreeContextMenu();
+
+        // Load the priority edit view into the detail pane
+        htmx.ajax('GET', '/priorities/' + treeMenuTarget.id + '/edit', {
+            target: '#detail-content',
+            swap: 'innerHTML'
+        });
+
+        // Select the node in the tree
+        const treeNode = document.querySelector('.tree-node[data-id="' + treeMenuTarget.id + '"]');
+        if (treeNode) {
+            const nodeContent = treeNode.querySelector(':scope > .tree-node-row .tree-node-content');
+            if (nodeContent) selectTreeNode(nodeContent);
+        }
+    };
+
     window.handleTreeMenuAddChild = function() {
         closeTreeContextMenu();
 
         // Open the quick-add priority modal with parent pre-selected
-        const parentSelect = document.getElementById('qap-parent');
+        const parentSelect = document.getElementById('quick-add-priority-parent');
         if (parentSelect) {
             parentSelect.value = treeMenuTarget.id;
         }
@@ -625,6 +948,29 @@
     window.closeConfirmModal = function() {
         document.getElementById('confirm-modal-backdrop').classList.remove('open');
         confirmModalCallback = null;
+    };
+
+    // Handle trigger fired response
+    window.handleTriggerFired = function(event) {
+        const xhr = event.detail.xhr;
+        if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.success && data.tasks_created > 0) {
+                // Show success message
+                alert(`Created ${data.tasks_created} task(s) from trigger`);
+                // Refresh the priority view to show updated last_triggered_at
+                const priorityId = event.target.closest('.detail-view')?.querySelector('[hx-get*="/priorities/"]')?.getAttribute('hx-get')?.match(/priorities\/([^/]+)/)?.[1];
+                if (priorityId) {
+                    htmx.ajax('GET', `/priorities/${priorityId}`, {target: '#detail-content', swap: 'innerHTML'});
+                }
+            } else if (!data.success) {
+                alert(`Trigger failed: ${data.error || 'Unknown error'}`);
+            } else {
+                alert('Trigger fired but no tasks were created (conditions may not be met)');
+            }
+        } else {
+            alert('Failed to fire trigger');
+        }
     };
 
     // Handle confirm button click
@@ -685,7 +1031,7 @@
                 htmx.ajax('GET', '/priorities/list', {target: '#item-list', swap: 'innerHTML'});
 
                 // Navigate to tree view
-                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-pane', swap: 'innerHTML'});
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
             } else {
                 console.error('Failed to delete priority');
             }
@@ -698,7 +1044,7 @@
         if (!treeContainer) return;
 
         treeContainer.querySelectorAll(':scope > .tree-node').forEach((node, idx) => {
-            const badge = node.querySelector(':scope > .tree-node-row .rank-badge');
+            const badge = node.querySelector(':scope > .tree-node-row .pill--rank');
             const newRank = idx + 1;
             if (badge) {
                 badge.textContent = '#' + newRank;
@@ -716,6 +1062,7 @@
         sharePriorityId = priorityId;
         document.getElementById('share-priority-name').textContent = priorityName;
         document.getElementById('share-permission').value = 'contributor';
+        document.getElementById('share-allow-adoption').checked = false;
         document.getElementById('share-submit-btn').disabled = true;
 
         // Load friends for the dropdown (only friends can be shared with)
@@ -759,21 +1106,24 @@
     };
 
     window.submitShare = function() {
-        const userId = document.getElementById('share-user').value;
-        const permission = document.getElementById('share-permission').value;
+        var userId = document.getElementById('share-user').value;
+        var permission = document.getElementById('share-permission').value;
+        var allowAdoption = document.getElementById('share-allow-adoption').checked;
 
         if (!userId || !sharePriorityId) return;
 
         fetch('/priorities/' + sharePriorityId + '/share', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: parseInt(userId), permission: permission })
+            body: JSON.stringify({ user_id: parseInt(userId), permission: permission, allow_adoption: allowAdoption })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                var refreshId = sharePriorityId;
                 closeShareModal();
-                // Could show a success message here
+                // Refresh the priority detail to update the share banner
+                htmx.ajax('GET', '/priorities/' + refreshId, {target: '#detail-content', swap: 'innerHTML'});
             } else {
                 alert(data.error || 'Failed to share priority');
             }
@@ -782,6 +1132,43 @@
             console.error('Failed to share priority:', err);
             alert('Failed to share priority');
         });
+    };
+
+    // -------------------------------------------------------------------------
+    // Priority Adoption
+    // -------------------------------------------------------------------------
+
+    window.adoptPriority = function(priorityId) {
+        // For MVP, adopt as root (no parent picker yet)
+        fetch('/priorities/' + priorityId + '/adopt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parent_priority_id: null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh tree pane to show priority in owned section
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
+            } else {
+                alert(data.error || 'Failed to adopt priority');
+            }
+        })
+        .catch(err => console.error('Failed to adopt:', err));
+    };
+
+    window.unadoptPriority = function(priorityId) {
+        fetch('/priorities/' + priorityId + '/adopt', { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh tree pane to show priority back in "Shared with Me"
+                htmx.ajax('GET', '/priorities/tree-pane', {target: '#detail-content', swap: 'innerHTML'});
+            } else {
+                alert(data.error || 'Failed to unadopt priority');
+            }
+        })
+        .catch(err => console.error('Failed to unadopt:', err));
     };
 
     // Close share modal on Escape
@@ -850,6 +1237,300 @@
         setTimeout(() => { btn.textContent = originalText; }, 1500);
     };
 
+    // -------------------------------------------------------------------------
+    // New Group Modal
+    // -------------------------------------------------------------------------
+
+    window.openGroupModal = function() {
+        document.getElementById('group-modal-backdrop').classList.add('open');
+        document.getElementById('group-name').value = '';
+        document.getElementById('create-group-btn').disabled = false;
+
+        // Load friends as checkboxes
+        fetch('/users', { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(friends => {
+                const list = document.getElementById('group-member-list');
+                if (!friends.length) {
+                    list.innerHTML = '<p class="text-muted">Add friends first to create a group.</p>';
+                    return;
+                }
+                list.innerHTML = friends.map(function(f) {
+                    return '<label class="checkbox-label">' +
+                        '<input type="checkbox" name="member_ids" value="' + f.id + '">' +
+                        '<span>' + f.username + '</span>' +
+                    '</label>';
+                }).join('');
+            });
+    };
+
+    window.closeGroupModal = function() {
+        document.getElementById('group-modal-backdrop').classList.remove('open');
+    };
+
+    window.createGroup = function() {
+        const name = document.getElementById('group-name').value.trim();
+        if (!name) { document.getElementById('group-name').focus(); return; }
+
+        const memberIds = Array.from(
+            document.querySelectorAll('#group-member-list input[name="member_ids"]:checked')
+        ).map(cb => parseInt(cb.value));
+
+        document.getElementById('create-group-btn').disabled = true;
+
+        fetch('/groups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, member_ids: memberIds })
+        })
+        .then(() => {
+            closeGroupModal();
+            // Refresh friends list to show new group
+            htmx.ajax('GET', '/friends/list', { target: '#item-list', swap: 'innerHTML' });
+        })
+        .catch(err => {
+            console.error('Failed to create group:', err);
+            document.getElementById('create-group-btn').disabled = false;
+        });
+    };
+
+    // -------------------------------------------------------------------------
+    // Import Rules Modal
+    // -------------------------------------------------------------------------
+
+    var importYamlContent = null;
+    var importParsedRules = [];
+
+    window.openImportModal = function() {
+        document.getElementById('import-modal-backdrop').classList.add('open');
+        resetImportModal();
+    };
+
+    window.closeImportModal = function() {
+        document.getElementById('import-modal-backdrop').classList.remove('open');
+        resetImportModal();
+    };
+
+    function resetImportModal() {
+        importYamlContent = null;
+        importParsedRules = [];
+        document.getElementById('import-step-upload').style.display = 'block';
+        document.getElementById('import-step-select').style.display = 'none';
+        document.getElementById('import-error').style.display = 'none';
+        document.getElementById('import-submit-btn').disabled = true;
+        document.getElementById('import-file-input').value = '';
+    }
+
+    window.handleImportFile = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        processImportFile(file);
+    };
+
+    function processImportFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            previewImportRules(content);
+        };
+        reader.onerror = function() {
+            showImportError('Failed to read file');
+        };
+        reader.readAsText(file);
+    }
+
+    async function previewImportRules(yamlContent) {
+        try {
+            const response = await fetch('/rules/import/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: yamlContent
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showImportError(data.error || 'Failed to parse rules');
+                return;
+            }
+
+            importYamlContent = yamlContent;
+            importParsedRules = data.rules;
+            showImportSelection(data.rules);
+        } catch (err) {
+            showImportError('Failed to preview rules: ' + err.message);
+        }
+    }
+
+    function showImportError(message) {
+        const errorDiv = document.getElementById('import-error');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+
+    function showImportSelection(rules) {
+        document.getElementById('import-step-upload').style.display = 'none';
+        document.getElementById('import-step-select').style.display = 'block';
+
+        const listDiv = document.getElementById('import-rules-list');
+        listDiv.innerHTML = rules.map((rule, i) => `
+            <label class="import-rule-item">
+                <input type="checkbox" value="${i}" checked onchange="updateImportButton()">
+                <span class="import-rule-name">${rule.name}</span>
+                <span class="import-rule-meta">${rule.conditions_count} conditions, ${rule.effects_count} effects</span>
+            </label>
+        `).join('');
+
+        updateImportButton();
+    }
+
+    window.selectAllImportRules = function(selectAll) {
+        document.querySelectorAll('#import-rules-list input[type="checkbox"]').forEach(cb => {
+            cb.checked = selectAll;
+        });
+        updateImportButton();
+    };
+
+    function updateImportButton() {
+        const checked = document.querySelectorAll('#import-rules-list input[type="checkbox"]:checked');
+        const btn = document.getElementById('import-submit-btn');
+        btn.disabled = checked.length === 0;
+        btn.textContent = checked.length === 1
+            ? 'Import 1 Rule'
+            : `Import ${checked.length} Rules`;
+    }
+
+    window.submitImport = async function() {
+        const checked = document.querySelectorAll('#import-rules-list input[type="checkbox"]:checked');
+        const selectedIndices = Array.from(checked).map(cb => parseInt(cb.value));
+
+        if (selectedIndices.length === 0) return;
+
+        const btn = document.getElementById('import-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Importing...';
+
+        try {
+            const response = await fetch('/rules/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    yaml_content: importYamlContent,
+                    selected_indices: selectedIndices
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showImportError(data.error || 'Failed to import rules');
+                btn.disabled = false;
+                btn.textContent = 'Import Selected';
+                return;
+            }
+
+            closeImportModal();
+            // Refresh the rules list
+            htmx.ajax('GET', '/rules/list', { target: '#item-list', swap: 'innerHTML' });
+        } catch (err) {
+            showImportError('Failed to import: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Import Selected';
+        }
+    };
+
+    // Drag and drop support
+    var dropZone = document.getElementById('import-drop-zone');
+    if (dropZone) {
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', function() {
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processImportFile(file);
+        });
+    }
+
+    // Close import modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImportModal();
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // Task Search and Filters
+    // -------------------------------------------------------------------------
+
+    window.toggleFiltersDropdown = function() {
+        const dropdown = document.getElementById('filters-dropdown');
+        dropdown.classList.toggle('open');
+
+        // Close when clicking outside
+        if (dropdown.classList.contains('open')) {
+            setTimeout(() => {
+                document.addEventListener('click', closeFiltersDropdownOnClickOutside, { once: true });
+            }, 0);
+        }
+    };
+
+    function closeFiltersDropdownOnClickOutside(event) {
+        const wrapper = document.querySelector('.filters-dropdown-wrapper');
+        if (wrapper && !wrapper.contains(event.target)) {
+            document.getElementById('filters-dropdown').classList.remove('open');
+        } else if (wrapper) {
+            // Re-attach listener if click was inside
+            setTimeout(() => {
+                document.addEventListener('click', closeFiltersDropdownOnClickOutside, { once: true });
+            }, 0);
+        }
+    }
+
+    window.updateFilterBadge = function() {
+        const taskFilters = document.getElementById('task-filters');
+        if (!taskFilters) return;
+
+        let activeCount = 0;
+        taskFilters.querySelectorAll('select').forEach(select => {
+            if (select.value) activeCount++;
+        });
+
+        const badge = document.getElementById('filter-badge');
+        if (activeCount > 0) {
+            badge.textContent = activeCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    };
+
+    window.clearTaskFilters = function() {
+        // Reset all filter dropdowns and search input
+        const taskFilters = document.getElementById('task-filters');
+        if (taskFilters) {
+            taskFilters.querySelectorAll('select').forEach(select => {
+                select.value = '';
+            });
+            const searchInput = taskFilters.querySelector('input[name="q"]');
+            if (searchInput) searchInput.value = '';
+        }
+        // Update badge
+        updateFilterBadge();
+        // Close dropdown
+        document.getElementById('filters-dropdown').classList.remove('open');
+        // Refresh the task list without filters
+        htmx.ajax('GET', '/tasks/list', {
+            target: '#item-list',
+            swap: 'innerHTML'
+        });
+    };
+
     // On page load, check if browser restored a filter value and re-fetch if needed
     document.addEventListener('DOMContentLoaded', function() {
         const priorityFilter = document.querySelector('[name="priority"]');
@@ -859,6 +1540,201 @@
                 swap: 'innerHTML'
             });
         }
+    });
+
+    // Refresh filter dropdowns when priorities/tags are created
+    document.body.addEventListener('priorityCreated', function() {
+        const select = document.getElementById('filter-priority-select');
+        if (select) {
+            const currentValue = select.value;
+            htmx.ajax('GET', '/filters/priorities?selected=' + encodeURIComponent(currentValue), {
+                target: '#filter-priority-select',
+                swap: 'innerHTML'
+            });
+        }
+    });
+
+    document.body.addEventListener('tagCreated', function() {
+        const select = document.getElementById('filter-tag-select');
+        if (select) {
+            const currentValue = select.value;
+            htmx.ajax('GET', '/filters/tags?selected=' + encodeURIComponent(currentValue), {
+                target: '#filter-tag-select',
+                swap: 'innerHTML'
+            });
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // Tag Input Handling
+    // -------------------------------------------------------------------------
+
+    window.handleTagInputKey = function(event, input) {
+        const suggestions = input.parentElement.querySelector('.tag-suggestions');
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const value = input.value.trim();
+            if (value) {
+                addTagToItem(input, value);
+            }
+        } else if (event.key === 'Escape') {
+            input.value = '';
+            if (suggestions) {
+                suggestions.innerHTML = '';
+            }
+        }
+    };
+
+    window.selectTagSuggestion = function(element, tagName) {
+        // Find the input container
+        const suggestionsDiv = element.closest('.tag-suggestions');
+        const inputContainer = suggestionsDiv.parentElement;
+        const input = inputContainer.querySelector('.tag-input');
+
+        addTagToItem(input, tagName);
+    };
+
+    window.addTagToItem = function(input, tagName) {
+        const taskId = input.dataset.taskId;
+        const priorityId = input.dataset.priorityId;
+        const suggestionsDiv = input.parentElement.querySelector('.tag-suggestions');
+
+        let url, targetId;
+
+        if (taskId) {
+            url = '/tasks/' + taskId + '/tags';
+            targetId = 'task-tags-' + taskId;
+        } else if (priorityId) {
+            url = '/priorities/' + priorityId + '/tags';
+            targetId = 'priority-tags-' + priorityId;
+        } else {
+            console.error('No task or priority ID found for tag input');
+            return;
+        }
+
+        // Submit via HTMX
+        htmx.ajax('POST', url, {
+            target: '#' + targetId,
+            swap: 'innerHTML',
+            values: { name: tagName }
+        });
+
+        // Clear input and suggestions
+        input.value = '';
+        if (suggestionsDiv) {
+            suggestionsDiv.innerHTML = '';
+        }
+    };
+
+    // Close tag suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.tag-input-container')) {
+            document.querySelectorAll('.tag-suggestions').forEach(s => {
+                s.innerHTML = '';
+            });
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // Visibility-Based Polling
+    // -------------------------------------------------------------------------
+    // Replaces SSE for real-time updates. Polls every 60s when tab is visible.
+    // Combined with midnight cron and catch-up on app launch for trigger firing.
+
+    var pollInterval = null;
+    var POLL_INTERVAL_MS = 60000; // 60 seconds
+
+    async function checkTriggers() {
+        // Fire any Practice triggers that are due
+        try {
+            const response = await fetch('/api/practices/check-triggers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.tasks_created > 0) {
+                    console.log(`Created ${data.tasks_created} task(s) from triggers`);
+                }
+            }
+        } catch (error) {
+            console.error('Error checking triggers:', error);
+        }
+    }
+
+    function refreshTaskList() {
+        // Only refresh if in a task-viewing mode
+        if (window.currentMode !== 'tasks' && window.currentMode !== 'inbox') {
+            return;
+        }
+
+        if (window.currentMode === 'inbox') {
+            htmx.ajax('GET', '/tasks/inbox', {target: '#item-list', swap: 'innerHTML'});
+        } else {
+            // Respect current filters
+            const priorityFilter = document.querySelector('[name="priority"]')?.value || '';
+            const tagFilter = document.querySelector('[name="tag"]')?.value || '';
+            const statusFilter = document.querySelector('[name="status"]')?.value || '';
+            const searchQuery = document.querySelector('#task-filters input[name="q"]')?.value || '';
+
+            const params = new URLSearchParams();
+            if (priorityFilter) params.set('priority', priorityFilter);
+            if (tagFilter) params.set('tag', tagFilter);
+            if (statusFilter) params.set('status', statusFilter);
+            if (searchQuery) params.set('q', searchQuery);
+
+            const queryString = params.toString();
+            const listUrl = queryString ? `/tasks/list?${queryString}` : '/tasks/list';
+            htmx.ajax('GET', listUrl, {target: '#item-list', swap: 'innerHTML'});
+        }
+    }
+
+    async function pollCycle() {
+        // Suppress polling during onboarding tutorial to avoid replacing DOM nodes
+        // that Shepherd.js is attached to
+        if (document.querySelector('.tutorial-active')) return;
+        // First check triggers (may create new tasks), then refresh list
+        await checkTriggers();
+        refreshTaskList();
+    }
+
+    function startPolling() {
+        if (pollInterval) return; // Already polling
+        pollInterval = setInterval(pollCycle, POLL_INTERVAL_MS);
+        // Immediate check when tab becomes visible
+        pollCycle();
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            startPolling();
+        } else {
+            stopPolling();
+        }
+    });
+
+    // Start polling on page load if tab is already visible
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.visibilityState === 'visible') {
+            // Delay initial poll start slightly to not interfere with page load
+            setTimeout(startPolling, 1000);
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        stopPolling();
     });
 </script>
 {% endblock %}

@@ -1,0 +1,93 @@
+{#
+Start Date Chip
+===============
+Selects when a cadence begins.
+
+Params:
+  - name: Form field name (default: "start")
+  - value: Current value (default: "immediately")
+  - period: The cadence period type (days, weeks, months, quarters, years)
+
+For days: shows date picker
+For other periods: immediately | next {period} | in [N] {periods}
+#}
+
+{% set name = name or 'start' %}
+{% set value = value or 'immediately' %}
+{% set period = period or 'weeks' %}
+{% set variant = 'due' %}
+
+{% set period_singular = {
+  'weeks': 'week',
+  'months': 'month',
+  'quarters': 'quarter',
+  'years': 'year'
+}.get(period, period) %}
+
+{# Determine display value #}
+{% if value == 'immediately' %}
+  {% set display = 'immediately' %}
+{% elif value.startswith('next') %}
+  {% set display = 'next ' ~ period_singular %}
+{% elif value.startswith('in ') %}
+  {% set display = value %}
+{% else %}
+  {% set display = value if value else 'a specific date' %}
+{% endif %}
+
+{% set is_placeholder = not value %}
+
+<span class="chip" data-chip="{{ name }}" data-chip-type="start" data-period="{{ period }}">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}{% if is_placeholder %} chip-trigger--placeholder{% endif %}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div class="chip-popup chip-popup--left" role="dialog" aria-label="Select start date">
+    {% if period == 'days' %}
+    {# Date picker for days period #}
+    <div class="chip-popup__date-input">
+      <input type="date"
+             class="chip-popup__date-field"
+             value="{{ value if value and value != 'immediately' else '' }}"
+             onchange="selectStartDate(this)">
+    </div>
+    {% else %}
+    {# Quick picks for other periods #}
+    <div class="chip-popup__options chip-popup__options--start">
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--due{% if value == 'immediately' %} selected{% endif %}"
+              data-value="immediately"
+              data-display="immediately"
+              onclick="selectStartOption(this)">immediately</button>
+
+      <button type="button"
+              class="chip-popup__option chip-popup__option--chip chip-popup__option--due{% if value == 'next' %} selected{% endif %}"
+              data-value="next"
+              data-display="next {{ period_singular }}"
+              onclick="selectStartOption(this)">next {{ period_singular }}</button>
+    </div>
+
+    <div class="chip-popup__start-custom">
+      <span class="chip-popup__prefix">in</span>
+      <div class="chip-popup__number-input">
+        <button type="button" class="chip-popup__number-btn" onclick="adjustStartCustom(this, -1)">−</button>
+        <input type="number"
+               class="chip-popup__number-field"
+               value="2"
+               min="2"
+               max="52"
+               onchange="selectStartCustom(this)"
+               onkeydown="if(event.key==='Enter'){selectStartCustom(this);closeAllChipPopups();}">
+        <button type="button" class="chip-popup__number-btn" onclick="adjustStartCustom(this, 1)">+</button>
+      </div>
+      <span class="chip-popup__suffix">{{ period }}</span>
+    </div>
+    {% endif %}
+  </div>
+</span>

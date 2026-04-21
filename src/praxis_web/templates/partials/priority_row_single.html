@@ -2,15 +2,18 @@
      id="priority-row-{{ priority.id }}"
      {% if oob %}hx-swap-oob="true"{% endif %}
      hx-get="/priorities/{{ priority.id }}"
-     hx-target="#detail-pane"
+     hx-target="#detail-content"
      hx-swap="innerHTML"
      hx-push-url="true"
      onclick="selectRow(this)">
     <div class="name">{{ priority.name }}</div>
     <div class="meta">
-        <span class="type-badge {{ priority.priority_type }}">{{ priority.priority_type|upper }}</span>
-        <span class="status-indicator {% if priority.status == 'active' %}active{% endif %}">
+        <span class="pill pill--{{ priority.priority_type }}">{{ priority.priority_type|upper }}</span>
+        <span class="pill pill--status-{{ priority.status }}">
             {{ priority.status }}
         </span>
+        {% if priority.is_shared_with_me or (priority.share_count and priority.share_count > 0) %}
+        <span class="pill pill--xs pill--shared"><span class="icon icon--sm">handshake</span></span>
+        {% endif %}
     </div>
 </div>

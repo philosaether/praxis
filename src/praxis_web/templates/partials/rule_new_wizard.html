@@ -1,0 +1,22 @@
+<div class="detail-view rule-wizard">
+    <div class="detail-header">
+        <h2>New Rule</h2>
+    </div>
+    <p class="text-muted">Pick a template to get started, or create from scratch.</p>
+
+    <div class="template-grid">
+        {% for template in templates %}
+        <div class="template-card"
+             hx-post="/rules/new/from-template"
+             hx-vals='{"template_id": "{{ template.id }}"}'
+             hx-target="#detail-content"
+             hx-swap="innerHTML">
+            <div class="template-icon"><span class="icon icon--lg">{{ template.icon }}</span></div>
+            <div class="template-content">
+                <h3 class="template-name">{{ template.name }}</h3>
+                <p class="template-description">{{ template.description }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

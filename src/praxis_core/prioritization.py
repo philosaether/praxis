@@ -1,18 +1,20 @@
 """
 Prioritization engine for ranking tasks.
 
-Two-dimensional scoring:
+Three-dimensional scoring:
 - Importance: inherited from priority hierarchy (static, based on root rank)
-- Urgency: calculated based on due dates (dynamic)
+- Urgency: calculated by rules (due date pressure, staleness, etc.)
+- Aptness: contextual relevance multiplier (time-of-day, tags, etc.)
 
-Combined score determines task queue ordering.
+Final score formula: (importance + urgency) × aptness
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 
 from praxis_core.model import Task
+from praxis_core.model.rules import Rule
 from praxis_core.persistence import PriorityGraph
+from praxis_core.rules.engine import evaluate_rules
 
 
 @dataclass
@@ -22,19 +24,13 @@ class ScoredTask:
     score: float
     importance: float
     urgency: float
+    aptness: float = 1.0
+    matched_rules: list[str] | None = None
 
 
 # Default importance for tasks with no ranked ancestor
 DEFAULT_IMPORTANCE = 5.0
 
-# Weights for combining importance and urgency
-IMPORTANCE_WEIGHT = 0.5
-URGENCY_WEIGHT = 0.5
-
-
-# ---------------------------------------------------------------------------
-# Importance (static, inherited from hierarchy)
-# ---------------------------------------------------------------------------
 
 def get_importance(task: Task, graph: PriorityGraph) -> float:
     """
@@ -46,111 +42,107 @@ def get_importance(task: Task, graph: PriorityGraph) -> float:
     if not task.priority_id:
         return DEFAULT_IMPORTANCE
 
-    # Walk up to root
     path = graph.path_to_root(task.priority_id)
-
     if not path:
         return DEFAULT_IMPORTANCE
 
-    # The last item in path is the root
     root_id = path[-1]
     root = graph.get(root_id)
-
     if root is None:
         return DEFAULT_IMPORTANCE
 
-    # Get rank from root (field to be added to Priority model)
     rank = getattr(root, 'rank', None)
-
     if rank is None:
         return DEFAULT_IMPORTANCE
 
-    # importance = 10 - rank, with floor of 1
     return max(10.0 - rank, 1.0)
 
 
-# ---------------------------------------------------------------------------
-# Urgency (dynamic, calculated on refresh)
-# ---------------------------------------------------------------------------
-
-def get_urgency(task: Task, graph: PriorityGraph) -> float:
+def score_task(
+    task: Task,
+    graph: PriorityGraph,
+    rules: list[Rule],
+    task_tags: set[str] | None = None,
+) -> ScoredTask:
     """
-    Calculate urgency score for a task.
+    Score a task using the rules engine.
 
-    Factors:
-    - Due date proximity (0-10 scale)
+    Formula: (importance + urgency) × aptness
 
-    Returns urgency, capped at 10.
+    Args:
+        task: The task to score
+        graph: Priority graph for importance calculation
+        rules: List of enabled rules to evaluate
+        task_tags: Set of tag names on the task
+
+    Returns:
+        ScoredTask with final score, components, and matched rules
     """
-    return min(_due_date_urgency(task.due_date), 10.0)
+    base_importance = get_importance(task, graph)
 
+    # Get priority depth and engagement data for rule context
+    depth = 0
+    last_engaged_at = None
+    if task.priority_id:
+        path = graph.path_to_root(task.priority_id)
+        depth = len(path) if path else 0
+        priority = graph.get(task.priority_id)
+        if priority:
+            last_engaged_at = priority.last_engaged_at
 
-def _due_date_urgency(due_date: datetime | None) -> float:
-    """
-    Calculate urgency based on due date proximity.
+    # Evaluate rules (urgency comes entirely from rules)
+    result = evaluate_rules(
+        rules=rules,
+        task=task,
+        task_tags=task_tags,
+        base_importance=base_importance,
+        base_urgency=0.0,
+        priority_depth=depth,
+        last_engaged_at=last_engaged_at,
+    )
 
-    Scale (0-10):
-    - No due date: 0
-    - > 30 days away: 1
-    - 7-30 days: 2-5 (gradual increase)
-    - 1-7 days: 5-8 (faster increase)
-    - Due today: 9
-    - Overdue: 10
-    """
-    if due_date is None:
-        return 0.0
-
-    now = datetime.now()
-
-    # Handle date-only comparison (strip time if due_date has no time component)
-    if due_date.hour == 0 and due_date.minute == 0 and due_date.second == 0:
-        now = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    days_until = (due_date - now).days
-
-    if days_until < 0:
-        return 10.0  # Overdue
-    elif days_until == 0:
-        return 9.0   # Due today
-    elif days_until <= 7:
-        # 1-7 days: linear from 8 down to 5
-        return 8.0 - (days_until - 1) * 0.5
-    elif days_until <= 30:
-        # 7-30 days: linear from 5 down to 2
-        return 5.0 - (days_until - 7) * (3.0 / 23.0)
-    else:
-        return 1.0   # > 30 days
-
-
-# ---------------------------------------------------------------------------
-# Combined Scoring
-# ---------------------------------------------------------------------------
-
-def score_task(task: Task, graph: PriorityGraph) -> ScoredTask:
-    """
-    Calculate the combined priority score for a task.
-
-    Score = (importance * weight) + (urgency * weight)
-    """
-    importance = get_importance(task, graph)
-    urgency = get_urgency(task, graph)
-
-    score = (importance * IMPORTANCE_WEIGHT) + (urgency * URGENCY_WEIGHT)
+    # Final scores
+    importance = base_importance + result.importance_modifier
+    urgency = result.urgency_modifier
+    aptness = result.aptness
+    score = (importance + urgency) * aptness
 
     return ScoredTask(
         task=task,
         score=score,
         importance=importance,
         urgency=urgency,
+        aptness=aptness,
+        matched_rules=result.matched_rules,
     )
 
 
-def rank_tasks(tasks: list[Task], graph: PriorityGraph) -> list[ScoredTask]:
+def rank_tasks(
+    tasks: list[Task],
+    graph: PriorityGraph,
+    rules: list[Rule],
+    task_tags_map: dict[str, set[str]] | None = None,
+) -> list[ScoredTask]:
     """
     Score and rank tasks by priority.
 
-    Returns tasks sorted by score (highest first).
+    Args:
+        tasks: Tasks to rank
+        graph: Priority graph for importance calculation
+        rules: List of enabled rules to evaluate
+        task_tags_map: Optional mapping of task_id -> set of tag names
+
+    Returns:
+        Tasks sorted by score (highest first).
     """
-    scored = [score_task(task, graph) for task in tasks]
+    scored = [
+        score_task(
+            task=task,
+            graph=graph,
+            rules=rules,
+            task_tags=task_tags_map.get(task.id, set()) if task_tags_map else None,
+        )
+        for task in tasks
+    ]
     scored.sort(key=lambda st: st.score, reverse=True)
     return scored

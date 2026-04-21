@@ -1,0 +1,54 @@
+{#
+Base Chip Component
+==================
+A clickable pastel chip that opens a popup for editing.
+
+Params:
+  - name: Form field name (required)
+  - value: Current value (required)
+  - display: Text to show in chip (defaults to value)
+  - variant: Color variant (interval, day, time, priority, tag, due)
+  - popup_id: Unique ID for the popup (auto-generated if not provided)
+  - popup_position: left (default), right, or center
+
+Usage:
+  {% with name="cadence", value="2 weeks", variant="interval" %}
+    {% include "partials/chips/chip_base.html" %}
+  {% endwith %}
+
+The popup content should be passed via Jinja block or caller().
+This base template is typically extended by specific chip types.
+#}
+
+{% set popup_id = popup_id or (name ~ '_popup_' ~ range(10000)|random) %}
+{% set display = display or value %}
+{% set variant = variant or 'default' %}
+{% set popup_position = popup_position or 'left' %}
+
+<span class="chip" data-chip="{{ name }}">
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+
+  <button type="button"
+          class="chip-trigger chip-trigger--{{ variant }}"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="{{ popup_id }}"
+          onclick="toggleChipPopup(this)">
+    <span class="chip-trigger__text">{{ display }}</span>
+  </button>
+
+  <div id="{{ popup_id }}"
+       class="chip-popup chip-popup--{{ popup_position }}"
+       role="dialog"
+       aria-label="Edit {{ name }}">
+    {% if caller %}
+      {{ caller() }}
+    {% else %}
+      {# Default empty popup - override in specific chip types #}
+      <div class="chip-popup__title">Select a value</div>
+      <div class="chip-popup__options">
+        {# Options go here #}
+      </div>
+    {% endif %}
+  </div>
+</span>

@@ -6,15 +6,18 @@ from enum import StrEnum
 
 
 class PriorityType(StrEnum):
-    VALUE = "value"        # Guiding principle (direction, never completes)
-    GOAL = "goal"          # Concrete outcome (destination, has end state)
-    PRACTICE = "practice"  # Recurring activity (generates tasks on rhythm)
+    INITIATIVE = "initiative"  # Ongoing bucket of work (pull-based, tactical)
+    VALUE = "value"            # Guiding principle (direction, never completes)
+    GOAL = "goal"              # Concrete outcome (destination, has end state)
+    PRACTICE = "practice"      # Recurring activity (generates tasks on rhythm)
+    ORG = "org"                # Shared workspace with group inbox
 
 
 class PriorityStatus(StrEnum):
     # Universal (values, practices, goals)
     ACTIVE = "active"
     DORMANT = "dormant"     # draft, backlog, abandoned, on-hold (see substatus)
+    BLOCKED = "blocked"     # waiting on external dependency
 
     # Goal-specific
     COMPLETED = "completed"  # goal achieved
@@ -29,17 +32,18 @@ class Priority:
     substatus: str | None = None  # Extension field (e.g., draft, backlog, abandoned)
 
     entity_id: str | None = None  # ULID of owning entity
-    agent_context: str | None = None
-    notes: str | None = None
+    agent_context: str | None = None  # Scaffolding for AI integration
+    description: str | None = None
 
     # Importance ranking (only meaningful on root priorities)
     # Lower rank = higher importance (rank 1 is most important)
     rank: int | None = None
 
-    # Task assignment settings (for shared priorities)
-    # These are mutually exclusive; both False = unassigned (manual claim)
-    auto_assign_owner: bool = True    # Assign new tasks to priority owner
-    auto_assign_creator: bool = False  # Assign new tasks to task creator
+    # Priority-level assignment (replaces task-level assigned_to)
+    assigned_to_entity_id: str | None = None  # Entity responsible for this priority
+
+    # Engagement tracking (updated when child tasks are completed)
+    last_engaged_at: datetime | None = None
 
     # Metadata
     created_at: datetime | None = None
@@ -51,8 +55,6 @@ class Value(Priority):
     """A guiding principle (telos). Direction to travel, never completes."""
 
     priority_type: PriorityType = PriorityType.VALUE
-    success_looks_like: str | None = None  # What living this value looks like
-    obsolete_when: str | None = None       # When this value no longer applies
 
 
 @dataclass
@@ -67,9 +69,27 @@ class Goal(Priority):
 
 @dataclass
 class Practice(Priority):
-    """A recurring activity (ethea). Generates task instances on a rhythm."""
+    """A recurring activity (ethea). Generates task instances via triggers."""
 
     priority_type: PriorityType = PriorityType.PRACTICE
-    rhythm_frequency: str | None = None   # e.g., "daily", "weekly", "2x daily"
-    rhythm_constraints: str | None = None # e.g., "morning only", "not after 9pm"
-    generation_prompt: str | None = None  # how agent generates specific tasks
+
+    # Actions configuration (JSON string containing DSL v2 actions array)
+    actions_config: str | None = None
+
+    # Tracking for fire-at-first-opportunity pattern
+    last_triggered_at: datetime | None = None
+
+
+@dataclass
+class Initiative(Priority):
+    """An ongoing bucket of work. Pull-based and tactical, no special fields."""
+
+    priority_type: PriorityType = PriorityType.INITIATIVE
+
+
+@dataclass
+class Org(Priority):
+    """A shared workspace with a group inbox. Tasks directly under an Org
+    appear in the personal inboxes of all group members."""
+
+    priority_type: PriorityType = PriorityType.ORG

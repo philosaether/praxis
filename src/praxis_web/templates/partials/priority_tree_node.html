@@ -3,7 +3,7 @@
 {% set depth = depth|default(0) %}
 {% set node = node|default(root) %}
 
-<div class="tree-node" data-id="{{ node.id }}" data-depth="{{ depth }}" data-name="{{ node.name }}">
+<div class="tree-node{% if node.status == 'dormant' %} status-dormant{% endif %}{% if node.status == 'completed' %} status-completed{% endif %}{% if node.is_shared_with_me and not node.can_adopt %} no-adopt{% endif %}" data-id="{{ node.id }}" data-depth="{{ depth }}" data-name="{{ node.name }}">
     <div class="tree-node-row"
          style="padding-left: {{ depth * 1.5 + 0.5 }}rem;"
          oncontextmenu="showTreeContextMenuFromElement(event, this)">
@@ -20,33 +20,31 @@
         {# Clickable content area #}
         <div class="tree-node-content"
              hx-get="/priorities/{{ node.id }}"
-             hx-target="#detail-pane"
+             hx-target="#detail-content"
              hx-swap="innerHTML"
              hx-push-url="true"
              onclick="selectTreeNode(this)">
 
             {# Rank badge (only for roots with rank) #}
             {% if depth == 0 and node.rank %}
-            <span class="rank-badge">#{{ node.rank }}</span>
+            <span class="pill pill--xs pill--rank">#{{ node.rank }}</span>
             {% endif %}
 
-            {# Type badge #}
-            <span class="type-badge {{ node.priority_type }}">{{ node.priority_type|upper }}</span>
+            {# Type pill #}
+            <span class="pill pill--{{ node.priority_type }}">{{ node.priority_type|upper }}</span>
 
             {# Name #}
             <span class="tree-node-name">{{ node.name }}</span>
 
-            {# Share indicator #}
-            {% if node.is_shared_with_me %}
-            <span class="share-indicator shared-with-me" title="Shared with you">&#x1F517;</span>
-            {% elif node.share_count and node.share_count > 0 %}
-            <span class="share-indicator shared-by-me" title="Shared with {{ node.share_count }} other(s)">&#x1F91D;</span>
+            {# Shared/assignee pill — show for both owner and sharee #}
+            <span class="tree-node-meta">
+            {% if node.is_shared_with_me or (node.share_count is defined and node.share_count and node.share_count > 0) %}
+              <span class="pill pill--xs pill--shared">
+                <span class="icon icon--sm">handshake</span>
+                {%- if node.assigned_to_name and node.is_shared_with_me %} {{ node.assigned_to_name }}{% endif -%}
+              </span>
             {% endif %}
-
-            {# Status indicator #}
-            {% if node.status and node.status != 'active' %}
-            <span class="status-dim">({{ node.status }})</span>
-            {% endif %}
+            </span>
         </div>
 
         {# Kebab menu button #}

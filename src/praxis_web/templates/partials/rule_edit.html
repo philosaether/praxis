@@ -1,0 +1,264 @@
+<div class="detail-view rule-edit" id="rule-edit-{{ rule.id }}">
+    <form id="rule-edit-form" hx-post="/rules/{{ rule.id }}" hx-target="#detail-content" hx-swap="innerHTML">
+        <div class="detail-header">
+            <input type="text" name="name" value="{{ rule.name }}" class="rule-name-input" placeholder="Rule name">
+        </div>
+
+        <div class="rule-property-row">
+            <label>Description</label>
+            <input type="text" name="description" value="{{ rule.description or '' }}" class="rule-property-input" placeholder="Optional description">
+        </div>
+
+        <div class="rule-property-row">
+            <label>Priority</label>
+            <input type="number" name="priority" value="{{ rule.priority }}" class="rule-property-input rule-property-input-sm" min="0" max="1000">
+            <span class="rule-property-hint">Higher = evaluated first</span>
+        </div>
+
+        <!-- Conditions Section -->
+        <div class="rule-section">
+            <div class="rule-section-header">
+                <h3>When</h3>
+                <button type="button" class="btn btn-sm" onclick="addCondition()">+ Add</button>
+            </div>
+            <p class="text-muted">All conditions must match</p>
+
+            <div id="conditions-list" class="block-list">
+                {% for condition in rule.conditions %}
+                {% set idx = loop.index0 %}
+                {% include "partials/rule_condition_block.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Effects Section -->
+        <div class="rule-section">
+            <div class="rule-section-header">
+                <h3>Then</h3>
+                <button type="button" class="btn btn-sm" onclick="addEffect()">+ Add</button>
+            </div>
+
+            <div id="effects-list" class="block-list">
+                {% for effect in rule.effects %}
+                {% set idx = loop.index0 %}
+                {% include "partials/rule_effect_block.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- YAML View Toggle -->
+        <div class="rule-yaml-section" id="yaml-section" style="display: none;">
+            <div class="rule-section-header">
+                <h3>YAML</h3>
+            </div>
+            <textarea id="yaml-editor" class="yaml-editor" rows="15">{{ rule_yaml }}</textarea>
+            <input type="hidden" name="yaml_content" id="yaml-content-field" value="">
+            <p class="text-muted">Edit the YAML directly. Changes here will replace the visual editor content.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="rule-edit-actions">
+            <button type="button" class="btn btn-secondary" onclick="toggleYamlView()">
+                <span id="yaml-toggle-label">Edit as YAML</span>
+            </button>
+            <div class="rule-edit-actions-right">
+                <button type="button" class="btn btn-secondary"
+                        hx-get="/rules/{{ rule.id }}"
+                        hx-target="#detail-content">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    let conditionIndex = {{ rule.conditions|length }};
+    let effectIndex = {{ rule.effects|length }};
+    let yamlMode = false;
+
+    // Initialize SortableJS for drag-and-drop
+    if (typeof Sortable !== 'undefined') {
+        new Sortable(document.getElementById('conditions-list'), {
+            animation: 150,
+            handle: '.block-drag-handle',
+            ghostClass: 'block-ghost'
+        });
+        new Sortable(document.getElementById('effects-list'), {
+            animation: 150,
+            handle: '.block-drag-handle',
+            ghostClass: 'block-ghost'
+        });
+    }
+
+    window.addCondition = function() {
+        const list = document.getElementById('conditions-list');
+        const idx = conditionIndex++;
+
+        const block = document.createElement('div');
+        block.className = 'rule-block condition-block';
+        block.innerHTML = `
+            <span class="block-drag-handle">⋮⋮</span>
+            <select name="conditions[${idx}][type]" class="block-type-select" onchange="updateConditionFields(this, ${idx})">
+                <option value="">Select condition...</option>
+                <option value="time_window">Time of day</option>
+                <option value="day_of_week">Day of week</option>
+                <option value="tag_match">Has tag</option>
+                <option value="tag_missing">Missing tag</option>
+                <option value="due_date_proximity">Due date</option>
+                <option value="staleness">Staleness</option>
+                <option value="engagement_recency">Priority not engaged</option>
+            </select>
+            <div class="block-fields" id="condition-fields-${idx}"></div>
+            <button type="button" class="block-delete" onclick="this.closest('.rule-block').remove()">×</button>
+        `;
+        list.appendChild(block);
+    };
+
+    window.updateConditionFields = function(select, idx) {
+        const container = document.getElementById('condition-fields-' + idx);
+        const type = select.value;
+
+        let html = '';
+        switch(type) {
+            case 'time_window':
+                html = `
+                    <input type="time" name="conditions[${idx}][start]" value="08:00" class="block-input">
+                    <span class="block-label">to</span>
+                    <input type="time" name="conditions[${idx}][end]" value="17:00" class="block-input">
+                `;
+                break;
+            case 'day_of_week':
+                html = `
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="monday"> Mon</label>
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="tuesday"> Tue</label>
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="wednesday"> Wed</label>
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="thursday"> Thu</label>
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="friday"> Fri</label>
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="saturday"> Sat</label>
+                    <label class="day-check"><input type="checkbox" name="conditions[${idx}][days][]" value="sunday"> Sun</label>
+                `;
+                break;
+            case 'tag_match':
+            case 'tag_missing':
+                html = `
+                    <input type="text" name="conditions[${idx}][tag]" placeholder="tag name" class="block-input">
+                `;
+                break;
+            case 'due_date_proximity':
+                html = `
+                    <select name="conditions[${idx}][due_type]" class="block-select">
+                        <option value="has_due_date">has a due date</option>
+                        <option value="overdue">is overdue</option>
+                        <option value="not_overdue">is not overdue</option>
+                        <option value="within_hours">is due within</option>
+                    </select>
+                    <input type="number" name="conditions[${idx}][hours]" value="24" class="block-input block-input-sm" style="display:none;">
+                    <span class="block-label" style="display:none;">hours</span>
+                `;
+                break;
+            case 'staleness':
+                html = `
+                    <span class="block-label">untouched for</span>
+                    <input type="number" name="conditions[${idx}][days]" value="3" class="block-input block-input-sm" min="1">
+                    <span class="block-label">+ days</span>
+                `;
+                break;
+            case 'engagement_recency':
+                html = `
+                    <span class="block-label">not engaged for</span>
+                    <input type="number" name="conditions[${idx}][days]" value="7" class="block-input block-input-sm" min="1">
+                    <span class="block-label">+ days</span>
+                `;
+                break;
+        }
+        container.innerHTML = html;
+
+        // Handle due_date_proximity special case
+        if (type === 'due_date_proximity') {
+            const dueSelect = container.querySelector('select');
+            dueSelect.addEventListener('change', function() {
+                const hoursInput = container.querySelector('input[type="number"]');
+                const hoursLabel = container.querySelectorAll('.block-label')[0];
+                if (this.value === 'within_hours') {
+                    hoursInput.style.display = '';
+                    if (hoursLabel) hoursLabel.style.display = '';
+                } else {
+                    hoursInput.style.display = 'none';
+                    if (hoursLabel) hoursLabel.style.display = 'none';
+                }
+            });
+        }
+    };
+
+    window.toggleDueHours = function(select, idx) {
+        const container = select.closest('.block-fields');
+        const hoursInput = container.querySelector('input[type="number"]');
+        const hoursLabel = container.querySelector('.block-label');
+        if (select.value === 'within_hours') {
+            if (hoursInput) hoursInput.style.display = '';
+            if (hoursLabel) hoursLabel.style.display = '';
+        } else {
+            if (hoursInput) hoursInput.style.display = 'none';
+            if (hoursLabel) hoursLabel.style.display = 'none';
+        }
+    };
+
+    window.addEffect = function() {
+        const list = document.getElementById('effects-list');
+        const idx = effectIndex++;
+
+        const block = document.createElement('div');
+        block.className = 'rule-block effect-block';
+        block.innerHTML = `
+            <span class="block-drag-handle">⋮⋮</span>
+            <select name="effects[${idx}][target]" class="block-type-select">
+                <option value="aptness">Aptness</option>
+                <option value="urgency">Urgency</option>
+                <option value="importance">Importance</option>
+            </select>
+            <select name="effects[${idx}][operator]" class="block-select">
+                <option value="multiply">× multiply by</option>
+                <option value="add">+ add</option>
+                <option value="set">= set to</option>
+                <option value="formula">formula</option>
+            </select>
+            <input type="text" name="effects[${idx}][value]" placeholder="value or formula" class="block-input">
+            <button type="button" class="block-delete" onclick="this.closest('.rule-block').remove()">×</button>
+        `;
+        list.appendChild(block);
+    };
+
+    window.toggleYamlView = function() {
+        yamlMode = !yamlMode;
+        const blockView = document.querySelectorAll('.rule-section');
+        const yamlSection = document.getElementById('yaml-section');
+        const toggleLabel = document.getElementById('yaml-toggle-label');
+        const yamlContentField = document.getElementById('yaml-content-field');
+
+        if (yamlMode) {
+            // Switch to YAML view
+            blockView.forEach(s => s.style.display = 'none');
+            yamlSection.style.display = 'block';
+            toggleLabel.textContent = 'Edit as Blocks';
+        } else {
+            // Switch to block view
+            blockView.forEach(s => s.style.display = '');
+            yamlSection.style.display = 'none';
+            toggleLabel.textContent = 'Edit as YAML';
+            // Clear YAML field when switching back to blocks
+            yamlContentField.value = '';
+        }
+    };
+
+    // Intercept form submission to include YAML content when in YAML mode
+    const form = document.getElementById('rule-edit-form');
+    form.addEventListener('htmx:configRequest', function(evt) {
+        if (yamlMode) {
+            const yamlEditor = document.getElementById('yaml-editor');
+            const yamlContentField = document.getElementById('yaml-content-field');
+            yamlContentField.value = yamlEditor.value;
+        }
+    });
+})();
+</script>

@@ -5,7 +5,7 @@
     <div id="properties-section">
         <div class="properties-section task-properties">
             <form hx-post="/tasks/create"
-                  hx-target="#detail-pane"
+                  hx-target="#detail-content"
                   hx-swap="innerHTML">
 
                 <!-- Name (required) -->
@@ -27,7 +27,7 @@
                     <select id="priority_id" name="priority_id" class="property-input">
                         <option value="">Inbox (no priority)</option>
                         {% for p in priorities %}
-                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        <option value="{{ p.id }}">[{{ p.priority_type[:3]|upper }}] {{ p.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -59,7 +59,7 @@
                     <div class="actions-right">
                         <button type="button"
                                 class="btn btn-secondary"
-                                onclick="document.getElementById('detail-pane').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
+                                onclick="document.getElementById('detail-content').innerHTML = '<div class=\'empty-state\'><h3>Select an item</h3><p>Click an item on the left to view details</p></div>';">
                             Cancel
                         </button>
                     </div>

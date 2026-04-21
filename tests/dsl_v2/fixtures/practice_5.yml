@@ -1,0 +1,32 @@
+practice:
+  name: Show Your Work
+  description: Don't just be about it, talk about it
+  actions:
+    - on:
+        event: priority_completion
+        when:
+          event:
+            type: goal
+            ancestor: Career
+        create:
+          - priority:
+              name: "Write a case study for {{priority.name}}"
+              type: goal
+              due: +30d
+              tags:
+                - writing
+              children:
+                - task:
+                    name: "Gather resources"
+                    notes: "Work through the following checklist: - [ ] ..."
+                - task:
+                    name: "Rough it out"
+                    notes: "Get the structure out first"
+                    tags:
+                      - deep_work
+                - task:
+                    name: "Edit"
+                - task:
+                    name: "Publish & Post"
+                    tags:
+                      - publish   # publishing tasks get higher aptness on Thursday afternoons

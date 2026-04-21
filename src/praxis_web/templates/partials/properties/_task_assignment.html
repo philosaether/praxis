@@ -1,28 +1,31 @@
-{# Task assignment settings - include in priority property forms #}
-{# Expects: priority #}
+{# Priority assignment - include in priority property forms #}
+{# Expects: priority, friends (list of {entity_id, username}), groups (list of {entity_id, name}) #}
 {# Only shown to owner #}
 
 {% if priority.is_owner %}
-<!-- Task Assignment Settings -->
-<div class="property-row assignment-settings">
-    <label>Task Assignment</label>
-    <div class="checkbox-group">
-        <label class="checkbox-label">
-            <input type="checkbox"
-                   name="auto_assign_owner"
-                   id="auto_assign_owner"
-                   {% if priority.auto_assign_owner %}checked{% endif %}
-                   onchange="if(this.checked) document.getElementById('auto_assign_creator').checked = false;">
-            <span>Assign new tasks to me</span>
-        </label>
-        <label class="checkbox-label">
-            <input type="checkbox"
-                   name="auto_assign_creator"
-                   id="auto_assign_creator"
-                   {% if priority.auto_assign_creator %}checked{% endif %}
-                   onchange="if(this.checked) document.getElementById('auto_assign_owner').checked = false;">
-            <span>Assign new tasks to creator</span>
-        </label>
-    </div>
+<!-- Priority Assignment -->
+<div class="property-row">
+    <label for="assigned_to_entity_id">Assigned to</label>
+    <select name="assigned_to_entity_id" id="assigned_to_entity_id" class="property-input">
+        <option value="">Unassigned</option>
+        {% if friends %}
+        <optgroup label="People">
+            {% for friend in friends %}
+            <option value="{{ friend.entity_id }}" {% if priority.assigned_to_entity_id == friend.entity_id %}selected{% endif %}>
+                {{ friend.username }}
+            </option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
+        {% if groups %}
+        <optgroup label="Groups">
+            {% for group in groups %}
+            <option value="{{ group.entity_id }}" {% if priority.assigned_to_entity_id == group.entity_id %}selected{% endif %}>
+                {{ group.name }}
+            </option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
+    </select>
 </div>
 {% endif %}

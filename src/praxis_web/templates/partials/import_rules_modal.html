@@ -1,0 +1,55 @@
+{# Import Rules Modal #}
+<div class="modal-backdrop" id="import-modal-backdrop" onclick="if(event.target === this) closeImportModal()">
+    <div class="modal import-modal">
+        <div class="modal-header">
+            <h2>Import Rules</h2>
+            <button type="button" class="modal-close" onclick="closeImportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            {# Step 1: File Upload #}
+            <div id="import-step-upload">
+                <p>Upload a YAML file containing Praxis rules.</p>
+                <div class="file-upload-area" id="import-drop-zone">
+                    <input type="file"
+                           id="import-file-input"
+                           accept=".yml,.yaml"
+                           onchange="handleImportFile(event)"
+                           style="display: none;">
+                    <div class="file-upload-content">
+                        <span class="file-upload-icon"><span class="icon icon--lg">upload_file</span></span>
+                        <p>Drag & drop a .yml file here</p>
+                        <p class="text-muted">or</p>
+                        <button type="button"
+                                class="btn btn-secondary btn-sm"
+                                onclick="document.getElementById('import-file-input').click()">
+                            Choose File
+                        </button>
+                    </div>
+                </div>
+                <div id="import-error" class="import-error" style="display: none;"></div>
+            </div>
+
+            {# Step 2: Rule Selection #}
+            <div id="import-step-select" style="display: none;">
+                <p>Select which rules to import:</p>
+                <div id="import-rules-list" class="import-rules-list">
+                    {# Populated by JavaScript #}
+                </div>
+                <div class="import-select-actions">
+                    <button type="button" class="btn-link" onclick="selectAllImportRules(true)">Select All</button>
+                    <button type="button" class="btn-link" onclick="selectAllImportRules(false)">Select None</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+            <button type="button"
+                    class="btn btn-primary"
+                    id="import-submit-btn"
+                    onclick="submitImport()"
+                    disabled>
+                Import Selected
+            </button>
+        </div>
+    </div>
+</div>

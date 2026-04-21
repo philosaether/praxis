@@ -1,0 +1,16 @@
+{# Due date selector widget #}
+{# Params: name (field name), selected (current value), include_none (bool, default true) #}
+
+{% set include_none = include_none if include_none is defined else true %}
+
+<select name="{{ name }}" class="property-input due-select">
+    {% if include_none %}
+    <option value="" {% if not selected %}selected{% endif %}>No due date</option>
+    {% endif %}
+    <option value="end_of_day" {% if selected == "end_of_day" %}selected{% endif %}>End of day</option>
+    <option value="+1d" {% if selected == "+1d" %}selected{% endif %}>Tomorrow</option>
+    <option value="+2d" {% if selected == "+2d" %}selected{% endif %}>In 2 days</option>
+    <option value="+3d" {% if selected == "+3d" %}selected{% endif %}>In 3 days</option>
+    <option value="+7d" {% if selected == "+7d" %}selected{% endif %}>In 1 week</option>
+    <option value="end_of_week" {% if selected == "end_of_week" %}selected{% endif %}>End of week</option>
+</select>
