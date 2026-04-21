@@ -32,11 +32,20 @@ async def get_current_user(
     # Try bearer token from Authorization header
     if credentials is not None:
         token = credentials.credentials
+
+        # 1. Try session token
         result = validate_session(token)
         if result is not None:
             session, user = result
             request.state.user = user
             request.state.session = session
+            return user
+
+        # 2. Try API key (praxis_... format)
+        from praxis_core.persistence.api_key_repo import validate_api_key
+        user = validate_api_key(token)
+        if user is not None:
+            request.state.user = user
             return user
 
     raise HTTPException(
@@ -63,11 +72,18 @@ async def get_current_user_optional(
     # Try bearer token
     if credentials is not None:
         token = credentials.credentials
+
         result = validate_session(token)
         if result is not None:
             session, user = result
             request.state.user = user
             request.state.session = session
+            return user
+
+        from praxis_core.persistence.api_key_repo import validate_api_key
+        user = validate_api_key(token)
+        if user is not None:
+            request.state.user = user
             return user
 
     return None

@@ -1,0 +1,36 @@
+<div class="settings-panel">
+    <h2>Outbox</h2>
+    <p class="settings-description">Completed tasks are held here for 7 days before automatic deletion.</p>
+
+    {% if tasks %}
+    <div class="task-list">
+        {% for task in tasks %}
+        <div class="list-row list-row--done" id="task-row-{{ task.id }}">
+            <div class="list-row__content">
+                <span class="list-row__name">{{ task.name }}</span>
+                {% if task.priority_name %}
+                <span class="list-row__meta">{{ task.priority_name }}</span>
+                {% endif %}
+                {% if task.moved_to_outbox_at %}
+                <span class="list-row__meta">Completed {{ task.moved_to_outbox_at }}</span>
+                {% endif %}
+            </div>
+            <div class="list-row__actions">
+                <button class="btn btn-sm"
+                        hx-post="/tasks/{{ task.id }}/restore"
+                        hx-target="#detail-content"
+                        hx-swap="innerHTML"
+                        hx-headers='{"HX-Trigger-After-Swap": "settingsOutboxRefresh"}'
+                        title="Restore to queue">
+                    <span class="icon icon--sm">undo</span>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No completed tasks in the outbox</p>
+    </div>
+    {% endif %}
+</div>

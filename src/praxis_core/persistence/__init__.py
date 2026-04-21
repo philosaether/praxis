@@ -105,6 +105,32 @@ from praxis_core.persistence.tag_persistence import (
     get_tags_for_tasks,
 )
 
+
+def ensure_all_schemas() -> None:
+    """Create all tables in dependency order. Safe to call on existing DBs."""
+    from praxis_core.persistence.user_repo import ensure_schema as _ensure_user_schema
+    from praxis_core.persistence.task_repo import ensure_schema as _ensure_task_schema
+    from praxis_core.persistence.rule_persistence import ensure_schema as _ensure_rule_schema
+    from praxis_core.persistence.api_key_repo import _ensure_schema as _ensure_api_key_schema
+
+    with get_connection() as conn:
+        # 1. Priorities + edges (no ensure_schema exists — use raw DDL)
+        conn.executescript(PRIORITIES_SCHEMA)
+        conn.executescript(ENTITY_SHARES_SCHEMA)
+
+    # 2. Users, entities, sessions, invites, friends, placements
+    _ensure_user_schema()
+
+    # 3. Tasks + outbox migration
+    _ensure_task_schema()
+
+    # 4. Rules
+    _ensure_rule_schema()
+
+    # 5. API keys
+    _ensure_api_key_schema()
+
+
 __all__ = [
     # Database
     "get_connection",
@@ -186,6 +212,8 @@ __all__ = [
     "seed_user_rules",
     "restore_default_rules",
     "ensure_default_rules",
+    # Schema management
+    "ensure_all_schemas",
     # Tag persistence (subset)
     "get_tags_for_task",
     "get_tags_for_tasks",

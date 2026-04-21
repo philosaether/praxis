@@ -1,0 +1,76 @@
+<div class="settings-panel">
+    <h2>API Keys</h2>
+    <p class="settings-description">API keys let agents access your Praxis data. Keys never expire. Revoke a key to disable it immediately.</p>
+
+    {% if new_key %}
+    <div class="api-key-created">
+        <div class="api-key-created__header">
+            <span class="icon icon--sm">check_circle</span>
+            Key created: <strong>{{ new_key_name }}</strong>
+        </div>
+        <div class="api-key-created__warning">Copy this key now. It will not be shown again.</div>
+        <div class="api-key-created__value">
+            <code id="new-key-value">{{ new_key }}</code>
+            <button type="button" class="btn btn-sm" onclick="copyApiKey()">
+                <span class="icon icon--sm">content_copy</span> Copy
+            </button>
+        </div>
+    </div>
+    <script>
+    function copyApiKey() {
+        var key = document.getElementById('new-key-value').textContent;
+        navigator.clipboard.writeText(key).then(function() {
+            event.target.closest('button').innerHTML = '<span class="icon icon--sm">done</span> Copied';
+        });
+    }
+    </script>
+    {% endif %}
+
+    <div class="settings-section">
+        <h3>Create Key</h3>
+        <form hx-post="/settings/api-keys/create"
+              hx-target="#detail-content"
+              hx-swap="innerHTML"
+              class="settings-form settings-form--inline">
+            <div class="form-group">
+                <label for="key-name">Key name</label>
+                <input type="text" id="key-name" name="name" placeholder="e.g. Claude Code"
+                       required maxlength="100">
+            </div>
+            <button type="submit" class="btn">Generate Key</button>
+        </form>
+    </div>
+
+    {% if keys %}
+    <div class="settings-section">
+        <h3>Active Keys</h3>
+        <div class="api-key-list">
+            {% for key in keys %}
+            {% if key.is_active %}
+            <div class="api-key-row">
+                <div class="api-key-info">
+                    <span class="api-key-name">{{ key.name }}</span>
+                    <code class="api-key-prefix">{{ key.key_prefix }}...</code>
+                </div>
+                <div class="api-key-meta">
+                    <span class="api-key-date">Created {{ key.created_at[:10] }}</span>
+                    {% if key.last_used_at %}
+                    <span class="api-key-date">Last used {{ key.last_used_at[:10] }}</span>
+                    {% else %}
+                    <span class="api-key-date api-key-date--never">Never used</span>
+                    {% endif %}
+                </div>
+                <button class="btn btn-sm btn--danger"
+                        hx-delete="/settings/api-keys/{{ key.id }}"
+                        hx-target="#detail-content"
+                        hx-swap="innerHTML"
+                        hx-confirm="Revoke key '{{ key.name }}'? Any agents using it will lose access immediately.">
+                    Revoke
+                </button>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
