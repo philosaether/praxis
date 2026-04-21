@@ -30,22 +30,28 @@ def _get_active_rules(entity_id: str | None):
 router = APIRouter()
 
 
+from praxis_core.serialization import (
+    get_graph as _get_graph_impl,
+    serialize_priority as _serialize_priority_fn,
+    serialize_task as _serialize_task_fn,
+    get_task_permission,
+    can_edit_task,
+    can_toggle_task,
+    can_delete_task,
+    can_view_task,
+)
+
+
 def _get_graph(entity_id: str | None = None):
-    """Import here to avoid circular import."""
-    from praxis_core.web_api.app import get_graph
-    return get_graph(entity_id=entity_id)
+    return _get_graph_impl(entity_id=entity_id)
 
 
 def _serialize_priority(p):
-    """Import here to avoid circular import."""
-    from praxis_core.web_api.app import serialize_priority
-    return serialize_priority(p)
+    return _serialize_priority_fn(p)
 
 
 def _serialize_task(t, render_markdown: bool = False, current_user=None, graph=None):
-    """Import here to avoid circular import."""
-    from praxis_core.web_api.app import serialize_task
-    return serialize_task(t, render_markdown=render_markdown, current_user=current_user, graph=graph)
+    return _serialize_task_fn(t, render_markdown=render_markdown, current_user=current_user, graph=graph)
 
 
 def _get_owner_user_id(entity_id: str) -> int | None:
@@ -58,63 +64,7 @@ def _get_owner_user_id(entity_id: str) -> int | None:
         return row["id"] if row else None
 
 
-# -----------------------------------------------------------------------------
-# Task Permission Helpers
-# -----------------------------------------------------------------------------
-
-def get_task_permission(task, user: User | None, graph=None) -> str | None:
-    """
-    Determine a user's permission level on a task.
-
-    Returns one of:
-      - 'owner': User's entity owns the task
-      - 'creator': User created the task
-      - 'contributor': User has contributor/editor permission on the priority
-      - 'viewer': User has viewer permission on the priority
-      - None: No access
-    """
-    if user is None:
-        return None
-
-    # Owner: task belongs to user's entity
-    if task.entity_id == user.entity_id:
-        return "owner"
-
-    # Creator: user created the task
-    if task.created_by == user.id:
-        return "creator"
-
-    # Check priority-level permissions
-    if task.priority_id and graph:
-        priority_perm = graph.get_permission(task.priority_id, user.entity_id)
-        if priority_perm in ("contributor", "editor"):
-            return "contributor"
-        if priority_perm == "viewer":
-            return "viewer"
-        if priority_perm == "owner":
-            return "owner"
-
-    return None
-
-
-def can_view_task(permission: str | None) -> bool:
-    """Check if user can view the task."""
-    return permission is not None
-
-
-def can_edit_task(permission: str | None) -> bool:
-    """Check if user can edit task properties (name, notes, due date)."""
-    return permission in ("owner", "creator")
-
-
-def can_toggle_task(permission: str | None) -> bool:
-    """Check if user can toggle task done/undone."""
-    return permission in ("owner", "creator")
-
-
-def can_delete_task(permission: str | None) -> bool:
-    """Check if user can delete the task."""
-    return permission == "owner"
+# Task permission helpers imported from praxis_core.serialization at top of file
 
 
 def can_create_task_on_priority(priority_perm: str | None) -> bool:

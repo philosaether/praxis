@@ -4,11 +4,13 @@
 
 Read these files first:
 - `~/Development/.claude/WORKFLOW.md` - How to work with Phil
-- `.claude/PROJECT_STATUS.md` - What the project is, architecture, deployment
+- `.claude/project-status.md` - What the project is, architecture, deployment
 - `.claude/decisions.md` - Architectural decisions (append-only log)
 - `.claude/in-progress.md` - What's being added/removed/blocked right now
 - `.claude/inbox/` - Files dropped for review
 - `~/Development/persona/goals.json` - Masterpiece context (Praxis is primary)
+- `logical-architecture.md` - Authoritative codebase navigation map
+- `.claude/designs/praxis-at-release.md` - 1.0 vision: package boundaries, process model, auth
 
 **During the session:** When making significant decisions, append to decisions.md. When starting/finishing work, update in-progress.md.
 

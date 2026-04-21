@@ -20,15 +20,14 @@ router = APIRouter()
 CRON_API_KEY = os.environ.get("CRON_API_KEY", "")
 
 
+from praxis_core.serialization import get_graph as _get_graph_impl, serialize_task
+
+
 def _get_graph(entity_id: str | None = None):
-    """Import here to avoid circular import."""
-    from praxis_core.web_api.app import get_graph
-    return get_graph(entity_id=entity_id)
+    return _get_graph_impl(entity_id=entity_id)
 
 
 def _serialize_task(t, render_markdown: bool = False, current_user=None, graph=None):
-    """Import here to avoid circular import."""
-    from praxis_core.web_api.app import serialize_task
     return serialize_task(t, render_markdown=render_markdown, current_user=current_user, graph=graph)
 
 
