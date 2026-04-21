@@ -536,8 +536,8 @@ async def priority_actions_yaml_save(
         priority.updated_at = datetime.now()
         graph.save_priority(priority)
 
-        # Clear the API's graph cache so it reloads from DB
-        from praxis_core.web_api.app import clear_graph_cache
+        # Clear graph cache so it reloads from DB
+        from praxis_core.serialization import clear_graph_cache
         clear_graph_cache(user.entity_id)
 
         return HTMLResponse('<span class="yaml-status--saved">saved</span>')
