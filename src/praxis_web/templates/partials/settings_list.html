@@ -1,0 +1,29 @@
+<div class="settings-categories">
+    <div class="settings-category selected"
+         hx-get="/settings/account"
+         hx-target="#detail-content"
+         hx-push-url="false"
+         onclick="selectSettingsCategory(this)">
+        <span class="icon icon--sm">person</span>
+        <span class="category-name">Account</span>
+    </div>
+    <div class="settings-category"
+         hx-get="/settings/api-keys"
+         hx-target="#detail-content"
+         hx-push-url="false"
+         onclick="selectSettingsCategory(this)">
+        <span class="icon icon--sm">key</span>
+        <span class="category-name">API Keys</span>
+        {% if key_count > 0 %}
+        <span class="category-count">{{ key_count }}</span>
+        {% endif %}
+    </div>
+    <div class="settings-category"
+         hx-get="/settings/outbox"
+         hx-target="#detail-content"
+         hx-push-url="false"
+         onclick="selectSettingsCategory(this)">
+        <span class="icon icon--sm">delete_outline</span>
+        <span class="category-name">Outbox</span>
+    </div>
+</div>

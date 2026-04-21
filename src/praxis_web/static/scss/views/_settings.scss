@@ -1,0 +1,247 @@
+// =============================================================================
+// Settings Views
+// =============================================================================
+@use '../base/variables' as *;
+
+// -----------------------------------------------------------------------------
+// Category List (left pane)
+// -----------------------------------------------------------------------------
+
+.settings-categories {
+  padding: $spacing-sm 0;
+}
+
+.settings-category {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+
+  &.selected {
+    background: $accent-glow;
+    border-left: 3px solid $accent;
+  }
+
+  .category-name {
+    font-size: $font-size-sm;
+  }
+
+  .category-count {
+    margin-left: auto;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Settings Panel (right pane)
+// -----------------------------------------------------------------------------
+
+.settings-panel {
+  padding: $spacing-xl;
+  max-width: 640px;
+
+  h2 {
+    font-size: 1.25rem;
+    margin-bottom: $spacing-md;
+  }
+
+  h3 {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: $spacing-sm;
+    margin-top: $spacing-xl;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+.settings-description {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+  margin-bottom: $spacing-lg;
+}
+
+.settings-section {
+  margin-bottom: $spacing-xl;
+}
+
+.settings-field {
+  padding: $spacing-sm 0;
+}
+
+// -----------------------------------------------------------------------------
+// Settings Forms
+// -----------------------------------------------------------------------------
+
+.settings-form {
+  .form-group {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin-bottom: $spacing-xs;
+    }
+
+    input {
+      width: 100%;
+      max-width: 320px;
+      padding: $spacing-sm $spacing-md;
+      border: 1px solid $border;
+      border-radius: 4px;
+      font-size: $font-size-sm;
+      background: $bg-elevated;
+
+      &:focus {
+        outline: none;
+        border-color: $accent;
+      }
+    }
+  }
+
+  &--inline {
+    display: flex;
+    align-items: flex-end;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+
+    .form-group {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.settings-message {
+  padding: $spacing-sm $spacing-md;
+  border-radius: 4px;
+  font-size: $font-size-sm;
+  margin-bottom: $spacing-md;
+
+  &--error {
+    background: rgba($error, 0.08);
+    color: $error;
+  }
+
+  &--success {
+    background: rgba($success, 0.08);
+    color: $success;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// API Key Components
+// -----------------------------------------------------------------------------
+
+.api-key-created {
+  background: rgba($success, 0.06);
+  border: 1px solid rgba($success, 0.2);
+  border-radius: 6px;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
+    color: $success;
+  }
+
+  &__warning {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: $spacing-md;
+  }
+
+  &__value {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    background: $bg-elevated;
+    padding: $spacing-sm $spacing-md;
+    border-radius: 4px;
+    border: 1px solid $border-subtle;
+
+    code {
+      font-family: monospace;
+      font-size: $font-size-sm;
+      word-break: break-all;
+      flex: 1;
+    }
+  }
+}
+
+.api-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.api-key-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background: $bg-secondary;
+  border-radius: 4px;
+
+  &:hover {
+    background: $bg-tertiary;
+  }
+}
+
+.api-key-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.api-key-name {
+  font-size: $font-size-sm;
+  font-weight: 500;
+}
+
+.api-key-prefix {
+  font-family: monospace;
+  font-size: $font-size-xs;
+  color: $text-muted;
+}
+
+.api-key-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.api-key-date {
+  font-size: $font-size-xs;
+  color: $text-muted;
+
+  &--never {
+    font-style: italic;
+  }
+}
+
+.btn--danger {
+  color: $error;
+  border-color: rgba($error, 0.3);
+
+  &:hover {
+    background: rgba($error, 0.08);
+  }
+}

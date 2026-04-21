@@ -111,6 +111,7 @@ def ensure_all_schemas() -> None:
     from praxis_core.persistence.user_repo import ensure_schema as _ensure_user_schema
     from praxis_core.persistence.task_repo import ensure_schema as _ensure_task_schema
     from praxis_core.persistence.rule_persistence import ensure_schema as _ensure_rule_schema
+    from praxis_core.persistence.api_key_repo import _ensure_schema as _ensure_api_key_schema
 
     with get_connection() as conn:
         # 1. Priorities + edges (no ensure_schema exists — use raw DDL)
@@ -125,6 +126,9 @@ def ensure_all_schemas() -> None:
 
     # 4. Rules
     _ensure_rule_schema()
+
+    # 5. API keys
+    _ensure_api_key_schema()
 
 
 __all__ = [
