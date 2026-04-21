@@ -1,14 +1,13 @@
 """
 Shared rendering utilities for praxis_web route modules.
 
-Provides the API client factory, template engine, HTMX detection,
+Provides the template engine, HTMX detection, session validation,
 and the full-page rendering helper that wraps partials in the app shell.
 """
 
 import hashlib
 import json
 import os
-import httpx
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
@@ -16,7 +15,6 @@ from pathlib import Path
 
 
 # Config
-API_URL = os.getenv("PRAXIS_API_URL", "http://localhost:8000")
 SESSION_COOKIE_NAME = "praxis_session"
 PRAXIS_ENV = os.getenv("PRAXIS_ENV", "local")  # local, staging, production
 
@@ -45,14 +43,17 @@ templates.env.globals["asset_v"] = ASSET_HASH
 templates.env.filters["tojson"] = lambda v: Markup(json.dumps(v))
 
 
-def api_client(request: Request | None = None):
-    """Create an API client, optionally with auth from session cookie."""
-    headers = {}
-    if request:
-        session_token = request.cookies.get(SESSION_COOKIE_NAME)
-        if session_token:
-            headers["Authorization"] = f"Bearer {session_token}"
-    return httpx.AsyncClient(base_url=API_URL, timeout=30.0, headers=headers)
+def get_user(request: Request):
+    """Get authenticated user from session cookie. Returns None if not authenticated."""
+    from praxis_core.persistence import validate_session
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return None
+    result = validate_session(token)
+    if result is None:
+        return None
+    _session, user = result
+    return user
 
 
 def is_htmx_request(request: Request) -> bool:
@@ -76,58 +77,84 @@ async def render_full_page(
 ):
     """Render full home page with specific mode and optional pre-rendered content."""
     from fastapi.responses import RedirectResponse
+    from praxis_core.serialization import get_graph, serialize_priority, serialize_task
+    from praxis_core.persistence import list_tasks, validate_session
+    from praxis_core.persistence.tag_persistence import get_tags_by_entity, get_tags_for_tasks
+    from praxis_core.persistence.friend_request_repo import get_notification_counts
+    from praxis_core.prioritization import rank_tasks
+    from praxis_core.persistence.rule_persistence import list_rules
+    from praxis_core.model import PriorityType
 
     # Check if user is logged in
-    if not request.cookies.get(SESSION_COOKIE_NAME):
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
         return RedirectResponse(url="/login", status_code=302)
 
-    async with api_client(request) as client:
-        # Fetch user info
-        me_response = await client.get("/api/auth/me")
-        if me_response.status_code != 200:
-            response = RedirectResponse(url="/login", status_code=302)
-            response.delete_cookie(key=SESSION_COOKIE_NAME)
-            return response
-        user = me_response.json()
+    result = validate_session(token)
+    if result is None:
+        response = RedirectResponse(url="/login", status_code=302)
+        response.delete_cookie(key=SESSION_COOKIE_NAME)
+        return response
+    _session, user = result
 
-        # Always fetch priorities for dropdowns
-        priorities_response = await client.get("/api/priorities")
-        priorities_data = priorities_response.json()
+    # Load priority graph
+    graph = get_graph(entity_id=user.entity_id)
 
-        # Fetch user's tags for filter dropdown
-        tags_response = await client.get("/api/tags")
-        tags_data = tags_response.json() if tags_response.status_code == 200 else {"tags": []}
+    # Serialize priorities for dropdowns
+    priorities = [
+        serialize_priority(p, current_entity_id=user.entity_id)
+        for p in graph.nodes.values()
+    ]
+    priority_types = [t.value for t in PriorityType]
 
-        # Fetch tasks for task modes (needed for default list if no initial_list_html)
-        tasks_data = {"tasks": []}
-        if mode in ["tasks", "inbox", "outbox"] and not initial_list_html:
-            if mode == "inbox":
-                tasks_response = await client.get("/api/tasks/inbox")
-            elif mode == "outbox":
-                tasks_response = await client.get("/api/tasks", params={"outbox": "true"})
-            else:
-                tasks_response = await client.get("/api/tasks")
-            tasks_data = tasks_response.json()
+    # Fetch user's tags for filter dropdown
+    tags = get_tags_by_entity(user.entity_id)
+    tags_data = [{"name": t} for t in sorted(tags)] if tags else []
 
-        # Fetch friend request notification counts for badge
-        notif_response = await client.get("/api/friend-requests/notifications")
-        notif_data = notif_response.json() if notif_response.status_code == 200 else {"total": 0}
+    # Fetch tasks for task modes (needed for default list if no initial_list_html)
+    tasks_serialized = []
+    if mode in ["tasks", "inbox", "outbox"] and not initial_list_html:
+        tasks = list_tasks(
+            entity_id=user.entity_id,
+            inbox_only=(mode == "inbox"),
+            outbox_only=(mode == "outbox"),
+        )
+        rules = list_rules(entity_id=user.entity_id, enabled_only=True)
+        task_ids = [t.id for t in tasks]
+        tags_map = get_tags_for_tasks(task_ids) if task_ids else {}
+        scored = rank_tasks(tasks, graph, rules, tags_map)
+        tasks_serialized = [
+            serialize_task(st.task, current_user=user, graph=graph)
+            for st in scored
+        ]
+
+    # Fetch friend request notification counts for badge
+    notif_data = get_notification_counts(user.id)
+
+    # User dict for template (matches what templates expect)
+    user_dict = {
+        "id": user.id,
+        "username": user.username,
+        "entity_id": user.entity_id,
+        "role": user.role.value if user.role else "user",
+        "tutorial_completed": user.tutorial_completed,
+    }
 
     # New user detection: no priorities AND hasn't completed tutorial
     is_new_user = (
-        len(priorities_data.get("priorities", [])) == 0
-        and not user.get("tutorial_completed", False)
+        len(priorities) == 0
+        and not user.tutorial_completed
     )
 
     return templates.TemplateResponse(
         request,
         "home.html",
         {
-            "user": user,
-            "tasks": tasks_data.get("tasks", []),
-            "priorities": priorities_data["priorities"],
-            "priority_types": priorities_data["priority_types"],
-            "user_tags": tags_data.get("tags", []),
+            "user": user_dict,
+            "tasks": tasks_serialized,
+            "priorities": priorities,
+            "priority_types": priority_types,
+            "user_tags": tags_data,
             "default_mode": mode,
             "outbox_mode": mode == "outbox",
             "initial_list_html": initial_list_html,

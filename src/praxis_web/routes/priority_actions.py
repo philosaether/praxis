@@ -7,9 +7,9 @@ from fastapi.responses import HTMLResponse
 
 from praxis_web.rendering import (
     templates,
-    api_client,
     SESSION_COOKIE_NAME,
 )
+from praxis_core.serialization import clear_graph_cache
 
 router = APIRouter()
 
@@ -234,10 +234,7 @@ async def priority_actions_create(request: Request, priority_id: str):
 
     graph.save_priority(priority)
 
-    # Clear the API's graph cache so it reloads from DB
-    # Must call the API endpoint since API runs in a separate process
-    async with api_client(request) as client:
-        await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
+    clear_graph_cache(user.entity_id)
 
     # Return updated editor with card data
     from praxis_web.helpers.action_renderer import actions_to_card_data, actions_to_yaml
@@ -312,8 +309,7 @@ async def priority_actions_create_from_wizard(
     priority.updated_at = datetime.now()
     graph.save_priority(priority)
 
-    async with api_client(request) as client:
-        await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
+    clear_graph_cache(user.entity_id)
 
     # Return updated editor with card data
     from praxis_web.helpers.action_renderer import actions_to_card_data, actions_to_yaml
@@ -369,9 +365,7 @@ async def priority_actions_delete(request: Request, priority_id: str, action_idx
             priority.updated_at = datetime.now()
             graph.save_priority(priority)
 
-            # Clear the API's graph cache so it reloads from DB
-            async with api_client(request) as client:
-                await client.post("/api/cache/invalidate", params={"entity_id": user.entity_id})
+            clear_graph_cache(user.entity_id)
 
             return {"success": True}
         else:
