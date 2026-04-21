@@ -19,12 +19,12 @@ from praxis_core.web_api.auth import get_current_user
 
 
 def _get_graph(entity_id):
-    from praxis_core.web_api.app import get_graph
+    from praxis_core.serialization import get_graph
     return get_graph(entity_id)
 
 
 def _clear_cache(entity_id):
-    from praxis_core.web_api.app import clear_graph_cache
+    from praxis_core.serialization import clear_graph_cache
     clear_graph_cache(entity_id)
 
 router = APIRouter()
