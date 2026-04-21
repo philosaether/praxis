@@ -95,7 +95,6 @@ try:
     from praxis_core.agent_api.tasks import router as agent_task_router
     from praxis_core.agent_api.rules import router as agent_rule_router
     from praxis_core.agent_api.graph import router as agent_graph_router
-
     app.include_router(agent_priority_router, prefix="/agent/priorities", tags=["agent"])
     app.include_router(agent_task_router, prefix="/agent/tasks", tags=["agent"])
     app.include_router(agent_rule_router, prefix="/agent/rules", tags=["agent"])
@@ -154,6 +153,7 @@ from praxis_web.routes.tags import router as tags_router
 from praxis_web.routes.filters import router as filters_router
 from praxis_web.routes.chips import router as chips_router
 from praxis_web.routes.triggers import router as triggers_router
+from praxis_web.routes.settings import router as settings_router
 
 app.include_router(auth_router)
 app.include_router(pages_router)
@@ -168,3 +168,4 @@ app.include_router(tags_router)
 app.include_router(filters_router)
 app.include_router(chips_router)
 app.include_router(triggers_router)
+app.include_router(settings_router)

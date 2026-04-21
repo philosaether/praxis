@@ -60,15 +60,15 @@
             <span class="icon">discover_tune</span>
             <span class="mode-nav-label">rules</span>
         </button>
-        <button class="mode-nav-btn {% if default_mode == 'outbox' %}active{% endif %}"
-                id="outbox-nav-btn"
-                hx-get="/tasks/outbox"
+        <button class="mode-nav-btn {% if default_mode == 'settings' %}active{% endif %}"
+                id="settings-nav-btn"
+                hx-get="/settings/list"
                 hx-target="#item-list"
-                hx-push-url="/tasks/outbox"
-                onclick="setMode('outbox')"
-                title="Outbox">
-            <span class="icon">delete_outline</span>
-            <span class="mode-nav-label">outbox</span>
+                hx-push-url="/settings"
+                onclick="setMode('settings')"
+                title="Settings">
+            <span class="icon">settings</span>
+            <span class="mode-nav-label">settings</span>
         </button>
     </nav>
 
@@ -418,7 +418,7 @@
         document.getElementById('priorities-nav-btn').classList.toggle('active', mode === 'priorities');
         document.getElementById('friends-nav-btn').classList.toggle('active', mode === 'friends');
         document.getElementById('rules-nav-btn').classList.toggle('active', mode === 'rules');
-        document.getElementById('outbox-nav-btn').classList.toggle('active', mode === 'outbox');
+        document.getElementById('settings-nav-btn').classList.toggle('active', mode === 'settings');
 
         // Toggle filter visibility
         document.getElementById('priority-filters').style.display = mode === 'priorities' ? 'flex' : 'none';
@@ -432,13 +432,21 @@
         document.getElementById('add-friend-bar').style.display = mode === 'friends' ? 'flex' : 'none';
         document.getElementById('add-rule-bar').style.display = mode === 'rules' ? 'flex' : 'none';
 
-        // Update FAB color based on mode
+        // Update FAB visibility and color based on mode
         const fab = document.getElementById('fab-button');
+        fab.style.display = mode === 'settings' ? 'none' : '';
         fab.classList.toggle('fab-priority', mode === 'priorities');
         fab.classList.toggle('fab-friends', mode === 'friends');
 
         // Update detail pane based on mode
-        if (mode === 'priorities') {
+        if (mode === 'settings') {
+            // Settings: load account panel by default on desktop
+            if (window.innerWidth > 768) {
+                htmx.ajax('GET', '/settings/account', {target: '#detail-content', swap: 'innerHTML'});
+            } else {
+                document.getElementById('detail-content').innerHTML = '';
+            }
+        } else if (mode === 'priorities') {
             if (window.innerWidth <= 768) {
                 // Mobile: tree is the primary view. The nav button's hx-get loads the list,
                 // so we delay the tree fetch to ensure it overwrites the list.
@@ -464,6 +472,17 @@
     };
 
     // FAB handler - opens appropriate modal based on mode
+    window.selectSettingsCategory = function(el) {
+        document.querySelectorAll('.settings-category').forEach(function(c) {
+            c.classList.remove('selected');
+        });
+        el.classList.add('selected');
+        // Mobile: switch to detail view
+        if (window.innerWidth <= 768) {
+            document.querySelector('.container').classList.add('mobile-detail');
+        }
+    };
+
     window.handleFabClick = function() {
         if (window.currentMode === 'priorities') {
             openQuickAddPriority();

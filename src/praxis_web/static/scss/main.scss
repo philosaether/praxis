@@ -29,6 +29,7 @@
 @use 'views/detail';
 @use 'views/tree';
 @use 'views/login';
+@use 'views/settings';
 
 // Features (rules before actions — yaml-editor cascade dependency)
 @use 'features/rules';
