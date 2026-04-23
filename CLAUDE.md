@@ -4,13 +4,13 @@
 
 Read these files first:
 - `~/Development/.claude/WORKFLOW.md` - How to work with Phil
-- `.claude/project-status.md` - What the project is, architecture, deployment
-- `.claude/decisions.md` - Architectural decisions (append-only log)
-- `.claude/in-progress.md` - What's being added/removed/blocked right now
-- `.claude/inbox/` - Files dropped for review
+- `.meta/project-status.md` - What the project is, architecture, deployment
+- `.meta/decisions.md` - Architectural decisions (append-only log)
+- `.meta/in-progress.md` - What's being added/removed/blocked right now
+- `.meta/inbox/` - Files dropped for review
 - `~/Development/persona/goals.json` - Masterpiece context (Praxis is primary)
 - `logical-architecture.md` - Authoritative codebase navigation map
-- `.claude/designs/praxis-at-release.md` - 1.0 vision: package boundaries, process model, auth
+- `.meta/designs/praxis-at-release.md` - 1.0 vision: package boundaries, process model, auth
 
 **During the session:** When making significant decisions, append to decisions.md. When starting/finishing work, update in-progress.md.
 
@@ -50,7 +50,7 @@ See `~/Development/persona/goals.json` for full architecture decisions.
 
 **Two git repos in this directory:**
 - `praxis/` — Main codebase (github.com/philosaether/praxis)
-- `praxis/.claude/` — Working docs, gitignored from main repo (github.com/philosaether/praxis-architecture)
+- `praxis/.meta/` — Working docs, gitignored from main repo (github.com/philosaether/praxis-architecture)
 
 When committing, remember to commit both:
 1. Code changes to praxis repo

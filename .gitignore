@@ -49,4 +49,7 @@ Thumbs.db
 
 # Claude Code local state
 .claude/
+
+# Project working docs (separate repo)
+.meta/
 node_modules/
