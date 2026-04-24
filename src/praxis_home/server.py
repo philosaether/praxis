@@ -1,7 +1,7 @@
 """Praxis Home server entry point.
 
 Usage:
-    praxis-home serve     # Start both API and web servers
+    praxis-home serve     # Start the server
     praxis-home setup     # Create admin user (first-time setup)
     praxis-home migrate   # Migrate existing data to admin user
 """
@@ -9,9 +9,7 @@ Usage:
 import os
 import sys
 import getpass
-import asyncio
 import uvicorn
-from multiprocessing import Process
 
 from praxis_home.config import PraxisHomeConfig
 
@@ -83,30 +81,8 @@ def setup(config: PraxisHomeConfig | None = None):
     print("Start the server with: praxis-home serve")
 
 
-def run_api_server(config: PraxisHomeConfig):
-    """Run the API server."""
-    os.environ["PRAXIS_DB_PATH"] = config.db_path
-    uvicorn.run(
-        "praxis_core.web_api.app:app",
-        host=config.api_host,
-        port=config.api_port,
-        log_level="info",
-    )
-
-
-def run_web_server(config: PraxisHomeConfig):
-    """Run the web server."""
-    os.environ["PRAXIS_API_URL"] = f"http://localhost:{config.api_port}"
-    uvicorn.run(
-        "praxis_web.app:app",
-        host=config.web_host,
-        port=config.web_port,
-        log_level="info",
-    )
-
-
 def serve(config: PraxisHomeConfig | None = None):
-    """Start both API and web servers."""
+    """Start the Praxis server (web UI + agent API, single process)."""
     if config is None:
         config = PraxisHomeConfig()
 
@@ -115,27 +91,18 @@ def serve(config: PraxisHomeConfig | None = None):
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
 
+    os.environ["PRAXIS_DB_PATH"] = config.db_path
+
     print("Starting Praxis Home...")
-    print(f"  API:  http://{config.api_host}:{config.api_port}")
-    print(f"  Web:  http://{config.web_host}:{config.web_port}")
+    print(f"  http://{config.host}:{config.port}")
     print()
 
-    # Start API server in background process
-    api_process = Process(target=run_api_server, args=(config,))
-    api_process.start()
-
-    # Give API a moment to start
-    import time
-    time.sleep(1)
-
-    # Run web server in main process
-    try:
-        run_web_server(config)
-    except KeyboardInterrupt:
-        print("\nShutting down...")
-    finally:
-        api_process.terminate()
-        api_process.join()
+    uvicorn.run(
+        "praxis_web.app:app",
+        host=config.host,
+        port=config.port,
+        log_level="info",
+    )
 
 
 def migrate(config: PraxisHomeConfig | None = None):

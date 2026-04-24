@@ -15,7 +15,7 @@ from praxis_core.model import (
     Org,
     User,
 )
-from praxis_core.web_api.auth import get_current_user
+from praxis_core.agent_api.auth import get_current_user
 
 
 def _get_graph(entity_id):
