@@ -203,6 +203,37 @@ async def tasks_outbox_page(request: Request):
     return await render_full_page(request, mode="outbox")
 
 
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """Settings view - full page or HTMX partial."""
+    if is_htmx_request(request):
+        from praxis_web.routes.settings import settings_list
+        return await settings_list(request)
+
+    user = _get_user(request)
+    if not user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/login", status_code=302)
+
+    from praxis_core.persistence.api_key_repo import list_api_keys
+    keys = list_api_keys(user.id)
+
+    list_html = templates.get_template("partials/settings_list.html").render(
+        user={"id": user.id, "username": user.username, "entity_id": user.entity_id,
+              "role": user.role.value if user.role else "user"},
+        key_count=len(keys),
+    )
+    detail_html = templates.get_template("partials/settings/account.html").render(
+        user={"id": user.id, "username": user.username, "entity_id": user.entity_id,
+              "role": user.role.value if user.role else "user"},
+    )
+
+    return await render_full_page(
+        request, mode="settings",
+        initial_list_html=list_html, initial_detail_html=detail_html,
+    )
+
+
 @router.get("/priorities", response_class=HTMLResponse)
 async def priorities_page(request: Request):
     """Priorities view - full page or HTMX partial."""

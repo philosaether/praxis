@@ -17,10 +17,9 @@
             </div>
             <div class="list-row__actions">
                 <button class="btn btn-sm"
-                        hx-post="/tasks/{{ task.id }}/restore"
-                        hx-target="#detail-content"
-                        hx-swap="innerHTML"
-                        hx-headers='{"HX-Trigger-After-Swap": "settingsOutboxRefresh"}'
+                        hx-post="/settings/outbox/{{ task.id }}/restore"
+                        hx-target="closest .settings-panel"
+                        hx-swap="outerHTML"
                         title="Restore to queue">
                     <span class="icon icon--sm">undo</span>
                 </button>

@@ -32,7 +32,6 @@ from praxis_core.persistence import (
     seed_database,
 )
 from praxis_home.cli import app as cli_app
-from praxis_core.web_api import app as api_app
 
 __all__ = [
     "__version__",
@@ -60,5 +59,4 @@ __all__ = [
     "seed_database",
     # Apps
     "cli_app",
-    "api_app",
 ]

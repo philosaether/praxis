@@ -199,3 +199,16 @@ async def outbox_panel(request: Request):
         "partials/settings/outbox.html",
         {"user": user, "tasks": tasks_serialized},
     )
+
+
+@router.post("/settings/outbox/{task_id}/restore", response_class=HTMLResponse)
+async def restore_from_outbox_route(request: Request, task_id: str):
+    """Restore a task from outbox back to queue, re-render outbox panel."""
+    user = _get_user(request)
+    if not user:
+        return HTMLResponse("", status_code=401)
+
+    from praxis_core.persistence.task_repo import restore_from_outbox
+    restore_from_outbox(task_id)
+
+    return await outbox_panel(request)
