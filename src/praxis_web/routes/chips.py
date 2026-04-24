@@ -23,9 +23,12 @@ def _chip_route(router: APIRouter, path: str, template: str, defaults: dict | No
     """
     _defaults = dict(defaults or {})
 
+    _allowed = set(_defaults.keys())
+
     @router.get(path, response_class=HTMLResponse)
     async def chip_partial(request: Request):
-        merged = {**_defaults, **dict(request.query_params)}
+        params = {k: v for k, v in request.query_params.items() if k in _allowed}
+        merged = {**_defaults, **params}
         return templates.TemplateResponse(request, template, merged)
 
     # Give each function a unique __name__ so FastAPI doesn't complain

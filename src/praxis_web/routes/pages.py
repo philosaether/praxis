@@ -218,14 +218,15 @@ async def settings_page(request: Request):
     from praxis_core.persistence.api_key_repo import list_api_keys
     keys = list_api_keys(user.id)
 
+    user_dict = {
+        "id": user.id, "username": user.username, "entity_id": user.entity_id,
+        "role": user.role.value if user.role else "user",
+    }
     list_html = templates.get_template("partials/settings_list.html").render(
-        user={"id": user.id, "username": user.username, "entity_id": user.entity_id,
-              "role": user.role.value if user.role else "user"},
-        key_count=len(keys),
+        user=user_dict, key_count=len(keys),
     )
     detail_html = templates.get_template("partials/settings/account.html").render(
-        user={"id": user.id, "username": user.username, "entity_id": user.entity_id,
-              "role": user.role.value if user.role else "user"},
+        user=user_dict,
     )
 
     return await render_full_page(

@@ -95,33 +95,14 @@ practices/
 
 Task ranking: computes (importance + urgency) x aptness scores using rules engine. Single file, ~148 lines.
 
-### web_api/
-
-Internal JSON API (BFF for web UI). Runs on port 8000.
-
-```
-web_api/
-├── __init__.py              — Package marker
-├── app.py                   — FastAPI app, lifespan, router mounting, graph cache
-├── auth.py                  — FastAPI dependencies: get_current_user, require_admin (also used by agent_api for now)
-├── auth_endpoints.py        — Register, login, logout, session management
-├── invite_endpoints.py      — Invitation CRUD endpoints
-├── friends_endpoints.py     — Friends list and removal
-├── friend_request_endpoints.py — Friend requests: send, accept, decline, cancel, notifications
-├── priority_endpoints.py    — Priority CRUD, tree operations, sharing, adoption (~1000 lines — split candidate)
-├── task_endpoints.py        — Task CRUD, toggle, status transitions, assignment
-├── rule_endpoints.py        — Rule CRUD, toggle, import/export
-├── tag_endpoints.py         — Tag search, task/priority tag management
-└── trigger_endpoints.py     — Practice trigger checking and event dispatch
-```
-
 ### agent_api/
 
-JSON-first API for AI agents. Mounted on web app at /agent/*. Uses web_api/auth.py for now; will move to API key auth (tracked as task under Praxis Improvements).
+JSON-first API for AI agents. Mounted on web app at /agent/*. Bearer token auth (session token or API key).
 
 ```
 agent_api/
 ├── __init__.py          — Package docstring
+├── auth.py              — Bearer token auth: session token or API key validation
 ├── priorities.py        — Priority CRUD for agents (all types incl. org), change-type endpoint
 ├── tasks.py             — Task CRUD for agents
 ├── rules.py             — Rule CRUD for agents

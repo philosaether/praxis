@@ -208,7 +208,25 @@ async def restore_from_outbox_route(request: Request, task_id: str):
     if not user:
         return HTMLResponse("", status_code=401)
 
+    from praxis_core.persistence import get_task
     from praxis_core.persistence.task_repo import restore_from_outbox
+
+    task = get_task(task_id)
+    if not task or task.entity_id != user.entity_id or not task.is_in_outbox:
+        return HTMLResponse("", status_code=404)
+
     restore_from_outbox(task_id)
 
-    return await outbox_panel(request)
+    # Re-render outbox inline (avoid double _get_user call)
+    from praxis_core.persistence import list_tasks
+    from praxis_core.serialization import get_graph, serialize_task
+
+    tasks = list_tasks(entity_id=user.entity_id, outbox_only=True)
+    graph = get_graph(entity_id=user.entity_id)
+    tasks_serialized = [serialize_task(t, current_user=user, graph=graph) for t in tasks]
+
+    return templates.TemplateResponse(
+        request,
+        "partials/settings/outbox.html",
+        {"user": user, "tasks": tasks_serialized},
+    )

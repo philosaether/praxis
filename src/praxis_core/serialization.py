@@ -3,8 +3,8 @@
 Used by web routes, agent API, and any other interface that needs to
 convert model objects to dicts or access the priority graph cache.
 
-This module breaks the circular dependency that previously existed
-between web_api/app.py and the endpoint modules.
+This module breaks the circular dependency that would otherwise exist
+between app.py and the endpoint modules.
 """
 
 from datetime import datetime

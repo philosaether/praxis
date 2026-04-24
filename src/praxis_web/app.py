@@ -37,7 +37,7 @@ async def _startup():
     ensure_all_schemas()
     ensure_default_rules()
 
-    # Auto-migrate (same logic as web_api/app.py lifespan)
+    # Auto-migrate on startup
     conn = get_connection()
 
     # tutorial_completed on users
