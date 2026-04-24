@@ -435,7 +435,7 @@
         // Update FAB visibility and color based on mode
         const fab = document.getElementById('fab-button');
         fab.style.display = mode === 'settings' ? 'none' : '';
-        fab.classList.toggle('fab-priority', mode === 'priorities');
+        updateFabStyle();
         fab.classList.toggle('fab-friends', mode === 'friends');
 
         // Update detail pane based on mode
@@ -484,12 +484,26 @@
     };
 
     window.handleFabClick = function() {
-        if (window.currentMode === 'priorities') {
+        // If a priority detail is showing, create task under that priority
+        const priorityView = document.querySelector('#detail-content [data-priority-id]');
+        if (priorityView) {
+            openQuickAdd(priorityView.dataset.priorityId);
+        } else if (window.currentMode === 'priorities') {
             openQuickAddPriority();
         } else {
             openQuickAdd();
         }
     };
+
+    // FAB is gold when it would create a priority (priorities mode, no detail showing)
+    window.updateFabStyle = function() {
+        const fab = document.getElementById('fab-button');
+        const hasPriorityDetail = !!document.querySelector('#detail-content [data-priority-id]');
+        fab.classList.toggle('fab-priority', window.currentMode === 'priorities' && !hasPriorityDetail);
+    };
+
+    // Update FAB style when detail pane content changes
+    document.getElementById('detail-content').addEventListener('htmx:afterSwap', updateFabStyle);
 
     // Task Quick Add Modal
     var currentQuickAddPriorityId = null;
