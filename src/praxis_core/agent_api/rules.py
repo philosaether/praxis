@@ -20,7 +20,7 @@ from praxis_core.persistence import (
     delete_rule,
     toggle_rule,
 )
-from praxis_core.web_api.auth import get_current_user
+from praxis_core.agent_api.auth import get_current_user
 
 router = APIRouter()
 

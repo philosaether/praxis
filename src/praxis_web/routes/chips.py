@@ -23,8 +23,11 @@ def _chip_route(router: APIRouter, path: str, template: str, defaults: dict | No
     """
     _defaults = dict(defaults or {})
 
+    _allowed = set(_defaults.keys())
+
     @router.get(path, response_class=HTMLResponse)
-    async def chip_partial(request: Request, **params):
+    async def chip_partial(request: Request):
+        params = {k: v for k, v in request.query_params.items() if k in _allowed}
         merged = {**_defaults, **params}
         return templates.TemplateResponse(request, template, merged)
 

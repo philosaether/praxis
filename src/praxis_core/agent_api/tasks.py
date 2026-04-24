@@ -17,7 +17,7 @@ from praxis_core.persistence import (
     get_tags_for_task,
     get_tags_for_tasks,
 )
-from praxis_core.web_api.auth import get_current_user
+from praxis_core.agent_api.auth import get_current_user
 
 
 def _get_graph(entity_id):

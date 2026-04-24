@@ -14,10 +14,8 @@ class PraxisHomeConfig:
     """
 
     # Server settings
-    api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    web_host: str = "0.0.0.0"
-    web_port: int = 8080
+    host: str = "0.0.0.0"
+    port: int = 8080
 
     # Auth settings
     allow_registration: bool = False  # Create users via CLI only

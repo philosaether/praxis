@@ -1,7 +1,7 @@
 {# Priority view mode - read-only display #}
 {# Expects: priority, priorities, parents, children, tasks, from_task #}
 
-<div class="detail-view {% if parents and parents|length > 0 %}nested-view{% endif %}">
+<div class="detail-view {% if parents and parents|length > 0 %}nested-view{% endif %}" data-priority-id="{{ priority.id }}">
     <!-- Back link -->
     <div class="detail-nav">
         {% if from_task %}
