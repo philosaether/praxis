@@ -109,7 +109,7 @@ async def render_full_page(
 
     # Fetch user's tags for filter dropdown
     tags = get_tags_by_entity(user.entity_id)
-    tags_data = [{"name": t} for t in sorted(tags)] if tags else []
+    tags_data = [{"name": t.name} for t in sorted(tags, key=lambda t: t.name)] if tags else []
 
     # Fetch tasks for task modes (needed for default list if no initial_list_html)
     tasks_serialized = []
