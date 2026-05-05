@@ -142,10 +142,16 @@ async def tutorial_completed(request: Request):
 
 @router.get("/signup", response_class=HTMLResponse)
 async def signup_page(request: Request, error: str | None = None, invite_token: str | None = None):
-    """Display signup page."""
+    """Display signup page. Requires a valid invite token."""
     # If already logged in, redirect to home
     if request.cookies.get(SESSION_COOKIE_NAME):
         return RedirectResponse(url="/", status_code=302)
+    # No invite token — redirect to login
+    if not invite_token:
+        return RedirectResponse(url="/login", status_code=302)
+    # Invalid/expired token — redirect to login
+    if validate_invitation(invite_token) is None:
+        return RedirectResponse(url="/login", status_code=302)
     return templates.TemplateResponse(
         request,
         "signup.html",
@@ -161,7 +167,16 @@ async def signup_submit(
     password_confirm: Annotated[str, Form()],
     invite_token: Annotated[str | None, Form()] = None,
 ):
-    """Handle signup form submission."""
+    """Handle signup form submission. Requires a valid invite token."""
+    # Reject signup without invite token
+    if not invite_token:
+        return templates.TemplateResponse(
+            request,
+            "signup.html",
+            {"error": "An invitation is required to create an account."},
+            status_code=403
+        )
+
     # Validate passwords match
     if password != password_confirm:
         return templates.TemplateResponse(
@@ -271,18 +286,14 @@ async def invite_page(request: Request, token: str):
             {"valid": False, "error": "This invitation is invalid or has expired."}
         )
 
-    # Check if user is already logged in
-    if request.cookies.get(SESSION_COOKIE_NAME):
-        return templates.TemplateResponse(
-            request,
-            "invite.html",
-            {
-                "valid": True,
-                "logged_in": True,
-                "inviter_username": invitation.get("inviter_username"),
-                "token": token,
-            }
-        )
+    # If logged in, accept the invite directly (creates friendship)
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_token:
+        result = validate_session(session_token)
+        if result:
+            _, user = result
+            accept_invitation(token, user.id)
+            return RedirectResponse(url="/", status_code=302)
 
     # Show signup form with invite context
     return templates.TemplateResponse(
@@ -290,7 +301,6 @@ async def invite_page(request: Request, token: str):
         "invite.html",
         {
             "valid": True,
-            "logged_in": False,
             "inviter_username": invitation.get("inviter_username"),
             "email": invitation.get("email"),
             "token": token,
