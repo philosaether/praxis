@@ -11,20 +11,7 @@
         <p class="login-subtitle">Invalid Invitation</p>
         <div class="login-error">{{ error }}</div>
         <p class="login-footer">
-            <a href="/login">Sign in</a> or <a href="/signup">create an account</a>
-        </p>
-
-        {% elif logged_in %}
-        <p class="login-subtitle">You're Invited!</p>
-        <p class="invite-message">
-            <strong>{{ inviter_username }}</strong> wants to connect with you on Praxis.
-        </p>
-        <p class="invite-note">
-            You're already logged in. To accept this invitation, please log out first
-            and create a new account using the invite link.
-        </p>
-        <p class="login-footer">
-            <a href="/logout">Log out</a> | <a href="/">Go to Praxis</a>
+            <a href="/login">Sign in</a>
         </p>
 
         {% else %}
