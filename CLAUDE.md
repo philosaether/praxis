@@ -3,13 +3,12 @@
 ## Session Start
 
 Read these files first:
-- `~/Development/.claude/WORKFLOW.md` - How to work with Phil
 - `.meta/project-status.md` - What the project is, architecture, deployment
 - `.meta/decisions.md` - Architectural decisions (append-only log)
 - `.meta/in-progress.md` - What's being added/removed/blocked right now
 - `.meta/inbox/` - Files dropped for review
 - `~/Development/persona/goals.json` - Masterpiece context (Praxis is primary)
-- `logical-architecture.md` - Authoritative codebase navigation map
+- `.meta/logical-architecture.md` - Authoritative codebase navigation map
 - `.meta/designs/praxis-at-release.md` - 1.0 vision: package boundaries, process model, auth
 
 **During the session:** When making significant decisions, append to decisions.md. When starting/finishing work, update in-progress.md.
@@ -54,7 +53,7 @@ See `~/Development/persona/goals.json` for full architecture decisions.
 
 When committing, remember to commit both:
 1. Code changes to praxis repo
-2. Documentation changes (PROJECT_STATUS.md, designs/, etc.) to praxis-architecture repo
+2. Documentation changes (designs/, etc.) to praxis-architecture repo
 
 **Branch policy:** Use feature branches for multi-commit work in praxis repo. If about to commit to main, warn Phil first.
 
