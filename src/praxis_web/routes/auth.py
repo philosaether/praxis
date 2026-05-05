@@ -177,6 +177,16 @@ async def signup_submit(
             status_code=403
         )
 
+    # Validate invite token early (before any mutations)
+    invitation = validate_invitation(invite_token)
+    if invitation is None:
+        return templates.TemplateResponse(
+            request,
+            "signup.html",
+            {"error": "Invalid or expired invitation", "invite_token": invite_token},
+            status_code=400
+        )
+
     # Validate passwords match
     if password != password_confirm:
         return templates.TemplateResponse(
@@ -228,24 +238,9 @@ async def signup_submit(
             status_code=400
         )
 
-    # Validate invite token if provided
-    invitation = None
-    if invite_token:
-        invitation = validate_invitation(invite_token)
-        if invitation is None:
-            return templates.TemplateResponse(
-                request,
-                "signup.html",
-                {"error": "Invalid or expired invitation", "invite_token": invite_token},
-                status_code=400
-            )
-
-    # Create the user
+    # Create the user and accept invitation
     user = create_user(username=clean_username, password=password)
-
-    # Accept invitation and create friendship
-    if invitation:
-        accept_invitation(invite_token, user.id)
+    accept_invitation(invite_token, user.id)
 
     # Create session and log in automatically
     user_agent, ip_address = _extract_request_meta(request)
@@ -292,7 +287,12 @@ async def invite_page(request: Request, token: str):
         result = validate_session(session_token)
         if result:
             _, user = result
-            accept_invitation(token, user.id)
+            if not accept_invitation(token, user.id):
+                return templates.TemplateResponse(
+                    request,
+                    "invite.html",
+                    {"valid": False, "error": "This invitation is invalid or has expired."}
+                )
             return RedirectResponse(url="/", status_code=302)
 
     # Show signup form with invite context

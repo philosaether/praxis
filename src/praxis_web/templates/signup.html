@@ -6,6 +6,8 @@
 <div class="login-container">
     <div class="login-card">
         <h1>Praxis</h1>
+
+        {% if invite_token %}
         <p class="login-subtitle">Create an account</p>
 
         {% if error %}
@@ -13,9 +15,7 @@
         {% endif %}
 
         <form method="POST" action="/signup" class="login-form">
-            {% if invite_token %}
             <input type="hidden" name="invite_token" value="{{ invite_token }}">
-            {% endif %}
             <div class="form-group">
                 <label for="username">Username</label>
                 <input
@@ -62,6 +62,12 @@
         <p class="login-footer">
             Already have an account? <a href="/login">Sign in</a>
         </p>
+        {% else %}
+        <p class="login-subtitle">Praxis is in closed alpha.</p>
+        <p class="login-footer">
+            <a href="/login">Sign in</a>
+        </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
